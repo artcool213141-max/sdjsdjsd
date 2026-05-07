@@ -144,10 +144,9 @@ def check(callback):
 
 @app.route("/", methods=["POST"])
 def webhook():
-    json_str = request.get_data().decode("utf-8")
 
     update = telebot.types.Update.de_json(
-        json_str
+        request.stream.read().decode("utf-8")
     )
 
     bot.process_new_updates([update])
