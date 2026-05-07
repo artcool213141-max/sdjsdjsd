@@ -1,11 +1,3 @@
-print("BOT FILE STARTED")
-bot = telebot.TeleBot(TOKEN)
-print("BOT CREATED")
-supabase = create_client(
-    SUPABASE_URL,
-    SUPABASE_KEY
-)
-print("SUPABASE CONNECTED")
 import os
 import telebot
 
@@ -27,11 +19,15 @@ TOKEN = os.environ.get("BOT_TOKEN")
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
+print("ENV LOADED")
+
 # =========================
 # BOT
 # =========================
 
 bot = telebot.TeleBot(TOKEN)
+
+print("BOT CREATED")
 
 app = Flask(__name__)
 
@@ -43,6 +39,8 @@ supabase = create_client(
     SUPABASE_URL,
     SUPABASE_KEY
 )
+
+print("SUPABASE CONNECTED")
 
 # =========================
 # FUNCTIONS
@@ -76,6 +74,7 @@ def check_subscriptions(user_id):
     for channel in channels:
 
         try:
+
             member = bot.get_chat_member(
                 channel["username"],
                 user_id
@@ -89,13 +88,15 @@ def check_subscriptions(user_id):
                 return False
 
         except Exception as e:
+
             print(e)
+
             return False
 
     return True
 
 # =========================
-# HANDLERS
+# START
 # =========================
 
 @bot.message_handler(commands=["start"])
@@ -126,6 +127,10 @@ def start(message):
         "Подпишитесь на все каналы:",
         reply_markup=keyboard
     )
+
+# =========================
+# CHECK SUBS
+# =========================
 
 @bot.callback_query_handler(
     func=lambda call: call.data == "check_subs"
@@ -171,6 +176,7 @@ def check_subs(call):
 
 @app.route("/", methods=["GET"])
 def home():
+
     return "Bot is running"
 
 @app.route("/", methods=["POST"])
