@@ -1,3 +1,11 @@
+print("BOT FILE STARTED")
+bot = telebot.TeleBot(TOKEN)
+print("BOT CREATED")
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY
+)
+print("SUPABASE CONNECTED")
 import os
 import telebot
 
