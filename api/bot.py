@@ -1,6 +1,8 @@
 import os
 import telebot
 
+from supabase import create_client
+
 from flask import Flask, request
 from telebot.types import (
     InlineKeyboardMarkup,
@@ -8,23 +10,51 @@ from telebot.types import (
     ReplyKeyboardMarkup
 )
 
+# =========================
+# ENV
+# =========================
+
 TOKEN = os.environ["BOT_TOKEN"]
+
+SUPABASE_URL = os.environ["SUPABASE_URL"]
+SUPABASE_KEY = os.environ["SUPABASE_KEY"]
+
+# =========================
+# SUPABASE
+# =========================
+
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY
+)
+
+# =========================
+# BOT
+# =========================
 
 bot = telebot.TeleBot(TOKEN)
 
 app = Flask(__name__)
 
-sponsor_channels = [
-    {
-        "title": "BudaStars",
-        "url": "https://t.me/BudaStars",
-        "username": "@BudaStars"
-    }
-]
+# =========================
+# FUNCTIONS
+# =========================
+
+def get_sponsor_channels():
+    response = supabase.table(
+        "sponsor_channels"
+    ).select("*").eq(
+        "active",
+        True
+    ).execute()
+
+    return response.data
 
 
 def check_subscriptions(user_id):
-    for channel in sponsor_channels:
+    channels = get_sponsor_channels()
+
+    for channel in channels:
         try:
             member = bot.get_chat_member(
                 channel["username"],
@@ -43,12 +73,17 @@ def check_subscriptions(user_id):
 
     return True
 
+# =========================
+# START
+# =========================
 
 @bot.message_handler(commands=["start"])
 def start(message):
+    channels = get_sponsor_channels()
+
     keyboard = InlineKeyboardMarkup()
 
-    for channel in sponsor_channels:
+    for channel in channels:
         keyboard.add(
             InlineKeyboardButton(
                 f"📢 {channel['title']}",
@@ -69,10 +104,18 @@ def start(message):
         reply_markup=keyboard
     )
 
+# =========================
+# CHECK SUBS
+# =========================
 
-@bot.callback_query_handler(func=lambda c: c.data == "check_subs")
+@bot.callback_query_handler(
+    func=lambda c: c.data == "check_subs"
+)
 def check(callback):
-    ok = check_subscriptions(callback.from_user.id)
+
+    ok = check_subscriptions(
+        callback.from_user.id
+    )
 
     if not ok:
         bot.answer_callback_query(
@@ -95,12 +138,17 @@ def check(callback):
         reply_markup=menu
     )
 
+# =========================
+# WEBHOOK
+# =========================
 
 @app.route("/", methods=["POST"])
 def webhook():
     json_str = request.get_data().decode("utf-8")
 
-    update = telebot.types.Update.de_json(json_str)
+    update = telebot.types.Update.de_json(
+        json_str
+    )
 
     bot.process_new_updates([update])
 
