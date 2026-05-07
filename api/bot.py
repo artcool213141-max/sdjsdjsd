@@ -1,9 +1,9 @@
 import os
 import telebot
 
+from flask import Flask, request
 from supabase import create_client
 
-from flask import Flask, request
 from telebot.types import (
     InlineKeyboardMarkup,
     InlineKeyboardButton,
@@ -14,10 +14,18 @@ from telebot.types import (
 # ENV
 # =========================
 
-TOKEN = os.environ["BOT_TOKEN"]
+TOKEN = os.environ.get("BOT_TOKEN")
 
-SUPABASE_URL = os.environ["SUPABASE_URL"]
-SUPABASE_KEY = os.environ["SUPABASE_KEY"]
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+# =========================
+# BOT
+# =========================
+
+bot = telebot.TeleBot(TOKEN)
+
+app = Flask(__name__)
 
 # =========================
 # SUPABASE
@@ -27,14 +35,6 @@ supabase = create_client(
     SUPABASE_URL,
     SUPABASE_KEY
 )
-
-# =========================
-# BOT
-# =========================
-
-bot = telebot.TeleBot(TOKEN)
-
-app = Flask(__name__)
 
 # =========================
 # FUNCTIONS
@@ -50,11 +50,12 @@ def get_sponsor_channels():
 
     return response.data
 
-
 def check_subscriptions(user_id):
+
     channels = get_sponsor_channels()
 
     for channel in channels:
+
         try:
             member = bot.get_chat_member(
                 channel["username"],
@@ -68,32 +69,35 @@ def check_subscriptions(user_id):
             ]:
                 return False
 
-        except:
+        except Exception as e:
+            print(e)
             return False
 
     return True
 
 # =========================
-# START
+# HANDLERS
 # =========================
 
 @bot.message_handler(commands=["start"])
 def start(message):
+
     channels = get_sponsor_channels()
 
     keyboard = InlineKeyboardMarkup()
 
     for channel in channels:
+
         keyboard.add(
             InlineKeyboardButton(
-                f"📢 {channel['title']}",
+                text=f"📢 {channel['title']}",
                 url=channel["url"]
             )
         )
 
     keyboard.add(
         InlineKeyboardButton(
-            "✅ Проверить подписку",
+            text="✅ Проверить подписку",
             callback_data="check_subs"
         )
     )
@@ -104,56 +108,61 @@ def start(message):
         reply_markup=keyboard
     )
 
-# =========================
-# CHECK SUBS
-# =========================
-
 @bot.callback_query_handler(
-    func=lambda c: c.data == "check_subs"
+    func=lambda call: call.data == "check_subs"
 )
-def check(callback):
+def check_subs(call):
 
     ok = check_subscriptions(
-        callback.from_user.id
+        call.from_user.id
     )
 
     if not ok:
+
         bot.answer_callback_query(
-            callback.id,
+            call.id,
             "❌ Подпишитесь на все каналы",
             show_alert=True
         )
+
         return
 
     menu = ReplyKeyboardMarkup(
         resize_keyboard=True
     )
 
-    menu.row("🎯 Задания", "👤 Профиль")
-    menu.row("💸 Вывести", "🏆 Топ")
+    menu.row(
+        "🎯 Задания",
+        "👤 Профиль"
+    )
+
+    menu.row(
+        "🏆 Топ"
+    )
 
     bot.send_message(
-        callback.message.chat.id,
+        call.message.chat.id,
         "✅ Подписки подтверждены!",
         reply_markup=menu
     )
 
 # =========================
-# WEBHOOK
+# ROUTES
 # =========================
+
+@app.route("/", methods=["GET"])
+def home():
+    return "Bot is running"
 
 @app.route("/", methods=["POST"])
 def webhook():
 
+    json_str = request.get_data().decode("UTF-8")
+
     update = telebot.types.Update.de_json(
-        request.stream.read().decode("utf-8")
+        json_str
     )
 
     bot.process_new_updates([update])
 
-    return "ok", 200
-
-
-@app.route("/", methods=["GET"])
-def index():
-    return "Bot is running"
+    return "OK", 200
