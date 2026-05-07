@@ -41,14 +41,25 @@ supabase = create_client(
 # =========================
 
 def get_sponsor_channels():
-    response = supabase.table(
-        "sponsor_channels"
-    ).select("*").eq(
-        "active",
-        True
-    ).execute()
 
-    return response.data
+    try:
+
+        response = supabase.table(
+            "sponsor_channels"
+        ).select("*").eq(
+            "active",
+            True
+        ).execute()
+
+        print(response.data)
+
+        return response.data
+
+    except Exception as e:
+
+        print(e)
+
+        return []
 
 def check_subscriptions(user_id):
 
