@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Buda Stars Premium</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Подключаем иконки и шрифты -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --tg-theme-bg: #0e1621;
+            --accent-green: #31b545;
+            --accent-blue: #3390ec;
+            --accent-gold: #fabb05;
+            --text-main: #ffffff;
+            --text-gray: #708499;
+            --card-bg: #17212b;
+            --gradient-green: linear-gradient(135deg, #42d358 0%, #28a139 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--tg-theme-bg);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* --- HEADER --- */
+        .header {
+            padding: 20px;
+            text-align: center;
+            background: linear-gradient(to bottom, #17212b, #0e1621);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .balance-title {
+            font-size: 14px;
+            color: var(--text-gray);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .balance-value {
+            font-size: 38px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .balance-value i {
+            color: var(--accent-gold);
+            filter: drop-shadow(0 0 8px rgba(250, 187, 5, 0.5));
+        }
+
+        /* --- NAVIGATION TABS --- */
+        .nav-tabs {
+            display: flex;
+            justify-content: space-around;
+            background: var(--card-bg);
+            padding: 10px;
+            border-bottom: 1px solid #232e3c;
+        }
+
+        .tab-item {
+            color: var(--text-gray);
+            font-size: 12px;
+            text-align: center;
+            flex: 1;
+            padding: 10px 0;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .tab-item.active {
+            color: var(--accent-blue);
+            border-bottom: 2px solid var(--accent-blue);
+        }
+
+        .tab-item i {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        /* --- CONTENT SECTIONS --- */
+        .content-section {
+            display: none;
+            padding: 20px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- CARDS & BUTTONS --- */
+        .task-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 15px;
+            border: 1px solid #232e3c;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .task-info h4 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+        }
+
+        .task-info p {
+            margin: 0;
+            font-size: 13px;
+            color: var(--text-gray);
+        }
+
+        .reward-badge {
+            background: rgba(250, 187, 5, 0.1);
+            color: var(--accent-gold);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .btn-main {
+            background: var(--gradient-green);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(49, 181, 69, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .btn-main:active {
+            transform: scale(0.96);
+            filter: brightness(0.9);
+        }
+
+        /* --- STATS GRID --- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-box span {
+            display: block;
+            color: var(--text-gray);
+            font-size: 12px;
+        }
+
+        .stat-box strong {
+            font-size: 18px;
+            color: var(--accent-blue);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="balance-title">Ваши звезды</div>
+        <div class="balance-value">
+            <i class="fas fa-star"></i>
+            <span id="user-balance">0</span>
+        </div>
+    </div>
+
+    <nav class="nav-tabs">
+        <div class="tab-item active" onclick="switchTab('tasks', this)">
+            <i class="fas fa-tasks"></i>
+            Задания
+        </div>
+        <div class="tab-item" onclick="switchTab('referrals', this)">
+            <i class="fas fa-users"></i>
+            Друзья
+        </div>
+        <div class="tab-item" onclick="switchTab('profile', this)">
+            <i class="fas fa-user-circle"></i>
+            Профиль
+        </div>
+    </nav>
+
+    <!-- SECTION: TASKS -->
+    <div id="tasks" class="content-section active">
+        <h3>🎯 Доступные задания</h3>
+        
+        <div class="task-card">
+            <div class="task-info">
+                <h4>Подписка на канал</h4>
+                <p>Buda News Official</p>
+            </div>
+            <div class="reward-badge">+50 ⭐</div>
+        </div>
+
+        <button class="btn-main" onclick="handleAction('task')">ВЫПОЛНИТЬ ВСЕ</button>
+    </div>
+
+    <!-- SECTION: REFERRALS -->
+    <div id="referrals" class="content-section">
+        <h3>👥 Реферальная система</h3>
+        <p style="color: var(--text-gray); font-size: 14px;">Приглашайте друзей и получайте 10% от их заработка!</p>
+        
+        <div class="stat-box" style="margin-bottom: 20px;">
+            <span>Ваша ссылка:</span>
+            <code id="ref-link" style="color: var(--accent-blue);">t.me/buda_bot?start=123</code>
+        </div>
+
+        <button class="btn-main" style="background: var(--accent-blue);" onclick="copyRef()">КОПИРОВАТЬ ССЫЛКУ</button>
+    </div>
+
+    <!-- SECTION: PROFILE -->
+    <div id="profile" class="content-section">
+        <h3>👤 Личный кабинет</h3>
+        <div class="stats-grid">
+            <div class="stat-box">
+                <span>Выведено</span>
+                <strong>0.00 $</strong>
+            </div>
+            <div class="stat-box">
+                <span>Ранг</span>
+                <strong>Новичок</strong>
+            </div>
+        </div>
+        <button class="btn-main" style="background: #eb4d4b; margin-top: 30px;" onclick="handleAction('withdraw')">ВЫВЕСТИ СРЕДСТВА</button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.headerColor = '#17212b';
+
+        // Инициализация данных
+        let balance = 1250;
+        document.getElementById('user-balance').innerText = balance.toLocaleString();
+
+        // Переключение вкладок
+        function switchTab(tabId, el) {
+            // Убираем активный класс у всех вкладок и секций
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+            
+            // Активируем нужную
+            document.getElementById(tabId).classList.add('active');
+            el.classList.add('active');
+            
+            // Легкая вибрация при клике (Haptic Feedback)
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        // Обработка действий
+        function handleAction(type) {
+            if(type === 'task') {
+                tg.showConfirm("Вы подписались на все каналы?", (ok) => {
+                    if(ok) {
+                        tg.HapticFeedback.notificationOccurred('success');
+                        tg.showAlert("Задания отправлены на проверку!");
+                    }
+                });
+            }
+            if(type === 'withdraw') {
+                tg.showPopup({
+                    title: 'Вывод средств',
+                    message: 'Минимальная сумма вывода — 500 звезд.',
+                    buttons: [{type: 'close'}]
+                });
+            }
+        }
+
+        function copyRef() {
+            // Логика копирования
+            tg.HapticFeedback.selectionChanged();
+            tg.showAlert("Ссылка скопирована в буфер обмена!");
+        }
+
+        // Сообщаем Telegram, что приложение готово
+        tg.ready();
+    </script>
+</body>
+</html>
