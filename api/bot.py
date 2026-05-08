@@ -178,19 +178,20 @@ def check_subs(call):
 # ROUTES
 # =========================
 
-@app.route("/", methods=["GET"])
-def home():
-
-    return "Bot is running"
+# =========================
+# ROUTES
+# =========================
 
 @app.route("/", methods=["POST"])
 def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return 'OK', 200
+    else:
+        return "Error", 403
 
-    json_str = request.get_data().decode("UTF-8")
-
-bot.process_new_updates(
-    [telebot.types.Update.de_json(json_str)]
-)
-
-    return "OK", 200
-    print("HANDLERS LOADED")
+@app.route("/", methods=["GET"])
+def index():
+    return "Bot is running", 200
