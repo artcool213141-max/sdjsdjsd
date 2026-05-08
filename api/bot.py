@@ -25,10 +25,7 @@ ADMINS = [8431093842]
 
 # Настройка каналов (До 10 штук)
 SPONSORS = [
-    {"name": "Buda News 📢", "user": "@channel1"},
-    {"name": "Crypto Farm 💎", "user": "@channel2"},
-    {"name": "Buda Community 👥", "user": "@channel3"},
-    {"name": "Partner Channel ✨", "user": "@channel4"},
+    {"name": "Тест 📢", "user": "@tesyruere"},
 ]
 
 # Настройки наград
