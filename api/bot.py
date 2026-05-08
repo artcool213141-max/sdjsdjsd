@@ -1,169 +1,283 @@
 import os
+import time
 import telebot
 from flask import Flask, request
 from supabase import create_client
 from telebot.types import (
     InlineKeyboardMarkup, InlineKeyboardButton, 
-    ReplyKeyboardMarkup, WebAppInfo
+    ReplyKeyboardMarkup, KeyboardButton
 )
 
-# --- Настройки ---
+# ==========================================
+# КОНФИГУРАЦИЯ И ИНИЦИАЛИЗАЦИЯ
+# ==========================================
+
 TOKEN = os.environ.get("BOT_TOKEN")
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-WEB_APP_URL = f"https://{os.environ.get('VERCEL_URL')}/" # Ссылка на твой фронт
+
+# Проверка критических переменных
+if not all([TOKEN, SUPABASE_URL, SUPABASE_KEY]):
+    raise ValueError("Критические переменные окружения не установлены!")
 
 bot = telebot.TeleBot(TOKEN, threaded=False)
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 app = Flask(__name__)
 
-# --- Логика БД ---
+# Списки администраторов (впиши свои ID через запятую)
+ADMINS = [8431093842] 
 
-def get_user(user_id, username=None):
-    res = supabase.table("users").select("*").eq("id", user_id).execute()
-    if not res.data:
-        # Регистрация нового юзера
-        data = {"id": user_id, "username": username}
-        res = supabase.table("users").insert(data).execute()
-    return res.data[0]
+# ==========================================
+# СИСТЕМНЫЕ ФУНКЦИИ БАЗЫ ДАННЫХ
+# ==========================================
 
-def add_balance(user_id, amount):
-    user = get_user(user_id)
-    new_balance = float(user['balance']) + float(amount)
-    supabase.table("users").update({"balance": new_balance}).eq("id", user_id).execute()
+def get_user_data(user_id, username="Unknown"):
+    """Получает или создает данные пользователя с глубокой инициализацией."""
+    try:
+        res = supabase.table("users").select("*").eq("id", user_id).execute()
+        if not res.data:
+            new_user = {
+                "id": user_id,
+                "username": username,
+                "balance": 0.0,
+                "tasks_completed": 0,
+                "referred_by": None,
+                "is_banned": False,
+                "last_active": "now()"
+            }
+            res = supabase.table("users").insert(new_user).execute()
+        return res.data[0]
+    except Exception as e:
+        print(f"DB Error (get_user): {e}")
+        return None
 
-# --- Кнопки (Главное меню) ---
+def update_balance(user_id, amount, reason="task"):
+    """Безопасное обновление баланса с логированием (если нужно)."""
+    user = get_user_data(user_id)
+    if not user: return False
+    
+    new_balance = round(float(user['balance']) + float(amount), 2)
+    try:
+        supabase.table("users").update({
+            "balance": new_balance,
+            "last_active": "now()"
+        }).eq("id", user_id).execute()
+        return True
+    except Exception as e:
+        print(f"DB Error (update_balance): {e}")
+        return False
 
-def main_menu():
+# ==========================================
+# КЛАВИАТУРЫ И ИНТЕРФЕЙС
+# ==========================================
+
+def get_main_menu():
     markup = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
-    markup.add("🟡 Задания", "👤 Профиль")
-    markup.add("💸 Вывести", "🏆 Топ")
-    # Та самая синяя кнопка Mini App
-    markup.add(InlineKeyboardButton("🤖 Мини-игры", web_app=WebAppInfo(url=WEB_APP_URL)))
+    markup.add(
+        KeyboardButton("🟡 Задания"), 
+        KeyboardButton("👤 Профиль")
+    )
+    markup.add(
+        KeyboardButton("🏆 Топ"), 
+        KeyboardButton("💸 Вывести")
+    )
     return markup
 
-# --- Обработчики ---
+def get_task_keyboard(task_id, url):
+    markup = InlineKeyboardMarkup()
+    markup.add(InlineKeyboardButton("🤖 Открыть задание", url=url))
+    markup.row(
+        InlineKeyboardButton("✅ Проверить", callback_data=f"verify_{task_id}"),
+        InlineKeyboardButton("🔄 Пропустить", callback_data="skip_task")
+    )
+    return markup
+
+# ==========================================
+# ОБРАБОТЧИКИ СООБЩЕНИЙ (COMMANDS)
+# ==========================================
 
 @bot.message_handler(commands=['start'])
-def start_cmd(message):
-    user_id = message.from_user.id
-    username = message.from_user.username
+def handle_start(message):
+    uid = message.from_user.id
+    uname = message.from_user.username
     
-    # Обработка рефералки: /start ref_12345
-    ref_parent = None
-    if len(message.text.split()) > 1:
-        parts = message.text.split()[1]
-        if parts.startswith("ref_"):
-            ref_parent = parts.replace("ref_", "")
+    # Обработка реферального кода
+    args = message.text.split()
+    referrer = None
+    if len(args) > 1 and args[1].startswith("ref_"):
+        ref_id = args[1].replace("ref_", "")
+        if ref_id.isdigit() and int(ref_id) != uid:
+            referrer = int(ref_id)
 
-    # Регаем юзера
-    user_exists = supabase.table("users").select("id").eq("id", user_id).execute()
-    if not user_exists.data:
-        new_user = {
-            "id": user_id,
-            "username": username,
-            "referred_by": int(ref_parent) if ref_parent and ref_parent.isdigit() else None
-        }
-        supabase.table("users").insert(new_user).execute()
-        if ref_parent:
-            # Начисляем 10 звезд пригласившему (как на скрине)
-            add_balance(ref_parent, 10)
-            bot.send_message(ref_parent, f"💎 Вам начислено 10 ⭐ за нового реферала @{username}!")
+    # Инициализация пользователя
+    user = get_user_data(uid, uname)
+    
+    if referrer and not user.get('referred_by'):
+        # Если юзер новый и пришел по ссылке — записываем родителя
+        # (Логика начисления бонуса родителю может быть тут или при первом задании)
+        supabase.table("users").update({"referred_by": referrer}).eq("id", uid).execute()
+        try:
+            bot.send_message(referrer, f"💎 У вас новый реферал: @{uname}! Вы получите бонус после его первого задания.")
+        except: pass
 
-    bot.send_message(
-        message.chat.id, 
-        f"🚀 *BudaTasks* — лучший бот для фарма!", 
-        parse_mode="Markdown",
-        reply_markup=main_menu()
+    welcome_text = (
+        f"🚀 *Добро пожаловать в BudaTasks, @{uname}!*\n\n"
+        "Выполняй простые задания, приглашай друзей и зарабатывай реальные звезды (⭐).\n\n"
+        "👇 Используй меню ниже, чтобы начать:"
     )
+    bot.send_message(uid, welcome_text, parse_mode="Markdown", reply_markup=get_main_menu())
+
+# ==========================================
+# ФУНКЦИОНАЛ: ПРОФИЛЬ
+# ==========================================
 
 @bot.message_handler(func=lambda m: m.text == "👤 Профиль")
-def profile(message):
-    u = get_user(message.from_user.id)
-    ref_link = f"https://t.me/{bot.get_me().username}?start=ref_{u['id']}"
+def handle_profile(message):
+    uid = message.from_user.id
+    u = get_user_data(uid)
     
-    text = (
-        f"👤 *Ваш профиль*\n\n"
-        f"💰 Баланс: `{u['balance']}` ⭐\n"
-        f"✅ Выполнено заданий: `{u['tasks_completed']}`\n\n"
-        f"🔗 Твоя ссылка:\n`{ref_link}`\n\n"
-        f"🎁 Награда за реферала: *10 ⭐*"
+    if not u:
+        bot.send_message(message.chat.id, "❌ Ошибка загрузки профиля.")
+        return
+
+    # Считаем количество рефералов
+    refs_count = supabase.table("users").select("id", count="exact").eq("referred_by", uid).execute().count
+    
+    ref_link = f"https://t.me/{bot.get_me().username}?start=ref_{uid}"
+    
+    profile_text = (
+        f"👤 *ЛИЧНЫЙ КАБИНЕТ*\n"
+        f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        f"🆔 Ваш ID: `{uid}`\n"
+        f"💰 Баланс: *{u['balance']}* ⭐\n"
+        f"✅ Заданий выполнено: *{u.get('tasks_completed', 0)}*\n"
+        f"👥 Приглашено друзей: *{refs_count}*\n"
+        f"⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+        f"🔗 *Реферальная ссылка:*\n{ref_link}\n\n"
+        f"🎁 _Получай 10 ⭐ за каждого активного друга!_"
     )
     
-    markup = InlineKeyboardMarkup()
-    markup.add(InlineKeyboardButton("🍀 Бонус", callback_data="daily_bonus"))
-    bot.send_message(message.chat.id, text, parse_mode="Markdown", reply_markup=markup)
+    bot.send_message(message.chat.id, profile_text, parse_mode="Markdown")
+
+# ==========================================
+# ФУНКЦИОНАЛ: ТОП ИГРОКОВ
+# ==========================================
+
+@bot.message_handler(func=lambda m: m.text == "🏆 Топ")
+def handle_top(message):
+    try:
+        # Сортировка по балансу
+        res = supabase.table("users").select("username, balance").order("balance", desc=True).limit(10).execute()
+        
+        leaderboard = "🏆 *ТОП-10 МАЙНЕРОВ СЕЗОНА*\n\n"
+        for i, user in enumerate(res.data, 1):
+            name = user['username'] if user['username'] else f"User_{i}"
+            # Экранирование для Markdown
+            name = name.replace("_", "\\_").replace("*", "\\*")
+            leaderboard += f"{i}. {name} — *{user['balance']}* ⭐\n"
+        
+        leaderboard += (
+            "\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n"
+            "🎁 *Награда:* Топ-10 игроков получат эксклюзивные бонусы в конце месяца!"
+        )
+        bot.send_message(message.chat.id, leaderboard, parse_mode="Markdown")
+    except Exception as e:
+        bot.send_message(message.chat.id, "🛠 Секция ТОП временно на тех. обслуживании.")
+
+# ==========================================
+# ФУНКЦИОНАЛ: ЗАДАНИЯ (ENGINE)
+# ==========================================
 
 @bot.message_handler(func=lambda m: m.text == "🟡 Задания")
-# Функция получения заданий "за звезды"
-def get_available_star_tasks(user_id):
-    # Берем ID уже выполненных заданий
-    done_res = supabase.table("star_tasks_done").select("task_id").eq("user_id", user_id).execute()
+def handle_tasks_hub(message):
+    uid = message.from_user.id
+    
+    # 1. Получаем выполненные ID
+    done_res = supabase.table("star_tasks_done").select("task_id").eq("user_id", uid).execute()
     done_ids = [item['task_id'] for item in done_res.data]
     
-    # Берем активные задания, которые еще не сделаны
+    # 2. Ищем доступное задание
     query = supabase.table("star_tasks").select("*").eq("active", True)
     if done_ids:
         query = query.not_.in_("id", done_ids)
     
-    res = query.limit(5).execute() # Показываем по 5 штук за раз
-    return res.data
-
-# Обработчик кнопки "🟡 Задания"
-@bot.message_handler(func=lambda m: m.text == "🟡 Задания")
-def show_star_tasks(message):
-    tasks = get_available_star_tasks(message.from_user.id)
+    tasks = query.limit(1).execute().data
     
     if not tasks:
-        bot.send_message(message.chat.id, "📭 Пока нет новых заданий за звезды. Загляни позже!")
+        bot.send_message(uid, "📭 *Все задания выполнены!*\nНовые появятся совсем скоро. Следите за обновлениями.", parse_mode="Markdown")
         return
 
-    for t in tasks:
-        markup = InlineKeyboardMarkup()
-        markup.add(InlineKeyboardButton("🔗 Выполнить", url=t['url']))
-        # Кнопка подтверждения выполнения
-        markup.add(InlineKeyboardButton(f"💰 Получить {t['reward']} ⭐", callback_data=f"done_star_{t['id']}"))
-        
-        msg_text = (
-            f"🌟 *Задание:* {t['title']}\n"
-            f"📝 *Что нужно сделать:* {t['description'] if t['description'] else 'Перейти по ссылке'}\n"
-            f"💵 *Награда:* `{t['reward']}` ⭐"
-        )
-        bot.send_message(message.chat.id, msg_text, parse_mode="Markdown", reply_markup=markup)
-
-# Обработчик нажатия на кнопку "Получить награду"
-@bot.callback_query_handler(func=lambda call: call.data.startswith("done_star_"))
-def claim_star_reward(call):
-    task_id = int(call.data.split("_")[2])
-    user_id = call.from_user.id
+    t = tasks[0]
+    task_card = (
+        f"✨ *НОВОЕ ЗАДАНИЕ*\n\n"
+        f"📌 *{t['title']}*\n"
+        f"📝 {t['description'] if t['description'] else 'Перейдите по ссылке и выполните условия.'}\n\n"
+        f"💰 Награда: *+{t['reward']}* ⭐"
+    )
     
-    # 1. Проверяем, не нажимал ли он уже (защита от дабл-клика)
-    check = supabase.table("star_tasks_done").select("*").eq("user_id", user_id).eq("task_id", task_id).execute()
+    bot.send_message(uid, task_card, parse_mode="Markdown", reply_markup=get_task_keyboard(t['id'], t['url']))
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("verify_"))
+def callback_verify(call):
+    task_id = int(call.data.split("_")[1])
+    uid = call.from_user.id
+    
+    # Проверка на повторное выполнение (на всякий случай)
+    check = supabase.table("star_tasks_done").select("*").eq("user_id", uid).eq("task_id", task_id).execute()
     if check.data:
         bot.answer_callback_query(call.id, "⚠️ Вы уже получили награду!", show_alert=True)
         return
 
-    # 2. Берем данные о задании
-    task = supabase.table("star_tasks").select("*").eq("id", task_id).execute().data[0]
-    
-    # 3. Начисляем баланс и записываем выполнение
-    add_balance(user_id, task['reward'])
-    supabase.table("star_tasks_done").insert({"user_id": user_id, "task_id": task_id}).execute()
-    
-    # 4. Обновляем сообщение
-    bot.edit_message_text(
-        chat_id=call.message.chat.id,
-        message_id=call.message.message_id,
-        text=f"✅ Задание «{task['title']}» выполнено! \n💰 +{task['reward']} ⭐ начислено на баланс."
-    )
-    bot.answer_callback_query(call.id, "Успешно!")
+    # Данные задания
+    t_data = supabase.table("star_tasks").select("*").eq("id", task_id).execute().data
+    if not t_data: return
+    task = t_data[0]
+
+    # Начисление
+    if update_balance(uid, task['reward']):
+        supabase.table("star_tasks_done").insert({"user_id": uid, "task_id": task_id}).execute()
+        
+        # Обновляем статистику выполненных
+        u = get_user_data(uid)
+        supabase.table("users").update({"tasks_completed": (u.get('tasks_completed', 0) or 0) + 1}).eq("id", uid).execute()
+        
+        bot.answer_callback_query(call.id, f"✅ Успешно! +{task['reward']} ⭐", show_alert=False)
+        bot.edit_message_text(
+            f"✅ *Задание выполнено!*\nВы получили {task['reward']} ⭐",
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            parse_mode="Markdown"
+        )
+        # С задержкой предлагаем следующее задание
+        time.sleep(1)
+        handle_tasks_hub(call.message)
+    else:
+        bot.answer_callback_query(call.id, "❌ Ошибка при начислении.", show_alert=True)
+
+@bot.callback_query_handler(func=lambda call: call.data == "skip_task")
+def callback_skip(call):
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+    bot.send_message(call.message.chat.id, "🔄 Ищем другое задание...")
+    handle_tasks_hub(call.message)
+
+# ==========================================
+# СЕКЦИЯ: ВЫВОД (ЗАГЛУШКА)
+# ==========================================
 
 @bot.message_handler(func=lambda m: m.text == "💸 Вывести")
-def withdraw(message):
-    u = get_user(message.from_user.id)
-    bot.send_message(message.chat.id, f"💳 Доступно к выводу: `{u['balance']}` ⭐\n\nМинималка: 50 ⭐")
+def handle_withdraw(message):
+    u = get_user_data(message.from_user.id)
+    text = (
+        f"💸 *ВЫВОД СРЕДСТВ*\n\n"
+        f"Доступно: *{u['balance']}* ⭐\n"
+        f"Минимальная сумма: *50 ⭐*\n\n"
+        f"⚠️ На данный момент вывод временно ограничен до начала финального этапа распределения (Airdrop)."
+    )
+    bot.send_message(message.chat.id, text, parse_mode="Markdown")
 
-# --- Flask Роуты ---
+# ==========================================
+# FLASK & WEBHOOKS
+# ==========================================
 
 @app.route("/", methods=["POST"])
 def webhook():
@@ -176,4 +290,10 @@ def webhook():
 
 @app.route("/", methods=["GET"])
 def index():
-    return "Bot is active", 200
+    return "<h1>BudaTasks Engine Active</h1>", 200
+
+if __name__ == "__main__":
+    # Для локального запуска (не для Vercel)
+    # bot.remove_webhook()
+    # bot.infinity_polling()
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
