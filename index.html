@@ -188,35 +188,53 @@
     const BACKEND_URL = 'https://sdjsdjsd.vercel.app/'; 
     const user = tg.initDataUnsafe?.user;
 
-    async function syncData() {
-        if (!user) return;
-        try {
-            const res = await fetch(`${BACKEND_URL}/get_balance/${user.id}?t=${Date.now()}`);
-            if (!res.ok) throw new Error();
-            const data = await res.json();
-            document.getElementById('bal-stars').innerText = Math.floor(data.stars || 0);
-        } catch (e) { console.warn("Sync error"); }
-    }
-
-    function navigateTo(url) { tg.HapticFeedback.impactOccurred('medium'); window.location.href = url; }
-
-    window.onload = () => {
-        tg.expand();
-        tg.ready();
-        tg.headerColor = '#050a05';
-        tg.backgroundColor = '#050a05';
+async function syncData() {
+    if (!user) return;
+    try {
+        // Запрос к твоему API на Vercel
+        const res = await fetch(`${BACKEND_URL}/get_balance/${user.id}?t=${Date.now()}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
         
-        if (user) {
-            document.getElementById('display-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
-            document.getElementById('display-id').innerText = `ID: ${user.id}`;
-            document.getElementById('user-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name}`;
-            syncData();
+        // Теперь мы берем значение из колонки 'balance' и записываем его в Звёзды
+        // Согласно твоему скрину image_19fd06.png, колонка называется 'balance'
+        const starsVal = data.balance || 0; 
+        
+        // Обновляем число в шапке (там, где иконка звезды)
+        const starsElem = document.getElementById('bal-stars');
+        if (starsElem) {
+            starsElem.innerText = Math.floor(starsVal);
         }
-        setTimeout(() => {
-            document.getElementById('global-loader').style.display = 'none';
-            document.body.classList.add('loaded');
-        }, 800);
-    };
+        
+        console.log("Баланс звёзд синхронизирован:", starsVal);
+    } catch (e) { 
+        console.warn("Ошибка при получении баланса из Supabase"); 
+    }
+}
+
+window.onload = () => {
+    tg.expand();
+    tg.ready();
+    // Красим хедер Telegram в цвет твоего нового дизайна
+    tg.headerColor = '#050a05';
+    tg.backgroundColor = '#050a05';
+    
+    if (user) {
+        document.getElementById('display-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
+        document.getElementById('display-id').innerText = `ID: ${user.id}`;
+        // Ставим аватарку, если её нет — генерим зеленую иконку с инициалами
+        document.getElementById('user-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name}`;
+        
+        // Запускаем синхронизацию с базой
+        syncData();
+    }
+    
+    // Убираем лоадер через 800мс
+    setTimeout(() => {
+        document.getElementById('global-loader').style.display = 'none';
+        document.body.classList.add('loaded');
+    }, 800);
+};
 
     const canvas = document.getElementById('stars-canvas');
     const ctx = canvas.getContext('2d');
