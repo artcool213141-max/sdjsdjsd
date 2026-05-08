@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>StarsDrop Purple Edition</title>
+    <title>FixStars Green Edition</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
         
         :root { 
-            --bg-dark: #0f0716; 
-            --accent-purple: #a855f7; 
-            --deep-purple: #6b21a8; 
-            --glow-purple: rgba(168, 85, 247, 0.2); 
+            --bg-dark: #050a05; 
+            --accent-green: #22c55e; 
+            --deep-green: #14532d; 
+            --glow-green: rgba(34, 197, 94, 0.2); 
         }
 
         body { 
@@ -35,12 +35,12 @@
 
         /* Блокировщик ПК */
         #pc-only-blocker { display: none; position: fixed; inset: 0; background: #000; z-index: 999999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
-        .qr-frame { background: white; padding: 15px; border-radius: 25px; box-shadow: 0 0 40px var(--accent-purple); margin-bottom: 25px; }
+        .qr-frame { background: white; padding: 15px; border-radius: 25px; box-shadow: 0 0 40px var(--accent-green); margin-bottom: 25px; }
 
         #stars-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
         
         .main-wrapper { 
-            background: radial-gradient(circle at 50% 30%, #2e1065 0%, #0f0716 75%); 
+            background: radial-gradient(circle at 50% 30%, #064e3b 0%, #050a05 75%); 
             height: 100vh; 
             display: flex; 
             flex-direction: column; 
@@ -57,341 +57,348 @@
         .scrollable-content::-webkit-scrollbar { display: none; }
         
         /* Баланс */
-        .balance-container-v2 { display: flex; flex-direction: column; gap: 4px; background: rgba(0, 0, 0, 0.5); border: 1px solid rgba(168, 85, 247, 0.3); padding: 8px 12px; border-radius: 18px; backdrop-filter: blur(20px); }
-        .balance-item-v2 { display: flex; align-items: center; justify-content: flex-end; gap: 6px; cursor: pointer; }
-        .balance-item-v2 img { width: 16px; height: 16px; object-fit: contain; }
+        .balance-container-v2 { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 4px; 
+            background: rgba(0, 0, 0, 0.6); 
+            border: 1px solid rgba(34, 197, 94, 0.3); 
+            padding: 10px 16px; 
+            border-radius: 20px; 
+            backdrop-filter: blur(20px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .balance-item-v2 { display: flex; align-items: center; justify-content: flex-end; gap: 8px; cursor: pointer; }
+        .balance-item-v2 img { width: 20px; height: 20px; object-fit: contain; filter: drop-shadow(0 0 5px var(--accent-green)); }
         
         /* Герой */
-        .hero-zone { position: relative; animation: heroFloat 4s ease-in-out infinite; filter: drop-shadow(0 0 30px var(--glow-purple)); text-align: center; margin: 20px 0; }
-        @keyframes heroFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        .hero-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 220px; height: 220px; background: radial-gradient(circle, var(--glow-purple) 0%, transparent 70%); z-index: -1; filter: blur(30px); }
+        .hero-zone { position: relative; animation: heroFloat 4s ease-in-out infinite; filter: drop-shadow(0 0 35px var(--glow-green)); text-align: center; margin: 30px 0; }
+        @keyframes heroFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+        .hero-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 240px; height: 240px; background: radial-gradient(circle, var(--glow-green) 0%, transparent 70%); z-index: -1; filter: blur(40px); }
 
-        /* Кнопки меню (Карточки) */
+        /* Карточки */
         .game-card {
             background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-            border: 1px solid rgba(168, 85, 247, 0.2);
-            border-radius: 24px;
-            padding: 16px;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 26px;
+            padding: 20px;
             display: flex;
             align-items: center;
-            gap: 16px;
-            margin-bottom: 12px;
-            transition: all 0.2s;
+            gap: 18px;
+            margin-bottom: 14px;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
         }
-        .game-card:active { transform: scale(0.96); background: rgba(168, 85, 247, 0.1); }
-        .game-card img { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.4)); }
-        .card-title { font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; line-height: 1; letter-spacing: -0.5px; }
-        .card-desc { font-size: 10px; font-weight: 700; color: #a855f7; text-transform: uppercase; opacity: 0.8; margin-top: 4px; }
+        .game-card:active { transform: scale(0.97); background: rgba(34, 197, 94, 0.1); border-color: var(--accent-green); }
+        .game-card img { width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(0 0 12px rgba(34, 197, 94, 0.5)); }
+        .card-title { font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 18px; line-height: 1; letter-spacing: -0.5px; color: #fff; }
+        .card-desc { font-size: 11px; font-weight: 700; color: var(--accent-green); text-transform: uppercase; opacity: 0.9; margin-top: 5px; letter-spacing: 0.5px; }
 
         /* Модалки */
-        .modal-base { position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(20px); z-index: 2000; display: none; align-items: flex-end; }
-        .modal-sheet { background: #150a21; width: 100%; border-radius: 35px 35px 0 0; padding: 30px 24px 60px 24px; border-top: 2px solid var(--accent-purple); }
+        .modal-base { position: fixed; inset: 0; background: rgba(0,0,0,0.92); backdrop-filter: blur(25px); z-index: 2000; display: none; align-items: flex-end; transition: all 0.3s; }
+        .modal-sheet { background: #0a110a; width: 100%; border-radius: 40px 40px 0 0; padding: 35px 24px 60px 24px; border-top: 3px solid var(--accent-green); box-shadow: 0 -10px 40px rgba(34, 197, 94, 0.2); }
         
         /* Навигация */
-        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(10, 5, 20, 0.95); border-top: 1px solid rgba(168, 85, 247, 0.2); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; backdrop-filter: blur(25px); height: 95px; }
-        .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #6b7280; flex: 1; }
-        .dock-btn.active { color: var(--accent-purple); filter: drop-shadow(0 0 5px var(--accent-purple)); }
+        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(5, 10, 5, 0.98); border-top: 1px solid rgba(34, 197, 94, 0.2); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; backdrop-filter: blur(30px); height: 100px; }
+        .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; color: #4b5563; flex: 1; transition: 0.2s; }
+        .dock-btn.active { color: var(--accent-green); filter: drop-shadow(0 0 8px var(--accent-green)); }
         
         #global-loader { position: fixed; inset: 0; background: var(--bg-dark); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .loader-ring { width: 50px; height: 50px; border: 3px solid #1e0a3d; border-left-color: var(--accent-purple); border-radius: 50%; animation: rotate 1s linear infinite; }
+        .loader-ring { width: 60px; height: 60px; border: 4px solid #062006; border-left-color: var(--accent-green); border-radius: 50%; animation: rotate 1s linear infinite; }
         @keyframes rotate { to { transform: rotate(360deg); } }
         
-        .tab-trigger { flex: 1; padding: 12px; text-align: center; font-weight: 800; font-size: 12px; color: #6b7280; transition: 0.3s; }
-        .tab-trigger.active { color: white; background: var(--accent-purple); border-radius: 14px; }
-        .hidden { display: none !important; }
+        .status-badge { background: rgba(34, 197, 94, 0.15); border: 1px solid var(--accent-green); color: var(--accent-green); padding: 2px 8px; border-radius: 8px; font-size: 9px; font-weight: 900; text-transform: uppercase; }
+        
+        .btn-primary { 
+            background: var(--accent-green); 
+            color: black; 
+            font-weight: 900; 
+            padding: 18px; 
+            border-radius: 20px; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            box-shadow: 0 10px 20px rgba(34, 197, 94, 0.3);
+            transition: all 0.2s;
+        }
+        .btn-primary:active { transform: scale(0.95); filter: brightness(1.2); }
     </style>
 </head>
 <body class="loaded">
 
     <div id="pc-only-blocker">
-        <div class="qr-frame"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://t.me/StarsDropOfficial_Bot" alt="QR"></div>
-        <h1 class="text-2xl font-black italic uppercase text-white">Играй с <span class="text-purple-500">телефона!</span></h1>
+        <div class="qr-frame"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://t.me/FixStarsBot" alt="QR"></div>
+        <h1 class="text-2xl font-black italic uppercase text-white">FIX <span class="text-green-500">STARS</span></h1>
+        <p class="text-gray-400 mt-2">Доступно только в Telegram</p>
     </div>
 
     <div id="global-loader">
         <div class="loader-ring"></div>
-        <div class="mt-4 text-purple-500 font-black italic tracking-widest animate-pulse">STARS DROP</div>
+        <div class="mt-4 text-green-500 font-black italic tracking-widest animate-pulse">FIXSTARS</div>
     </div>
 
     <canvas id="stars-canvas"></canvas>
     
     <div class="main-wrapper">
+        <!-- HEADER -->
         <div class="scrollable-content">
-            <div class="flex justify-between items-center mb-6">
-                <div class="flex items-center gap-3">
+            <div class="flex justify-between items-center mb-8">
+                <div class="flex items-center gap-4">
                     <div class="relative">
-                        <img id="user-avatar" src="" class="w-12 h-12 rounded-full border-2 border-purple-500/50 object-cover shadow-lg bg-gray-900">
-                        <div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-purple-500 border-2 border-black rounded-full"></div>
+                        <img id="user-avatar" src="" class="w-14 h-14 rounded-2xl border-2 border-green-500/50 object-cover shadow-lg bg-gray-900">
+                        <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-black rounded-full"></div>
                     </div>
                     <div>
-                        <div id="display-name" class="text-[12px] font-black text-white tracking-wide uppercase italic">ЗАГРУЗКА...</div>
-                        <div id="display-id" class="text-[9px] text-purple-400 font-bold opacity-60">ID: 00000000</div>
+                        <div id="display-name" class="text-[14px] font-black text-white tracking-wide uppercase italic">ПОДКЛЮЧЕНИЕ...</div>
+                        <div class="flex items-center gap-2 mt-1">
+                             <div class="status-badge">LVL 1</div>
+                             <div id="display-id" class="text-[10px] text-green-400/60 font-bold">ID: 0</div>
+                        </div>
                     </div>
                 </div>
-                <div class="balance-container-v2">
-                    <div class="balance-item-v2 text-blue-400" onclick="openVault('ton')">
-                        <span id="bal-ton" class="font-black">0.00</span>
-                        <img src="https://cryptologos.cc/logos/toncoin-ton-logo.png?v=025" alt="TON">
+                <div class="balance-container-v2" onclick="openVault()">
+                    <div class="balance-item-v2 text-green-400">
+                        <span id="bal-stars" class="font-black text-xl">0</span>
+                        <img src="https://img.icons8.com/fluency/48/star.png" alt="STARS">
                     </div>
-                    <div class="balance-item-v2 text-yellow-400" onclick="openVault('stars')">
-                        <span id="bal-stars" class="font-black">0</span>
-                        <img src="img/star.png" alt="STAR" onerror="this.src='https://img.icons8.com/fluency/48/star.png'">
-                    </div>
-                    <div class="balance-item-v2 text-purple-400">
-                        <span id="bal-tickets" class="font-black">0</span>
-                        <img src="https://img.icons8.com/fluency/48/ticket.png" alt="TICKET">
-                    </div>
+                    <div class="text-[8px] text-center font-black opacity-40 uppercase">Нажми чтоб пополнить</div>
                 </div>
             </div>
 
+            <!-- HERO -->
             <div class="hero-zone">
                 <div class="hero-glow"></div>
-                <img src="hero.png" alt="HERO" class="w-40 h-40 mx-auto object-contain" onerror="this.onerror=null; this.src='https://img.icons8.com/clouds/256/crown.png'">
-                <h1 class="text-4xl font-black italic mt-2 uppercase tracking-tighter">Stars<span class="text-purple-500">Drop</span></h1>
-                <div class="h-1 w-12 bg-purple-500 rounded-full mx-auto mt-1 shadow-lg shadow-purple-500/50"></div>
+                <img src="https://img.icons8.com/clouds/256/star.png" alt="STARS" class="w-48 h-48 mx-auto object-contain">
+                <h1 class="text-5xl font-black italic mt-4 uppercase tracking-tighter">Fix<span class="text-green-500">Stars</span></h1>
+                <p class="text-green-500/50 font-bold text-[10px] uppercase tracking-[0.2em] mt-1">Premium Gaming Ecosystem</p>
             </div>
 
-            <div class="mt-6">
+            <!-- MENU -->
+            <div class="grid gap-2 mt-8">
                 <div onclick="navigateTo('case.html')" class="game-card">
-                    <img src="img/case3.png" alt="Cases" onerror="this.src='https://img.icons8.com/fluency/96/box.png'">
+                    <img src="https://img.icons8.com/fluency/96/safe-box.png" alt="Cases">
                     <div>
-                        <div class="card-title">Кейсы</div>
-                        <div class="card-desc">Открывай и выигрывай</div>
+                        <div class="card-title">Звездные Кейсы</div>
+                        <div class="card-desc">Выбивай редкие награды</div>
                     </div>
-                    <div class="ml-auto opacity-30"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg></div>
+                    <div class="ml-auto opacity-20"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M9 5l7 7-7 7"></path></svg></div>
                 </div>
 
                 <div onclick="navigateTo('wheel.html')" class="game-card">
-                    <img src="spin.png" alt="Wheel" onerror="this.src='https://img.icons8.com/fluency/96/lucky-wheel.png'">
+                    <img src="https://img.icons8.com/fluency/96/roulette.png" alt="Wheel">
                     <div>
-                        <div class="card-title">Колесо удачи</div>
-                        <div class="card-desc">Испытай свой фарт</div>
+                        <div class="card-title">Колесо Фортуны</div>
+                        <div class="card-desc">Рискни ради джекпота</div>
                     </div>
-                    <div class="ml-auto"><div class="w-2.5 h-2.5 bg-purple-500 rounded-full animate-ping"></div></div>
+                    <div class="ml-auto"><div class="w-3 h-3 bg-green-500 rounded-full animate-ping"></div></div>
                 </div>
 
-                <div onclick="navigateTo('update.html')" class="game-card">
-                    <img src="helmet.png" alt="Upgrade" onerror="this.src='https://img.icons8.com/fluency/96/shield.png'">
+                <div onclick="navigateTo('tasks.html')" class="game-card">
+                    <img src="https://img.icons8.com/fluency/96/checklist.png" alt="Tasks">
                     <div>
-                        <div class="card-title">Апгрейд</div>
-                        <div class="card-desc">Прокачай свои шансы</div>
+                        <div class="card-title">Задания</div>
+                        <div class="card-desc">Получай звезды бесплатно</div>
                     </div>
-                    <div class="ml-auto opacity-30"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg></div>
+                    <div class="ml-auto opacity-20"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M9 5l7 7-7 7"></path></svg></div>
                 </div>
 
                 <div onclick="navigateTo('games.html')" class="game-card">
-                    <img src="mini.png" alt="Games" onerror="this.src='https://img.icons8.com/fluency/96/controller.png'">
+                    <img src="https://img.icons8.com/fluency/96/nintendo-switch.png" alt="Games">
                     <div>
-                        <div class="card-title">Мини-игры</div>
-                        <div class="card-desc">Играй и зарабатывай</div>
+                        <div class="card-title">Аркады</div>
+                        <div class="card-desc">Соревнуйся с другими</div>
                     </div>
-                    <div class="ml-auto opacity-30"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path></svg></div>
+                    <div class="ml-auto opacity-20"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="4" d="M9 5l7 7-7 7"></path></svg></div>
                 </div>
             </div>
         </div>
 
+        <!-- NAVIGATION -->
         <div class="dock-bar">
-            <div onclick="openVault('ton')" class="dock-btn">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
-                <span class="text-[9px] font-bold uppercase italic">Кошелёк</span>
+            <div onclick="openVault()" class="dock-btn">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span class="text-[10px] font-black uppercase italic">Звезды</span>
             </div>
             <div class="dock-btn active">
-                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011-1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
-                <span class="text-[9px] font-bold uppercase italic">Главная</span>
+                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011-1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+                <span class="text-[10px] font-black uppercase italic">Главная</span>
             </div>
             <div onclick="navigateTo('profile.html')" class="dock-btn">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                <span class="text-[9px] font-bold uppercase italic">Профиль</span>
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                <span class="text-[10px] font-black uppercase italic">Аккаунт</span>
             </div>
         </div>
     </div>
 
+    <!-- MODAL PURCHASE -->
     <div id="vault-modal" class="modal-base" onclick="closeVault()">
         <div class="modal-sheet" onclick="event.stopPropagation()">
-            <div class="w-12 h-1 bg-white/10 mx-auto mb-6 rounded-full"></div>
-            <div class="flex p-1 bg-black/40 rounded-xl border border-white/5 mb-6">
-                <div id="tab-btn-ton" onclick="setTab('ton')" class="tab-trigger active cursor-pointer">TON PAY</div>
-                <div id="tab-btn-stars" onclick="setTab('stars')" class="tab-trigger cursor-pointer">STARS</div>
-            </div>
+            <div class="w-16 h-1.5 bg-green-500/20 mx-auto mb-8 rounded-full"></div>
             
-            <div id="pane-ton" class="grid grid-cols-2 gap-3 max-h-[40vh] overflow-y-auto">
-                </div>
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-black italic uppercase">Пополнение <span class="text-green-500">Stars</span></h2>
+                <p class="text-gray-400 text-xs mt-2">Мгновенное зачисление через Telegram Stars</p>
+            </div>
 
-            <div id="pane-stars" class="hidden text-center">
-                <p class="text-gray-400 text-xs mb-4 uppercase font-bold">Введите количество (мин. 50):</p>
-                <input type="number" id="stars-input" placeholder="50" class="w-full bg-white/5 border border-purple-500/30 py-4 rounded-xl text-center text-xl font-black text-white outline-none mb-4">
-                <button onclick="verifyGift()" class="w-full bg-purple-600 text-white font-black py-4 rounded-xl uppercase text-xs tracking-widest active:scale-95 transition-all shadow-lg shadow-purple-600/30">Оплатить через Telegram</button>
+            <div class="space-y-4">
+                <div class="relative">
+                    <input type="number" id="stars-input" placeholder="Введите количество" class="w-full bg-white/5 border-2 border-green-500/20 py-5 px-6 rounded-2xl text-center text-2xl font-black text-white outline-none focus:border-green-500 transition-all placeholder:text-gray-700">
+                    <div class="absolute right-6 top-1/2 -translate-y-1/2 text-green-500 font-black">STARS</div>
+                </div>
+                
+                <button onclick="verifyGift()" class="w-full btn-primary text-lg">Приобрести звезды</button>
             </div>
             
-            <button onclick="closeVault()" class="w-full mt-6 py-2 text-gray-500 font-bold uppercase text-[10px] tracking-widest">Закрыть</button>
+            <div class="mt-8 grid grid-cols-3 gap-2">
+                <div onclick="setAmount(100)" class="bg-white/5 p-3 rounded-xl text-center border border-white/10 active:border-green-500 font-bold">+100</div>
+                <div onclick="setAmount(500)" class="bg-white/5 p-3 rounded-xl text-center border border-white/10 active:border-green-500 font-bold">+500</div>
+                <div onclick="setAmount(1000)" class="bg-white/5 p-3 rounded-xl text-center border border-white/10 active:border-green-500 font-bold">+1000</div>
+            </div>
+
+            <button onclick="closeVault()" class="w-full mt-10 py-2 text-gray-600 font-black uppercase text-[11px] tracking-[0.3em]">Вернуться назад</button>
         </div>
     </div>
 
 <script>
     const tg = window.Telegram.WebApp;
-    const BACKEND_URL = 'https://sdjsdjsd.vercel.app/'; // БЕЗ /api В КОНЦЕ
+    const BACKEND_URL = 'https://sdjsdjsd.vercel.app'; 
     const user = tg.initDataUnsafe?.user;
     let isProcessing = false;
 
-    // Синхронизация баланса
-async function syncData() {
-    if (!user) return;
-    try {
-        const res = await fetch(`${BACKEND_URL}/get_balance/${user.id}?t=${Date.now()}`);
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        
-        // Мапим данные строго по твоим колонкам из Supabase
-        const tonVal = data.balance || 0;     // Колонка balance (TON)
-        const starsVal = data.stars || 0;     // Колонка stars (Звёзды)
-        const ticketsVal = data.tickets || 0; // Колонка tickets (Тикеты)
-        
-        document.getElementById('bal-ton').innerText = parseFloat(tonVal).toFixed(2);
-        document.getElementById('bal-stars').innerText = Math.floor(starsVal);
-        document.getElementById('bal-tickets').innerText = Math.floor(ticketsVal);
-        
-        console.log("Балансы обновлены:", {tonVal, starsVal, ticketsVal});
-    } catch (e) { 
-        console.warn("Ошибка синхронизации баланса"); 
+    // Режим разработки (эмуляция для браузера)
+    if (!user) {
+        console.warn("Запущено вне Telegram");
     }
-}
 
-// Оплата TON
-    async function processPayment(amount) {
-        if (isProcessing || !user) return;
+    async function syncData() {
+        if (!user) return;
+        try {
+            const res = await fetch(`${BACKEND_URL}/api/get_balance/${user.id}?t=${Date.now()}`);
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            
+            // Оставляем только звезды по твоему запросу
+            const starsVal = data.stars || 0;
+            document.getElementById('bal-stars').innerText = Math.floor(starsVal).toLocaleString();
+            
+        } catch (e) { 
+            console.error("Ошибка синхронизации"); 
+        }
+    }
+
+    async function verifyGift() {
+        const val = parseInt(document.getElementById('stars-input').value);
+        if (!val || val < 1) {
+            tg.HapticFeedback.notificationOccurred('error');
+            return tg.showAlert('Укажите корректное количество звезд');
+        }
+        
+        if (isProcessing) return;
         isProcessing = true;
         tg.HapticFeedback.impactOccurred('medium');
+
         try {
-            const res = await fetch(`${BACKEND_URL}/create_pay`, {
+            const res = await fetch(`${BACKEND_URL}/api/create_stars_pay`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                // Важно: ID как строка, amount как число
-                body: JSON.stringify({
+                body: JSON.stringify({ 
                     user_id: String(user.id), 
-                    amount: Number(amount)
+                    amount: val 
                 })
             });
             
             const data = await res.json();
             
-            if (res.ok && data.pay_url) { 
-                tg.openTelegramLink(data.pay_url); 
-                closeVault(); 
-            } else { 
-                tg.showAlert(data.error || 'Крипто-бот недоступен'); 
-            }
-        } catch (e) { 
-            tg.showAlert('Ошибка сети: проверь бэкенд'); 
-        } finally { 
-            isProcessing = false; 
-        }
-    }
-
-async function verifyGift() {
-    const val = parseInt(document.getElementById('stars-input').value);
-    if (!val || val < 1) return tg.showAlert('Введите число');
-    
-    try {
-        const res = await fetch(`${BACKEND_URL}/api/create_stars_pay`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                user_id: String(tg.initDataUnsafe.user.id), 
-                amount: val 
-            })
-        });
-        
-        const data = await res.json();
-        
-        if (data.pay_url) {
-            // ТЕЛЕГРАМ ХИТРЫЙ: если ссылка полная, openInvoice её не откроет
-            if (data.pay_url.includes('t.me/')) {
-                // Открываем как внешнюю ссылку внутри ТГ
-                tg.openTelegramLink(data.pay_url);
+            if (data.pay_url) {
+                if (data.pay_url.includes('t.me/')) {
+                    tg.openTelegramLink(data.pay_url);
+                } else {
+                    tg.openInvoice(data.pay_url, (status) => {
+                        if (status === 'paid') {
+                            tg.showAlert('Пополнение прошло успешно!');
+                            syncData();
+                            closeVault();
+                        }
+                    });
+                }
             } else {
-                // Если это короткий токен
-                tg.openInvoice(data.pay_url, (status) => {
-                    if (status === 'paid') tg.showAlert('Готово!');
-                });
+                tg.showAlert('Ошибка сервера. Попробуйте позже.');
             }
-        } else {
-            tg.showAlert('Сервер не прислал ссылку');
+        } catch (e) {
+            tg.showAlert('Ошибка сети: ' + e.message);
+        } finally {
+            isProcessing = false;
         }
-    } catch (e) {
-        tg.showAlert('Ошибка: ' + e.message);
-    }
-}
-
-    function renderTonPacks() {
-        const PACKS = [1, 3, 5, 10, 20, 50, 100, 250];
-        document.getElementById('pane-ton').innerHTML = PACKS.map(amt => `
-            <div onclick="processPayment(${amt})" class="bg-white/5 border border-white/10 p-4 rounded-2xl text-center active:scale-95 transition-all">
-                <div class="text-[9px] text-purple-400 font-black uppercase mb-1">Пополнить</div>
-                <div class="font-black text-white text-lg">${amt} TON</div>
-            </div>
-        `).join('');
     }
 
-    function setTab(type) {
-        const isTon = type === 'ton';
-        document.getElementById('tab-btn-ton').classList.toggle('active', isTon);
-        document.getElementById('tab-btn-stars').classList.toggle('active', !isTon);
-        document.getElementById('pane-ton').classList.toggle('hidden', !isTon);
-        document.getElementById('pane-stars').classList.toggle('hidden', isTon);
+    function setAmount(num) {
+        document.getElementById('stars-input').value = num;
+        tg.HapticFeedback.selectionChanged();
     }
 
-    function openVault(tab) { 
+    function openVault() { 
         tg.HapticFeedback.impactOccurred('light');
         document.getElementById('vault-modal').style.display = 'flex'; 
-        setTab(tab); 
     }
     
     function closeVault() { document.getElementById('vault-modal').style.display = 'none'; }
-    function navigateTo(url) { tg.HapticFeedback.impactOccurred('medium'); window.location.href = url; }
+    function navigateTo(url) { tg.HapticFeedback.impactOccurred('rigid'); window.location.href = url; }
 
     window.onload = () => {
         tg.expand();
         tg.ready();
+        tg.headerColor = '#050a05';
+        tg.backgroundColor = '#050a05';
+
         if (user) {
-            document.getElementById('display-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
+            document.getElementById('display-name').innerText = (user.username || user.first_name || "AGENT").toUpperCase();
             document.getElementById('display-id').innerText = `ID: ${user.id}`;
-            document.getElementById('user-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=6b21a8&color=fff&name=${user.first_name}`;
+            document.getElementById('user-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name}`;
             syncData();
         }
-        renderTonPacks();
+
         setTimeout(() => {
-            document.getElementById('global-loader').style.display = 'none';
+            document.getElementById('global-loader').style.opacity = '0';
+            setTimeout(() => document.getElementById('global-loader').style.display = 'none', 300);
             document.body.classList.add('loaded');
-        }, 800);
+        }, 1200);
     };
 
-    // Анимация звезд
+    // Анимация зеленых частиц
     const canvas = document.getElementById('stars-canvas');
     const ctx = canvas.getContext('2d');
-    let starsArr = [];
-    function initStars() {
+    let particles = [];
+
+    function initParticles() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        starsArr = Array.from({length: 35}, () => ({ 
+        particles = Array.from({length: 40}, () => ({ 
             x: Math.random() * canvas.width, 
             y: Math.random() * canvas.height, 
-            size: Math.random() * 1.8, 
-            speed: Math.random() * 0.4 + 0.1, 
-            opacity: Math.random() 
+            size: Math.random() * 2 + 1, 
+            speed: Math.random() * 0.5 + 0.2, 
+            opacity: Math.random() * 0.5 
         }));
     }
-    function animateStars() {
+
+    function animateParticles() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        starsArr.forEach(s => {
-            ctx.beginPath(); ctx.globalAlpha = s.opacity; ctx.fillStyle = "#a855f7"; 
-            ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); ctx.fill();
-            s.y += s.speed; if (s.y > canvas.height) s.y = -5;
+        particles.forEach(p => {
+            ctx.beginPath();
+            ctx.globalAlpha = p.opacity;
+            ctx.fillStyle = "#22c55e"; 
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            p.y -= p.speed; 
+            if (p.y < -10) p.y = canvas.height + 10;
         });
-        requestAnimationFrame(animateStars);
+        requestAnimationFrame(animateParticles);
     }
-    initStars(); animateStars();
+    initParticles(); 
+    animateParticles();
+
+    // Запрет контекстного меню
+    window.oncontextmenu = (e) => { e.preventDefault(); e.stopPropagation(); return false; };
 </script>
 </body>
 </html>
