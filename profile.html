@@ -173,18 +173,16 @@
             </div>
 
             <!-- ВЫВОД -->
-            <div class="flex justify-between items-end mb-4 px-2">
-                <div>
-                    <p class="text-[10px] font-black uppercase text-green-500 opacity-60">Доступно к выводу</p>
-                    <div class="flex items-center gap-2">
-                        <span id="p-balance" class="text-3xl font-black italic">0</span>
-                        <img src="star.png" class="w-6 h-6" alt="S">
-                    </div>
+<!-- ВЫВОД: ПО ЦЕНТРУ И БЕЗ КНОПКИ -->
+            <div class="flex flex-col items-center justify-center mb-6 px-2 text-center">
+                <p class="text-[10px] font-black uppercase text-green-500 opacity-60 tracking-widest mb-1">Доступно к выводу</p>
+                <div class="flex items-center gap-3">
+                    <span id="p-balance" class="text-5xl font-black italic tracking-tighter">0</span>
+                    <img src="star.png" class="w-8 h-8 filter drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]" alt="S">
                 </div>
-                <button onclick="tg.showAlert('Вывод доступен от 1000 звёзд')" class="bg-white/5 border border-white/10 px-4 py-2 rounded-lg text-[10px] font-black uppercase italic">Вывести</button>
             </div>
 
-            <div class="h-[1px] w-full bg-white/5 mb-6"></div>
+            <div class="h-[1px] w-full bg-white/5 mb-8"></div>
 
             <!-- МАГАЗИН ПОДАРКОВ (ВЫВОД) -->
             <h3 class="text-sm font-black uppercase italic mb-4 px-2">Выберите подарок</h3>
