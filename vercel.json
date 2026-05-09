@@ -1,8 +1,5 @@
 {
   "rewrites": [
-    {
-      "source": "/get_balance/(.*)",
-      "destination": "/api/index.py"
-    }
+    { "source": "/get_balance/(.*)", "destination": "/api/index.py" }
   ]
 }
