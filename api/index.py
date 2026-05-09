@@ -21,10 +21,25 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 @app.get("/get_balance/{user_id}")
 async def get_balance(user_id: int):
     try:
-        # Тянем баланс из таблицы users
+        # 1. Пробуем найти юзера
         result = supabase.table("users").select("balance").eq("id", user_id).execute()
+        
         if result.data and len(result.data) > 0:
+            # Юзер есть, отдаем баланс
             return {"balance": result.data[0]["balance"]}
-        return {"balance": 0}
+        else:
+            # 2. Юзера НЕТ. Создаем новую строку!
+            # Здесь мы добавляем ID и ставим начальный баланс 0
+            new_user = {
+                "id": user_id, 
+                "balance": 0, 
+                "username": "new_player" # можно будет потом передавать реальный ник
+            }
+            supabase.table("users").insert(new_user).execute()
+            
+            print(f"Создан новый пользователь: {user_id}")
+            return {"balance": 0}
+            
     except Exception as e:
+        print(f"Ошибка: {e}")
         return {"error": str(e), "balance": 0}
