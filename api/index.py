@@ -19,27 +19,21 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 @app.get("/get_balance/{user_id}")
-async def get_balance(user_id: int):
+async def get_balance(user_id: int, username: str = "Unknown"):
     try:
-        # 1. Пробуем найти юзера
         result = supabase.table("users").select("balance").eq("id", user_id).execute()
         
         if result.data and len(result.data) > 0:
-            # Юзер есть, отдаем баланс
             return {"balance": result.data[0]["balance"]}
         else:
-            # 2. Юзера НЕТ. Создаем новую строку!
-            # Здесь мы добавляем ID и ставим начальный баланс 0
+            # Теперь используем переменную username, которую прислал фронтенд
             new_user = {
                 "id": user_id, 
                 "balance": 0, 
-                "username": "new_player" # можно будет потом передавать реальный ник
+                "username": username 
             }
             supabase.table("users").insert(new_user).execute()
-            
-            print(f"Создан новый пользователь: {user_id}")
             return {"balance": 0}
             
     except Exception as e:
-        print(f"Ошибка: {e}")
         return {"error": str(e), "balance": 0}
