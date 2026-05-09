@@ -191,24 +191,28 @@
 async function syncData() {
     if (!user) return;
     try {
-        // Запрос к твоему API на Vercel
-        const res = await fetch(`${BACKEND_URL}/get_balance/${user.id}?t=${Date.now()}`);
-        if (!res.ok) throw new Error();
+        // Получаем имя пользователя из Telegram (username или имя+фамилия)
+        const username = user.username || `${user.first_name || ''} ${user.last_name || ''}`.trim() || "Player";
+
+        // Запрос к API с передачей username для сохранения в базе
+        const res = await fetch(`${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(username)}&t=${Date.now()}`);
+        
+        if (!res.ok) throw new Error("Ошибка сервера");
+        
         const data = await res.json();
         
-        // Теперь мы берем значение из колонки 'balance' и записываем его в Звёзды
-        // Согласно твоему скрину image_19fd06.png, колонка называется 'balance'
-        const starsVal = data.balance || 0; 
+        // Берем баланс из ответа (колонку 'balance')
+        const starsVal = data.balance !== undefined ? data.balance : 0; 
         
-        // Обновляем число в шапке (там, где иконка звезды)
+        // Обновляем число в интерфейсе бота
         const starsElem = document.getElementById('bal-stars');
         if (starsElem) {
             starsElem.innerText = Math.floor(starsVal);
         }
         
-        console.log("Баланс звёзд синхронизирован:", starsVal);
+        console.log("Данные синхронизированы. Игрок:", username, "Баланс:", starsVal);
     } catch (e) { 
-        console.warn("Ошибка при получении баланса из Supabase"); 
+        console.warn("Не удалось обновить баланс:", e); 
     }
 }
 
