@@ -3,4 +3,4 @@ python-dotenv
 flask
 supabase
 fastapi
-supabase-py
+
