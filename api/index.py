@@ -13,7 +13,7 @@ app.add_middleware(
 
 # Убери /rest/v1/ в конце, если он есть!
 SUPABASE_URL = "https://bajufluzgcguxconhxuj.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." # Твой ключ
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhanVmbHV6Z2NndXhjb25oeHVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODI4NTUsImV4cCI6MjA5Mzc1ODg1NX0.LtqDCLlMlaWluUdnx0uc3Wt-w8jimw9gyLYMwW9eAxs" # Твой ключ
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
