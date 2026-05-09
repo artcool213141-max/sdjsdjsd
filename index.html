@@ -171,17 +171,17 @@
         </div>
 
         <!-- ТУЛБАР: УБРАН ДЕПОЗИТ (КОШЕЛЕК) -->
-        <div class="dock-bar">
-            <div class="dock-btn active">
-                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011-1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
-                <span class="text-[10px] font-black uppercase italic">Главная</span>
-            </div>
-            <div onclick="navigateTo('profile.html')" class="dock-btn">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                <span class="text-[10px] font-black uppercase italic">Профиль</span>
-            </div>
-        </div>
+<div class="dock-bar">
+    <div class="dock-btn active">
+        <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011-1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+        <span class="text-[10px] font-black uppercase italic">Главная</span>
     </div>
+    <!-- Просто меняем способ перехода -->
+    <div onclick="window.location.href='profile.html'" class="dock-btn">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+        <span class="text-[10px] font-black uppercase italic">Профиль</span>
+    </div>
+</div>
 
 <script>
     const tg = window.Telegram.WebApp;
