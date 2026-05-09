@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Profile - FixStars</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+        
+        :root { 
+            --bg-dark: #050a05; 
+            --accent-green: #22c55e; 
+            --deep-green: #14532d; 
+            --glow-green: rgba(34, 197, 94, 0.2); 
+        }
+
+        body { 
+            background-color: var(--bg-dark); 
+            color: white; 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; 
+            min-height: 100vh;
+            width: 100vw;
+            overflow-x: hidden;
+            user-select: none; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+
+        .main-wrapper { 
+            background: radial-gradient(circle at 50% 10%, #064e3b 0%, #050a05 60%); 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+            z-index: 1; 
+        }
+
+        .scrollable-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 20px 120px 20px;
+        }
+
+        /* Карточка профиля */
+        .profile-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 30px;
+            padding: 30px 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            margin-bottom: 20px;
+        }
+
+        .avatar-main {
+            width: 100px;
+            height: 100px;
+            border-radius: 35px;
+            border: 3px solid var(--accent-green);
+            margin: 0 auto 15px;
+            box-shadow: 0 0 20px var(--glow-green);
+            object-cover: cover;
+        }
+
+        /* Реферальная секция */
+        .ref-box {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .ref-link-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px dashed var(--accent-green);
+            color: var(--accent-green);
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            word-break: break-all;
+            margin-bottom: 15px;
+        }
+
+        /* Сетка подарков */
+        .gifts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .gift-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            border-radius: 24px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        
+        .gift-card:active { transform: scale(0.95); background: rgba(34, 197, 94, 0.1); }
+
+        .gift-img {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.3));
+        }
+
+        .gift-name { font-weight: 800; text-transform: uppercase; font-size: 13px; margin-bottom: 4px; }
+        
+        .price-tag {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: var(--accent-green);
+            font-weight: 900;
+            font-size: 14px;
+        }
+
+        .price-tag img { width: 14px; height: 14px; }
+
+        /* Навигация */
+        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(5, 10, 5, 0.96); border-top: 1px solid rgba(34, 197, 94, 0.2); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; backdrop-filter: blur(25px); height: 95px; }
+        .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #4b5563; flex: 1; }
+        .dock-btn.active { color: var(--accent-green); filter: drop-shadow(0 0 8px var(--accent-green)); }
+        
+        .stat-badge {
+            background: var(--deep-green);
+            padding: 5px 12px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-wrapper">
+        <div class="scrollable-content">
+            
+            <!-- ПРОФИЛЬ -->
+            <div class="profile-card">
+                <img id="p-avatar" src="" class="avatar-main shadow-2xl">
+                <h2 id="p-name" class="text-2xl font-black italic uppercase tracking-tight">Загрузка...</h2>
+                <p id="p-id" class="text-green-500 font-bold opacity-50 text-sm">ID: 00000000</p>
+
+                <!-- РЕФЕРАЛКА -->
+                <div class="ref-box">
+                    <p class="text-[10px] font-black uppercase text-gray-400 mb-2">Твоя реферальная ссылка</p>
+                    <div id="ref-link" class="ref-link-input">t.me/FixStarsOfficial_bot?start=id</div>
+                    
+                    <div class="flex justify-center gap-4 mt-4">
+                        <div class="text-center">
+                            <div id="ref-count" class="text-xl font-black">0</div>
+                            <div class="text-[9px] uppercase font-bold text-green-500">Пригласил</div>
+                        </div>
+                        <div class="w-[1px] h-10 bg-white/10"></div>
+                        <div class="text-center">
+                            <div id="ref-earned" class="text-xl font-black">0</div>
+                            <div class="text-[9px] uppercase font-bold text-green-500">Заработал</div>
+                        </div>
+                    </div>
+
+                    <button onclick="copyRef()" class="w-full mt-4 py-3 bg-green-500 text-black font-black rounded-xl uppercase italic text-sm active:scale-95 transition-all">Пригласить друзей</button>
+                </div>
+            </div>
+
+            <!-- ВЫВОД -->
+            <div class="flex justify-between items-end mb-4 px-2">
+                <div>
+                    <p class="text-[10px] font-black uppercase text-green-500 opacity-60">Доступно к выводу</p>
+                    <div class="flex items-center gap-2">
+                        <span id="p-balance" class="text-3xl font-black italic">0</span>
+                        <img src="star.png" class="w-6 h-6" alt="S">
+                    </div>
+                </div>
+                <button onclick="tg.showAlert('Вывод доступен от 1000 звёзд')" class="bg-white/5 border border-white/10 px-4 py-2 rounded-lg text-[10px] font-black uppercase italic">Вывести</button>
+            </div>
+
+            <div class="h-[1px] w-full bg-white/5 mb-6"></div>
+
+            <!-- МАГАЗИН ПОДАРКОВ (ВЫВОД) -->
+            <h3 class="text-sm font-black uppercase italic mb-4 px-2">Выберите подарок</h3>
+            
+            <div class="gifts-grid">
+                <!-- Подарок 1 -->
+                <div class="gift-card" onclick="buyGift('Сердечко', 15)">
+                    <img src="img/heart.png" class="gift-img" alt="G">
+                    <div class="gift-name">Сердечко</div>
+                    <div class="price-tag">15 <img src="star.png"></div>
+                </div>
+
+                <!-- Подарок 2 -->
+                <div class="gift-card" onclick="buyGift('Мишка', 15)">
+                    <img src="img/bear.png" class="gift-img" alt="G">
+                    <div class="gift-name">Мишка</div>
+                    <div class="price-tag">15 <img src="star.png"></div>
+                </div>
+
+                <!-- Подарок 3 -->
+                <div class="gift-card" onclick="buyGift('Роза', 25)">
+                    <img src="img/rose.png" class="gift-img" alt="G">
+                    <div class="gift-name">Роза</div>
+                    <div class="price-tag">25 <img src="star.png"></div>
+                </div>
+
+                <!-- Подарок 4 -->
+                <div class="gift-card" onclick="buyGift('Подарок', 25)">
+                    <img src="img/gift.png" class="gift-img" alt="G">
+                    <div class="gift-name">Подарок</div>
+                    <div class="price-tag">25 <img src="star.png"></div>
+                </div>
+
+                <!-- Подарок 5 -->
+                <div class="gift-card" onclick="buyGift('Торт', 50)">
+                    <img src="img/cake.png" class="gift-img" alt="G">
+                    <div class="gift-name">Торт</div>
+                    <div class="price-tag">50 <img src="star.png"></div>
+                </div>
+
+                <!-- Подарок 6 -->
+                <div class="gift-card" onclick="buyGift('Букет', 50)">
+                    <img src="img/flowers.png" class="gift-img" alt="G">
+                    <div class="gift-name">Букет</div>
+                    <div class="price-tag">50 <img src="star.png"></div>
+                </div>
+
+                <!-- Подарок 7 -->
+                <div class="gift-card" onclick="buyGift('Ракета', 50)">
+                    <img src="img/rocket.png" class="gift-img" alt="G">
+                    <div class="gift-name">Ракета</div>
+                    <div class="price-tag">50 <img src="star.png"></div>
+                </div>
+
+                <!-- Подарок 8 -->
+                <div class="gift-card" onclick="buyGift('Кубок', 100)">
+                    <img src="img/trophy.png" class="gift-img" alt="G">
+                    <div class="gift-name">Кубок</div>
+                    <div class="price-tag">100 <img src="star.png"></div>
+                </div>
+
+                 <!-- Подарок 9 -->
+                 <div class="gift-card" onclick="buyGift('Кольцо', 100)">
+                    <img src="img/ring.png" class="gift-img" alt="G">
+                    <div class="gift-name">Кольцо</div>
+                    <div class="price-tag">100 <img src="star.png"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- НАВИГАЦИЯ -->
+        <div class="dock-bar">
+            <div onclick="location.href='index.html'" class="dock-btn">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                <span class="text-[10px] font-black uppercase italic">Главная</span>
+            </div>
+            <div class="dock-btn active">
+                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
+                <span class="text-[10px] font-black uppercase italic">Профиль</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        const user = tg.initDataUnsafe?.user;
+        const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
+
+        // Инициализация данных
+        function initProfile() {
+            if (user) {
+                document.getElementById('p-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
+                document.getElementById('p-id').innerText = `ID: ${user.id}`;
+                document.getElementById('p-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name}`;
+                
+                const refLink = `https://t.me/FixStarsOfficial_bot?start=${user.id}`;
+                document.getElementById('ref-link').innerText = refLink;
+                
+                fetchBalance();
+            }
+        }
+
+        async function fetchBalance() {
+            try {
+                const res = await fetch(`${BACKEND_URL}/get_balance/${user.id}`);
+                const data = await res.json();
+                document.getElementById('p-balance').innerText = data.balance || 0;
+            } catch (e) {
+                console.error("Ошибка баланса");
+            }
+        }
+
+        function copyRef() {
+            const link = document.getElementById('ref-link').innerText;
+            const shareText = `Присоединяйся к FixStars и зарабатывай вместе со мной! 🌟\n${link}`;
+            const fullUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Присоединяйся к FixStars и зарабатывай звёзды! 🌟')}`;
+            tg.openTelegramLink(fullUrl);
+        }
+
+        function buyGift(name, price) {
+            tg.showConfirm(`Вы действительно хотите обменять ${price} звёзд на "${name}"?`, (confirmed) => {
+                if (confirmed) {
+                    tg.showAlert("Обмен временно недоступен. Накопите 1000 звёзд!");
+                }
+            });
+        }
+
+        window.onload = () => {
+            tg.expand();
+            initProfile();
+        };
+    </script>
+</body>
+</html>
