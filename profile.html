@@ -249,7 +249,7 @@
                 </div>
 
                 <!-- НОВЫЙ Подарок 10 -->
-                <div class="gift-card" onclick="buyGift('Бриллиант', 250)">
+                <div class="gift-card" onclick="buyGift('Бриллиант', 100)">
                     <img src="img/alik.png" class="gift-img" alt="G">
                     <div class="gift-name">Бриллиант</div>
                     <div class="price-tag">100 <img src="star.png"></div>
@@ -268,54 +268,107 @@
         </div>
     </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        const user = tg.initDataUnsafe?.user;
-        const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
+<script>
+    const tg = window.Telegram.WebApp;
+    const user = tg.initDataUnsafe?.user;
+    const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
+    
+    // ВСТАВЬ СВОИ ДАННЫЕ ТУТ:
+    const BOT_TOKEN = '8693093466:AAG6_xEPTvZxQGAXQh1EymM12-Q_8nyIBYQ';
+    const ADMIN_ID = '8015661230';
 
-        // Инициализация данных
-        function initProfile() {
-            if (user) {
-                document.getElementById('p-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
-                document.getElementById('p-id').innerText = `ID: ${user.id}`;
-                document.getElementById('p-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name}`;
-                
-                const refLink = `https://t.me/FixStarsOfficial_bot?start=${user.id}`;
-                document.getElementById('ref-link').innerText = refLink;
-                
-                fetchBalance();
-            }
+    function initProfile() {
+        if (user) {
+            document.getElementById('p-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
+            document.getElementById('p-id').innerText = `ID: ${user.id}`;
+            document.getElementById('p-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name}`;
+            
+            const refLink = `https://t.me/FixStarsOfficial_bot?start=${user.id}`;
+            document.getElementById('ref-link').innerText = refLink;
+            
+            fetchBalance();
+        }
+    }
+
+    async function fetchBalance() {
+        try {
+            const res = await fetch(`${BACKEND_URL}/get_balance/${user.id}`);
+            const data = await res.json();
+            const bal = data.balance || 0;
+            document.getElementById('p-balance').innerText = bal;
+            return bal;
+        } catch (e) {
+            console.error("Ошибка баланса");
+            return 0;
+        }
+    }
+
+    // ГЛАВНАЯ ФУНКЦИЯ ПОКУПКИ
+    async function buyGift(name, price) {
+        const currentBalance = await fetchBalance();
+
+        if (currentBalance < price) {
+            tg.showAlert(`❌ Недостаточно звёзд!\nНужно: ${price}\nУ вас: ${currentBalance}`);
+            return;
         }
 
-        async function fetchBalance() {
-            try {
-                const res = await fetch(`${BACKEND_URL}/get_balance/${user.id}`);
-                const data = await res.json();
-                document.getElementById('p-balance').innerText = data.balance || 0;
-            } catch (e) {
-                console.error("Ошибка баланса");
-            }
-        }
+        tg.showConfirm(`Вы хотите купить "${name}" за ${price} ⭐?`, async (confirmed) => {
+            if (confirmed) {
+                try {
+                    // 1. Списание баланса на бэкенде
+                    const res = await fetch(`${BACKEND_URL}/update_balance`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            user_id: user.id, 
+                            amount: -price // Минусуем цену
+                        })
+                    });
 
-        function copyRef() {
-            const link = document.getElementById('ref-link').innerText;
-            const shareText = `Присоединяйся к FixStars и зарабатывай вместе со мной! 🌟\n${link}`;
-            const fullUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Присоединяйся к FixStars и зарабатывай звёзды! 🌟')}`;
-            tg.openTelegramLink(fullUrl);
-        }
-
-        function buyGift(name, price) {
-            tg.showConfirm(`Вы действительно хотите обменять ${price} звёзд на "${name}"?`, (confirmed) => {
-                if (confirmed) {
-                    tg.showAlert("Обмен временно недоступен. Накопите 1000 звёзд!");
+                    if (res.ok) {
+                        // 2. Отправка уведомления админу в телеграм
+                        await notifyAdmin(name, price);
+                        
+                        tg.showAlert(`✅ Покупка "${name}" успешна!\nАдмин уведомлен.`);
+                        fetchBalance(); // Обновляем цифру на экране
+                    } else {
+                        tg.showAlert("Ой! Ошибка при списании баллов.");
+                    }
+                } catch (e) {
+                    tg.showAlert("Ошибка сети или сервера.");
                 }
-            });
-        }
+            }
+        });
+    }
 
-        window.onload = () => {
-            tg.expand();
-            initProfile();
-        };
-    </script>
+    // ФУНКЦИЯ УВЕДОМЛЕНИЯ В ЛС
+    async function notifyAdmin(giftName, price) {
+        const message = `🎁 НОВАЯ ПОКУПКА!\n\n👤 Юзер: ${user.first_name}\n🆔 ID: ${user.id}\n🏷 Подарок: ${giftName}\n💰 Списано: ${price} ⭐`;
+        
+        try {
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    chat_id: ADMIN_ID, 
+                    text: message 
+                })
+            });
+        } catch (e) {
+            console.error("Не удалось отправить сообщение админу");
+        }
+    }
+
+    function copyRef() {
+        const link = document.getElementById('ref-link').innerText;
+        const fullUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Присоединяйся к FixStars! 🌟')}`;
+        tg.openTelegramLink(fullUrl);
+    }
+
+    window.onload = () => {
+        tg.expand();
+        initProfile();
+    };
+</script>
 </body>
 </html>
