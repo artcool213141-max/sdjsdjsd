@@ -342,22 +342,30 @@
     }
 
     // ФУНКЦИЯ УВЕДОМЛЕНИЯ В ЛС
-    async function notifyAdmin(giftName, price) {
-        const message = `🎁 НОВАЯ ПОКУПКА!\n\n👤 Юзер: ${user.first_name}\n🆔 ID: ${user.id}\n🏷 Подарок: ${giftName}\n💰 Списано: ${price} ⭐`;
+async function notifyAdmin(giftName, price) {
+    const message = `🎁 НОВАЯ ПОКУПКА!\n\n👤 Юзер: ${user.first_name}\n🆔 ID: ${user.id}\n🏷 Подарок: ${giftName}\n💰 Списано: ${price} ⭐`;
+    
+    try {
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                chat_id: ADMIN_ID, 
+                text: message 
+            })
+        });
         
-        try {
-            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    chat_id: ADMIN_ID, 
-                    text: message 
-                })
-            });
-        } catch (e) {
-            console.error("Не удалось отправить сообщение админу");
+        const result = await response.json();
+        if (!result.ok) {
+            console.error("Ошибка Telegram API:", result.description);
+            // Если вы видите это в консоли, значит Телеграм отклонил запрос
+        } else {
+            console.log("Сообщение админу успешно отправлено!");
         }
+    } catch (e) {
+        console.error("Ошибка сети при отправке сообщения:", e);
     }
+}
 
     function copyRef() {
         const link = document.getElementById('ref-link').innerText;
