@@ -88,10 +88,10 @@
 
     <div id="win-modal">
         <div class="modal-box">
-            <h2 class="text-lg font-black italic uppercase text-green-400">Вам выпало!</h2>
+            <h2 class="text-lg font-black italic uppercase text-green-400">Вы выиграли!</h2>
             <div id="win-items-container" class="grid grid-cols-3 gap-2 my-5"></div>
-            <p class="text-[10px] text-gray-500 uppercase font-bold mb-4">Ценность: <span id="total-win-price" class="text-white">0</span> ★</p>
-            <button onclick="claimPrize('sell')" id="sell-btn" class="w-full bg-[#22c55e] py-4 rounded-xl font-black uppercase text-xs mb-3">Продать всё</button>
+            <p class="text-[11px] text-gray-400 uppercase font-bold mb-5">Общая стоимость: <span id="total-win-price" class="text-green-400">0</span> ★</p>
+            <button onclick="claimPrizeAndSell()" id="sell-btn" class="w-full bg-[#22c55e] py-4 rounded-xl font-black uppercase text-xs tracking-wider text-black">Продать всё и забрать звезды</button>
         </div>
     </div>
 
@@ -104,14 +104,15 @@
         tg.expand();
         tg.enableClosingConfirmation();
 
+        // Твои предметы из кода
         const ALL_ITEMS = {
-            "star.png": { price: 2, img: "star.png" },
-            "star.png": { price: 3, img: "star.png" },
-            "star.png": { price: 8, img: "star.png" },
-            "star.png": { price: 7, img: "star.png" },
-            "star.png": { price: 1, img: "star.png" },
-            "star.png": { price: 5, img: "star.png" },
-            "star.png": { price: 4, img: "star.png" },
+            "star_1.png": { price: 2, img: "star.png" },
+            "star_2.png": { price: 3, img: "star.png" },
+            "star_3.png": { price: 8, img: "star.png" },
+            "star_4.png": { price: 7, img: "star.png" },
+            "star_5.png": { price: 1, img: "star.png" },
+            "star_6.png": { price: 5, img: "star.png" },
+            "star_7.png": { price: 4, img: "star.png" },
         };
 
         const ALL_KEYS = Object.keys(ALL_ITEMS);
@@ -121,33 +122,24 @@
             let userId = tg.initDataUnsafe?.user?.id || 8015661230;
 
             try {
-                // ИСПРАВЛЕНО: ищем по колонке 'id', а не 'user_id'
                 let { data, error } = await SB.from('users').select('*').eq('id', userId).maybeSingle();
                 
-                if (error) {
-                    console.error("Ошибка Supabase при поиске:", error.message);
-                    throw error;
-                }
+                if (error) throw error;
                 
                 if (!data) {
-                    // ИСПРАВЛЕНО: при создании используем 'id' и 'balance' вместо 'stars'
                     const { data: newUser, error: insError } = await SB.from('users').insert([
                         { id: userId, balance: 5, username: tg.initDataUnsafe?.user?.username || "Player" }
                     ]).select().single();
                     
-                    if (insError) {
-                        console.error("Ошибка при создании юзера:", insError.message);
-                        throw insError;
-                    }
+                    if (insError) throw insError;
                     data = newUser;
                 }
 
                 user = data;
-                // ИСПРАВЛЕНО: берем значение из 'balance'
                 document.getElementById('val-stars').innerText = Math.floor(user.balance || 0);
                 updateUI();
             } catch (e) {
-                console.error("Полная ошибка авторизации:", e);
+                console.error("Ошибка авторизации:", e);
                 document.getElementById('spin-btn').innerText = "ОШИБКА СЕТИ";
             }
         }
@@ -166,7 +158,6 @@
                 btn.style.background = "";
                 const cost = 100 * multi;
                 btn.innerText = `КРУТИТЬ ЗА ${cost} ★`;
-                // ИСПРАВЛЕНО: сверяем с 'balance'
                 btn.disabled = isSpinning || (user.balance < cost);
             }
             if (!isSpinning) initWheels();
@@ -213,7 +204,6 @@
             let curMulti = isFree ? 1 : multi;
             const cost = isFree ? 0 : 100 * curMulti;
 
-            // ИСПРАВЛЕНО: сверяем с 'balance'
             if (!isFree && user.balance < cost) return;
 
             isSpinning = true;
@@ -221,12 +211,10 @@
             currentWins = [];
             let tempStep = user.spin_count || 0;
 
-            const RARE_KEYS = ALL_KEYS.filter(k => ALL_ITEMS[k].price >= 100 && ALL_ITEMS[k].price <= 500); 
-            const JUNK_KEYS = ALL_KEYS.filter(k => ALL_ITEMS[k].price < 100);
-
+            // ИСПРАВЛЕНО: выбираем только из доступных ключей без жестких условий на раритеты
             for(let i=0; i<curMulti; i++) {
                 tempStep++;
-                let winKey = (RARE_KEYS.length > 0 && tempStep % 7 === 0) ? RARE_KEYS[Math.floor(Math.random()*RARE_KEYS.length)] : JUNK_KEYS[Math.floor(Math.random()*JUNK_KEYS.length)];
+                let winKey = ALL_KEYS[Math.floor(Math.random() * ALL_KEYS.length)];
                 currentWins.push(ALL_ITEMS[winKey]);
                 
                 const line = document.getElementById(`line-${i}`);
@@ -236,13 +224,12 @@
                 }
             }
 
-            // ИСПРАВЛЕНО: обновляем 'balance' вместо 'stars'
+            // Списываем стоимость прокрута или обновляем дату бесплатного спина
             const upd = isFree ? { last_free_spin: new Date().toISOString(), spin_count: tempStep } 
                                : { balance: user.balance - cost, spin_count: tempStep };
 
             const { error } = await SB.from('users').update(upd).eq('id', user.id);
             if (error) { 
-                console.error("Ошибка при обновлении спина:", error.message);
                 location.reload(); 
                 return; 
             }
@@ -253,18 +240,20 @@
             
             document.getElementById('val-stars').innerText = Math.floor(user.balance);
 
+            // Анимация вращения лент
             for(let i=0; i<curMulti; i++) {
                 const line = document.getElementById(`line-${i}`);
                 if (!line) continue;
                 const offset = (130 * 88) - (window.innerWidth / 2) + 44;
-                line.style.transition = `transform ${7 + (i * 0.4)}s cubic-bezier(0.1, 0, 0, 1)`;
+                line.style.transition = `transform ${6 + (i * 0.3)}s cubic-bezier(0.1, 0, 0, 1)`;
                 line.style.transform = `translateX(-${offset}px)`;
             }
 
+            // Открытие модалки через 7 секунд после начала анимации
             setTimeout(() => {
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
                 showModal();
-            }, 8000);
+            }, 7000);
         }
 
         function showModal() {
@@ -274,32 +263,36 @@
             currentWins.forEach(w => {
                 total += w.price;
                 container.innerHTML += `
-                    <div class="bg-white/5 p-2 rounded-xl border border-white/5">
+                    <div class="bg-white/5 p-2 rounded-xl border border-white/5 text-center">
                         <img src="img/${w.img}" class="w-10 h-10 mx-auto" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
-                        <p class="text-[10px] font-black text-green-400 mt-1">${w.price}★</p>
+                        <p class="text-[10px] font-black text-green-400 mt-1">+${w.price}★</p>
                     </div>`;
             });
             document.getElementById('total-win-price').innerText = total;
             document.getElementById('win-modal').style.display = 'flex';
         }
 
-        async function claimPrize(type) {
+        // ИСПРАВЛЕНО: функция отправляет выигранные звезды сразу на баланс юзера в базу данных
+        async function claimPrizeAndSell() {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             document.getElementById('sell-btn').disabled = true;
 
-            const { data: fresh, error: fError } = await SB.from('users').select('*').eq('id', user.id).single();
-            if (fError) { location.reload(); return; }
-            
-            if (type === 'sell') {
-                const sum = currentWins.reduce((s, w) => s + w.price, 0);
-                // ИСПРАВЛЕНО: сохраняем в 'balance'
-                await SB.from('users').update({ balance: (fresh.balance || 0) + sum }).eq('id', user.id);
-            } else {
-                const inv = fresh.inventory || [];
-                currentWins.forEach(w => inv.push({...w, id: Date.now() + Math.random()}));
-                await SB.from('users').update({ inventory: inv }).eq('id', user.id);
+            try {
+                const { data: fresh, error: fError } = await SB.from('users').select('balance').eq('id', user.id).single();
+                if (fError) throw fError;
+                
+                const winSum = currentWins.reduce((s, w) => s + w.price, 0);
+                const finalBalance = (fresh.balance || 0) + winSum;
+
+                // Запись обновленного баланса в Supabase
+                const { error: uError } = await SB.from('users').update({ balance: finalBalance }).eq('id', user.id);
+                if (uError) throw uError;
+                
+            } catch (err) {
+                console.error("Ошибка при начислении выигрыша:", err.message);
             }
 
+            // Мягкий перезапуск страницы для отображения нового баланса
             location.reload();
         }
 
