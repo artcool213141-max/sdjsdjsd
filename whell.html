@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>StarsDrop - Telegram Edition</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        :root { --accent: #7c3aed; }
+        
+        * { -webkit-tap-highlight-color: transparent; user-select: none; }
+        
+        body { 
+            background: #050505; color: white; font-family: 'Inter', sans-serif; 
+            margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; 
+        }
+
+        .header-panel { 
+            padding: 12px 20px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a; 
+            padding-top: calc(12px + var(--tg-safe-area-inset-top, 0px));
+        }
+
+        #wheels-container { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; overflow: hidden; }
+
+        .wheel-track { 
+            position: relative; width: 100%; height: 90px; overflow: hidden; 
+            border-top: 1px solid rgba(124, 58, 237, 0.15); border-bottom: 1px solid rgba(124, 58, 237, 0.15);
+            background: rgba(124, 58, 237, 0.02);
+        }
+
+        .pointer { 
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%); 
+            width: 3px; height: 100%; background: var(--accent); z-index: 50; 
+            box-shadow: 0 0 15px var(--accent);
+        }
+
+        .wheel-line { display: flex; align-items: center; height: 100%; will-change: transform; }
+
+        .item { 
+            min-width: 80px; height: 80px; margin: 0 4px; background: rgba(255,255,255,0.03); 
+            border-radius: 12px; display: flex; align-items: center; justify-content: center; 
+            border: 1px solid rgba(124, 58, 237, 0.1);
+        }
+        .item img { width: 55px; height: 55px; object-fit: contain; }
+
+        .btn-main { 
+            background: var(--accent); color: white; font-weight: 900; border-radius: 18px; 
+            transition: 0.2s; box-shadow: 0 0 25px rgba(124, 58, 237, 0.3);
+        }
+        .btn-main:active { transform: scale(0.97); }
+        .btn-main:disabled { opacity: 0.3; filter: grayscale(1); }
+
+        .multi-btn { background: #111; border: 1px solid #222; padding: 10px 0; border-radius: 12px; flex: 1; font-weight: 900; font-size: 12px; color: #555; }
+        .multi-btn.active { border-color: var(--accent); background: #1a0b2e; color: white; }
+
+        #win-modal { display: none; position: fixed; inset: 0; z-index: 999; background: rgba(0,0,0,0.92); backdrop-filter: blur(10px); align-items: center; justify-content: center; }
+        .modal-box { background: #0f0f0f; border: 1px solid var(--accent); border-radius: 24px; width: 85%; padding: 25px; text-align: center; }
+        
+        /* Скрытие полосы прокрутки */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body>
+
+    <header class="header-panel flex justify-between items-center">
+        <div class="font-black italic text-lg tracking-tighter">STARS<span class="text-[#7c3aed]">DROP</span></div>
+        <div class="flex items-center gap-2 bg-[#111] px-4 py-1.5 rounded-full border border-[#222]">
+            <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
+            <span id="val-stars" class="font-black text-sm">0</span>
+        </div>
+    </header>
+
+    <div id="wheels-container"></div>
+
+    <div class="p-6 bg-[#0a0a0a] border-t border-[#181818] pb-[calc(24px + var(--tg-safe-area-inset-bottom, 0px))]">
+        <div id="multi-wrap" class="flex gap-2 mb-4">
+            <button onclick="setMulti(1)" class="multi-btn active" data-m="1">X1</button>
+            <button onclick="setMulti(2)" class="multi-btn" data-m="2">X2</button>
+            <button onclick="setMulti(3)" class="multi-btn" data-m="3">X3</button>
+            <button onclick="setMulti(4)" class="multi-btn" data-m="4">X4</button>
+            <button onclick="setMulti(5)" class="multi-btn" data-m="5">X5</button>
+        </div>
+        <button id="spin-btn" onclick="startSpin()" class="w-full py-4 btn-main uppercase tracking-widest text-sm">Загрузка...</button>
+    </div>
+
+    <div id="win-modal">
+        <div class="modal-box">
+            <h2 class="text-lg font-black italic uppercase text-purple-400">Вам выпало!</h2>
+            <div id="win-items-container" class="grid grid-cols-3 gap-2 my-5"></div>
+            <p class="text-[10px] text-gray-500 uppercase font-bold mb-4">Ценность: <span id="total-win-price" class="text-white">0</span> ★</p>
+            <button onclick="claimPrize('sell')" id="sell-btn" class="w-full bg-[#7c3aed] py-4 rounded-xl font-black uppercase text-xs mb-3">Продать всё</button>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = "https://bajufluzgcguxconhxuj.supabase.co";
+        const SB_KEY = "sb_publishable_xuPKFyBBL2xlXdiaMl_ZkQ_oF0aAznZ";
+        const SB = supabase.createClient(SB_URL, SB_KEY);
+        const tg = window.Telegram.WebApp;
+        
+        tg.expand();
+        tg.enableClosingConfirmation();
+
+        // Сюда вставь свой объект ALL_ITEMS (я сократил для веса)
+        const ALL_ITEMS = {
+            "star.png": { price: 2, img: "star.png" },
+            "star.png": { price: 3, img: "star.png" },
+            "star.png": { price: 8, img: "star.png" },
+            "star.png": { price: 7, img: "star.png" },
+            "star.png": { price: 1, img: "star.png" },
+            "star.png": { price: 5, img: "star.png" },
+            "star.png": { price: 4, img: "star.png" },
+            // Добавь остальные свои предметы сюда точно так же
+        };
+
+        const ALL_KEYS = Object.keys(ALL_ITEMS);
+        let user = null, isSpinning = false, multi = 1, currentWins = [];
+
+        async function checkAuth() {
+            let userId = tg.initDataUnsafe?.user?.id || 8015661230;
+
+            try {
+                let { data, error } = await SB.from('users').select('*').eq('user_id', userId).single();
+                
+                if (error || !data) {
+                    const { data: newUser } = await SB.from('users').insert([
+                        { user_id: userId, stars: 5, inventory: [], spin_count: 0 }
+                    ]).select().single();
+                    data = newUser;
+                }
+
+                user = data;
+                document.getElementById('val-stars').innerText = Math.floor(user.stars || 0);
+                updateUI();
+            } catch (e) {
+                document.getElementById('spin-btn').innerText = "ОШИБКА СЕТИ";
+            }
+        }
+
+        function updateUI() {
+            if (!user) return;
+            const lastFree = user.last_free_spin ? new Date(user.last_free_spin).getTime() : 0;
+            const isFree = (Date.now() - lastFree) > 86400000;
+            const btn = document.getElementById('spin-btn');
+            
+            if (isFree) {
+                btn.innerText = "БЕСПЛАТНЫЙ СПИН";
+                btn.style.background = "#059669"; // Green
+                btn.disabled = isSpinning;
+            } else {
+                btn.style.background = ""; // Reset to purple
+                const cost = 100 * multi;
+                btn.innerText = `КРУТИТЬ ЗА ${cost} ★`;
+                btn.disabled = isSpinning || (user.stars < cost);
+            }
+            if (!isSpinning) initWheels();
+        }
+
+        function initWheels() {
+            const container = document.getElementById('wheels-container');
+            container.innerHTML = '';
+            // Если спин бесплатный, всегда показываем 1 ленту
+            const lastFree = user.last_free_spin ? new Date(user.last_free_spin).getTime() : 0;
+            const isFree = (Date.now() - lastFree) > 86400000;
+            const displayMulti = isFree ? 1 : multi;
+
+            for(let i=0; i<displayMulti; i++) {
+                let content = '';
+                for(let j=0; j<140; j++) {
+                    const k = ALL_KEYS[Math.floor(Math.random()*ALL_KEYS.length)];
+                    content += `<div class="item"><img src="img/${ALL_ITEMS[k].img}" onerror="this.src='img/star.png'"></div>`;
+                }
+                container.innerHTML += `
+                    <div class="wheel-track">
+                        <div class="pointer"></div>
+                        <div class="wheel-line" id="line-${i}">${content}</div>
+                    </div>`;
+            }
+        }
+
+        function setMulti(m) {
+            const lastFree = user.last_free_spin ? new Date(user.last_free_spin).getTime() : 0;
+            if (isSpinning || (Date.now() - lastFree) > 86400000) return; 
+            
+            multi = parseInt(m);
+            document.querySelectorAll('.multi-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`[data-m="${m}"]`).classList.add('active');
+            updateUI();
+        }
+
+        async function startSpin() {
+            if (isSpinning || !user) return;
+            tg.HapticFeedback.impactOccurred('medium');
+
+            const lastFree = user.last_free_spin ? new Date(user.last_free_spin).getTime() : 0;
+            const isFree = (Date.now() - lastFree) > 86400000;
+            
+            let curMulti = isFree ? 1 : multi;
+            const cost = isFree ? 0 : 100 * curMulti;
+
+            if (!isFree && user.stars < cost) return;
+
+            isSpinning = true;
+            document.getElementById('spin-btn').disabled = true;
+            currentWins = [];
+            let tempStep = user.spin_count || 0;
+
+            const RARE_KEYS = ALL_KEYS.filter(k => ALL_ITEMS[k].price >= 100 && ALL_ITEMS[k].price <= 500); 
+            const JUNK_KEYS = ALL_KEYS.filter(k => ALL_ITEMS[k].price < 100);
+
+            // Мгновенно фиксируем результат
+            for(let i=0; i<curMulti; i++) {
+                tempStep++;
+                let winKey = (tempStep % 7 === 0) ? RARE_KEYS[Math.floor(Math.random()*RARE_KEYS.length)] : JUNK_KEYS[Math.floor(Math.random()*JUNK_KEYS.length)];
+                currentWins.push(ALL_ITEMS[winKey]);
+                
+                const line = document.getElementById(`line-${i}`);
+                line.querySelectorAll('img')[130].src = `img/${ALL_ITEMS[winKey].img}`;
+            }
+
+            // Записываем в базу
+            const upd = isFree ? { last_free_spin: new Date().toISOString(), spin_count: tempStep } 
+                               : { stars: user.stars - cost, spin_count: tempStep };
+
+            const { error } = await SB.from('users').update(upd).eq('user_id', user.user_id);
+            if (error) { location.reload(); return; }
+
+            user.stars = upd.stars || user.stars;
+            user.spin_count = tempStep;
+            if (isFree) user.last_free_spin = upd.last_free_spin;
+            
+            document.getElementById('val-stars').innerText = Math.floor(user.stars);
+
+            // Анимация
+            for(let i=0; i<curMulti; i++) {
+                const line = document.getElementById(`line-${i}`);
+                const offset = (130 * 88) - (window.innerWidth / 2) + 44;
+                line.style.transition = `transform ${7 + (i * 0.4)}s cubic-bezier(0.1, 0, 0, 1)`;
+                line.style.transform = `translateX(-${offset}px)`;
+            }
+
+            setTimeout(() => {
+                tg.HapticFeedback.notificationOccurred('success');
+                showModal();
+            }, 8000);
+        }
+
+        function showModal() {
+            const container = document.getElementById('win-items-container');
+            container.innerHTML = '';
+            let total = 0;
+            currentWins.forEach(w => {
+                total += w.price;
+                container.innerHTML += `
+                    <div class="bg-white/5 p-2 rounded-xl border border-white/5">
+                        <img src="img/${w.img}" class="w-10 h-10 mx-auto" onerror="this.src='img/star.png'">
+                        <p class="text-[10px] font-black text-purple-400 mt-1">${w.price}★</p>
+                    </div>`;
+            });
+            document.getElementById('total-win-price').innerText = total;
+            document.getElementById('win-modal').style.display = 'flex';
+        }
+
+        async function claimPrize(type) {
+            tg.HapticFeedback.impactOccurred('light');
+            document.getElementById('sell-btn').disabled = true;
+            document.getElementById('keep-btn').disabled = true;
+
+            const { data: fresh } = await SB.from('users').select('*').eq('user_id', user.user_id).single();
+            
+            if (type === 'sell') {
+                const sum = currentWins.reduce((s, w) => s + w.price, 0);
+                await SB.from('users').update({ stars: (fresh.stars || 0) + sum }).eq('user_id', user.user_id);
+            } else {
+                const inv = fresh.inventory || [];
+                currentWins.forEach(w => inv.push({...w, id: Date.now() + Math.random()}));
+                await SB.from('users').update({ inventory: inv }).eq('user_id', user.user_id);
+            }
+
+            location.reload(); // Проще всего для чистого сброса стейта в Telegram
+        }
+
+        checkAuth();
+    </script>
+</body>
+</html>
