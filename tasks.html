@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>StarsDrop - Tasks</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        :root { --accent: #22c55e; }
+        
+        * { -webkit-tap-highlight-color: transparent; user-select: none; }
+        
+        body { 
+            background: #050505; color: white; font-family: 'Inter', sans-serif; 
+            margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; 
+        }
+
+        .header-panel { 
+            padding: 12px 20px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a; 
+            padding-top: calc(12px + var(--tg-safe-area-inset-top, 0px));
+        }
+
+        .tasks-container {
+            flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;
+            scrollbar-width: none;
+        }
+        .tasks-container::-webkit-scrollbar { display: none; }
+
+        .task-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid #151515;
+            border-radius: 20px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            transition: 0.2s;
+        }
+
+        .task-icon {
+            width: 44px; height: 44px; background: rgba(34, 197, 94, 0.07);
+            border-radius: 14px; display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: var(--accent); border: 1px solid rgba(34, 197, 94, 0.1);
+        }
+
+        .btn-task {
+            background: var(--accent); color: black; font-weight: 900; font-size: 11px;
+            padding: 10px 16px; border-radius: 12px; text-transform: uppercase; tracking-wider: 0.05em;
+            transition: 0.2s; box-shadow: 0 0 15px rgba(34, 197, 94, 0.15);
+        }
+        .btn-task:active { transform: scale(0.95); }
+        .btn-task:disabled { opacity: 0.3; filter: grayscale(1); box-shadow: none; }
+        
+        .btn-check { background: #eab308; color: black; box-shadow: 0 0 15px rgba(234, 179, 8, 0.15); }
+        .btn-done { background: #111; color: #444; border: 1px solid #1a1a1a; cursor: not-allowed; }
+
+        #success-modal { 
+            display: none; position: fixed; inset: 0; z-index: 999; 
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(10px); 
+            align-items: center; justify-content: center; 
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header-panel flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <button onclick="goHome()" class="flex items-center justify-center w-8 h-8 rounded-xl bg-[#111] border border-[#222] active:scale-90 transition-transform">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+            </button>
+            <div class="font-black italic text-lg tracking-tighter">STARS<span class="text-[#22c55e]">TASKS</span></div>
+        </div>
+        <div class="flex items-center gap-2 bg-[#111] px-4 py-1.5 rounded-full border border-[#222]">
+            <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
+            <span id="val-stars" class="font-black text-sm">0.00</span>
+        </div>
+    </header>
+
+    <div class="p-4 bg-[#0a0a0a]/50 border-b border-[#111]">
+        <h2 class="text-xs uppercase font-black tracking-widest text-gray-500">Доступные задания</h2>
+        <p class="text-[11px] text-gray-400 mt-0.5">Выполняй простые квесты спонсоров и получай ★ на счет</p>
+    </div>
+
+    <div class="tasks-container" id="tasks-list">
+        <div class="text-center text-gray-500 text-xs py-8">Загрузка списка заданий...</div>
+    </div>
+
+    <div id="success-modal">
+        <div class="bg-[#0f0f0f] border border-[#22c55e] rounded-[24px] w-[85%] p-6 text-center">
+            <div class="text-5xl mb-3">⭐</div>
+            <h2 class="text-lg font-black uppercase italic text-green-400 tracking-tight">Задание выполнено!</h2>
+            <div class="bg-white/5 py-3 rounded-xl border border-white/5 my-4 flex flex-col items-center justify-center">
+                <p id="reward-text" class="text-2xl font-black text-green-400">+0.00 ★</p>
+            </div>
+            <button onclick="closeModal()" class="w-full bg-[#22c55e] py-4 rounded-xl font-black text-black uppercase text-xs tracking-wider">Отлично</button>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = "https://bajufluzgcguxconhxuj.supabase.co";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhanVmbHV6Z2NndXhjb25oeHVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODI4NTUsImV4cCI6MjA5Mzc1ODg1NX0.LtqDCLlMlaWluUdnx0uc3Wt-w8jimw9gyLYMwW9eAxs";
+        const SB = supabase.createClient(SB_URL, SB_KEY);
+        const tg = window.Telegram.WebApp;
+        
+        tg.expand();
+
+        let user = null;
+        let completedTaskIds = []; // Массив для хранения ID уже сделанных заданий
+
+        // Твои задания для спонсоров. Меняй, добавляй, удаляй прямо здесь!
+        // channel — это юзернейм канала с @, где твой бот назначен админом.
+        const TASKS = [
+            { id: "tg_sponsor_1", icon: "📢", title: "Канал Спонсора #1", desc: "Подпишись на нашего партнера", reward: 1, link: "https://t.me/tesyruere", channel: "@tesyruere" },
+            { id: "tg_sponsor_2", icon: "💎", title: "Канал Спонсора #2", desc: "Топовые дропы тут", reward: 0.70, link: "https://t.me/telegram", channel: "@telegram" }
+        ];
+
+        function goHome() {
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            window.location.href = 'index.html';
+        }
+
+        async function checkAuth() {
+            let userId = tg.initDataUnsafe?.user?.id || 8015661230;
+
+            try {
+                // 1. Получаем или создаем юзера в таблице users
+                let { data, error } = await SB.from('users').select('*').eq('id', userId).maybeSingle();
+                if (error) throw error;
+                
+                if (!data) {
+                    const { data: newUser, error: insError } = await SB.from('users').insert([
+                        { id: userId, balance: 5, username: tg.initDataUnsafe?.user?.username || "Player", tasks_completed: 0 }
+                    ]).select().single();
+                    if (insError) throw insError;
+                    data = newUser;
+                }
+                user = data;
+                document.getElementById('val-stars').innerText = Number(user.balance || 0).toFixed(2);
+
+                // 2. Достаем из таблицы completed_tasks список квестов, которые этот юзер уже выполнял ранее
+                let { data: doneTasks, error: taskErr } = await SB.from('completed_tasks').select('task_id').eq('user_id', userId);
+                if (!taskErr && doneTasks) {
+                    completedTaskIds = doneTasks.map(t => t.task_id);
+                }
+
+                renderTasks();
+            } catch (e) {
+                console.error("Ошибка инициализации:", e);
+                document.getElementById('tasks-list').innerHTML = `<div class="text-center text-red-500 text-xs py-8">Ошибка загрузки данных базы</div>`;
+            }
+        }
+
+        function renderTasks() {
+            const listEl = document.getElementById('tasks-list');
+            listEl.innerHTML = "";
+
+            if (TASKS.length === 0) {
+                listEl.innerHTML = `<div class="text-center text-gray-500 text-xs py-8">Нет доступных заданий</div>`;
+                return;
+            }
+
+            TASKS.forEach(task => {
+                const isDone = completedTaskIds.includes(task.id);
+                const card = document.createElement('div');
+                card.className = "task-card";
+                
+                card.innerHTML = `
+                    <div class="task-icon">${task.icon}</div>
+                    <div class="flex-grow min-w-0">
+                        <h3 class="text-sm font-black tracking-tight truncate">${task.title}</h3>
+                        <p class="text-[11px] text-gray-400 truncate mt-0.5">${task.desc}</p>
+                        <p class="text-[11px] text-green-400 font-bold mt-1">+${task.reward.toFixed(2)} ★</p>
+                    </div>
+                    <div>
+                        ${isDone ? 
+                            `<button class="btn-task btn-done" disabled>Готово</button>` : 
+                            `<button id="btn-${task.id}" onclick="handleTask('${task.id}', '${task.link}', ${task.reward})" class="btn-task">Выполнить</button>`
+                        }
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+        }
+
+        function handleTask(id, link, reward) {
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            
+            // Открываем канал спонсора в Телеграмме
+            tg.openLink(link);
+
+            // Переводим кнопку в режим ожидания проверки
+            const btn = document.getElementById(`btn-${id}`);
+            btn.className = "btn-task btn-check";
+            btn.innerText = "Проверить";
+            btn.setAttribute("onclick", `verifyTask('${id}', ${reward})`);
+        }
+
+        async function verifyTask(id, reward) {
+            const btn = document.getElementById(`btn-${id}`);
+            btn.disabled = true;
+            btn.innerText = "Проверяем...";
+
+            const currentTask = TASKS.find(t => t.id === id);
+
+            try {
+                // Вызываем Edge Function в твоем Supabase
+                const response = await fetch(`${SB_URL}/functions/v1/check-subscription`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SB_KEY}`
+                    },
+                    body: JSON.stringify({
+                        userId: user.id,
+                        taskId: id,
+                        channelChatId: currentTask.channel,
+                        reward: reward
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Баланс обновился на бэкенде, синхронизируем локально на странице
+                    user.balance = result.newBalance;
+                    completedTaskIds.push(id);
+                    
+                    document.getElementById('val-stars').innerText = result.newBalance.toFixed(2);
+
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+
+                    // Показываем красивое окно с выигрышем
+                    document.getElementById('reward-text').innerText = `+${reward.toFixed(2)} ★`;
+                    document.getElementById('success-modal').style.display = 'flex';
+                    
+                    renderTasks();
+                } else {
+                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+                    
+                    if (result.reason === 'not_member') {
+                        alert("Вы не подписались на канал спонсора!");
+                    } else if (result.reason === 'already_done') {
+                        alert("Это задание уже было выполнено ранее.");
+                    } else {
+                        alert("Ошибка: " + (result.error || "Не удалось проверить подписку"));
+                    }
+                    
+                    // Возвращаем кнопку в активное состояние для повторной проверки
+                    btn.disabled = false;
+                    btn.innerText = "Проверить";
+                }
+            } catch (err) {
+                console.error("Ошибка отправки запроса проверки:", err);
+                alert("Ошибка соединения с сервером верификации.");
+                btn.disabled = false;
+                btn.innerText = "Проверить";
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('success-modal').style.display = 'none';
+        }
+
+        // Запуск авторизации при загрузке страницы
+        checkAuth();
+    </script>
+</body>
+</html>
