@@ -53,7 +53,14 @@
 <body>
 
     <header class="header-panel flex justify-between items-center">
-        <div class="font-black italic text-lg tracking-tighter">STARS<span class="text-[#22c55e]">DROP</span></div>
+        <div class="flex items-center gap-3">
+            <button onclick="goHome()" class="flex items-center justify-center w-8 h-8 rounded-xl bg-[#111] border border-[#222] active:scale-90 transition-transform">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+            </button>
+            <div class="font-black italic text-lg tracking-tighter">STARS<span class="text-[#22c55e]">DROP</span></div>
+        </div>
         <div class="flex items-center gap-2 bg-[#111] px-4 py-1.5 rounded-full border border-[#222]">
             <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
             <span id="val-stars" class="font-black text-sm">0.00</span>
@@ -98,6 +105,11 @@
         let user = null;
         let generatedBonus = 0;
 
+        function goHome() {
+            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+            window.location.href = 'index.html';
+        }
+
         async function checkAuth() {
             let userId = tg.initDataUnsafe?.user?.id || 8015661230;
 
@@ -128,7 +140,6 @@
             const timerEl = document.getElementById('countdown-timer');
             const giftEl = document.getElementById('gift-icon');
             
-            // Если колонки нет или она пустая, берем 0
             const lastBonus = user && user.hasOwnProperty('last_bonus_claim') && user.last_bonus_claim ? new Date(user.last_bonus_claim).getTime() : 0;
             
             const updateTimer = () => {
@@ -162,22 +173,18 @@
         async function claimDailyBonus() {
             if (!user) return;
             
-            // Визуально отключаем кнопку сразу
             const btn = document.getElementById('bonus-btn');
             btn.disabled = true;
             btn.innerText = "СОХРАНЕНИЕ...";
 
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
-            // Генерируем бонус от 0.05 до 0.50
             generatedBonus = parseFloat((Math.random() * (0.50 - 0.05) + 0.05).toFixed(2));
             const currentBalance = parseFloat(user.balance || 0);
             const targetBalance = parseFloat((currentBalance + generatedBonus).toFixed(2));
 
-            // Формируем безопасный объект обновления
             let updateData = { balance: targetBalance };
             
-            // Если колонка для даты существует в схеме юзера, обновляем и её
             if (user.hasOwnProperty('last_bonus_claim')) {
                 updateData.last_bonus_claim = new Date().toISOString();
             }
@@ -186,17 +193,14 @@
                 const { error } = await SB.from('users').update(updateData).eq('id', user.id);
                 if (error) throw error;
 
-                // Обновляем локальные данные, чтобы модалка показала верный баланс
                 user.balance = targetBalance;
                 if (updateData.last_bonus_claim) user.last_bonus_claim = updateData.last_bonus_claim;
                 document.getElementById('val-stars').innerText = targetBalance.toFixed(2);
 
-                // Показываем окно выигрыша
                 document.getElementById('bonus-gain-text').innerText = `+${generatedBonus.toFixed(2)} ★`;
                 document.getElementById('win-modal').style.display = 'flex';
             } catch (err) {
                 console.error("Ошибка при работе с базой:", err.message);
-                // Если база ругнулась, всё равно выводим модалку для теста интерфейса
                 document.getElementById('bonus-gain-text').innerText = `+${generatedBonus.toFixed(2)} ★ (Тест)`;
                 document.getElementById('win-modal').style.display = 'flex';
             }
