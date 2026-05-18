@@ -9,7 +9,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        :root { --accent: #7c3aed; }
+        :root { --accent: #22c55e; }
         
         * { -webkit-tap-highlight-color: transparent; user-select: none; }
         
@@ -27,8 +27,8 @@
 
         .wheel-track { 
             position: relative; width: 100%; height: 90px; overflow: hidden; 
-            border-top: 1px solid rgba(124, 58, 237, 0.15); border-bottom: 1px solid rgba(124, 58, 237, 0.15);
-            background: rgba(124, 58, 237, 0.02);
+            border-top: 1px solid rgba(34, 197, 94, 0.15); border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+            background: rgba(34, 197, 94, 0.02);
         }
 
         .pointer { 
@@ -42,19 +42,19 @@
         .item { 
             min-width: 80px; height: 80px; margin: 0 4px; background: rgba(255,255,255,0.03); 
             border-radius: 12px; display: flex; align-items: center; justify-content: center; 
-            border: 1px solid rgba(124, 58, 237, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.1);
         }
         .item img { width: 55px; height: 55px; object-fit: contain; }
 
         .btn-main { 
             background: var(--accent); color: white; font-weight: 900; border-radius: 18px; 
-            transition: 0.2s; box-shadow: 0 0 25px rgba(124, 58, 237, 0.3);
+            transition: 0.2s; box-shadow: 0 0 25px rgba(34, 197, 94, 0.3);
         }
         .btn-main:active { transform: scale(0.97); }
         .btn-main:disabled { opacity: 0.3; filter: grayscale(1); }
 
         .multi-btn { background: #111; border: 1px solid #222; padding: 10px 0; border-radius: 12px; flex: 1; font-weight: 900; font-size: 12px; color: #555; }
-        .multi-btn.active { border-color: var(--accent); background: #1a0b2e; color: white; }
+        .multi-btn.active { border-color: var(--accent); background: #062006; color: white; }
 
         #win-modal { display: none; position: fixed; inset: 0; z-index: 999; background: rgba(0,0,0,0.92); backdrop-filter: blur(10px); align-items: center; justify-content: center; }
         .modal-box { background: #0f0f0f; border: 1px solid var(--accent); border-radius: 24px; width: 85%; padding: 25px; text-align: center; }
@@ -66,7 +66,7 @@
 <body>
 
     <header class="header-panel flex justify-between items-center">
-        <div class="font-black italic text-lg tracking-tighter">STARS<span class="text-[#7c3aed]">DROP</span></div>
+        <div class="font-black italic text-lg tracking-tighter">STARS<span class="text-[#22c55e]">DROP</span></div>
         <div class="flex items-center gap-2 bg-[#111] px-4 py-1.5 rounded-full border border-[#222]">
             <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
             <span id="val-stars" class="font-black text-sm">0</span>
@@ -88,16 +88,16 @@
 
     <div id="win-modal">
         <div class="modal-box">
-            <h2 class="text-lg font-black italic uppercase text-purple-400">Вам выпало!</h2>
+            <h2 class="text-lg font-black italic uppercase text-green-400">Вам выпало!</h2>
             <div id="win-items-container" class="grid grid-cols-3 gap-2 my-5"></div>
             <p class="text-[10px] text-gray-500 uppercase font-bold mb-4">Ценность: <span id="total-win-price" class="text-white">0</span> ★</p>
-            <button onclick="claimPrize('sell')" id="sell-btn" class="w-full bg-[#7c3aed] py-4 rounded-xl font-black uppercase text-xs mb-3">Продать всё</button>
+            <button onclick="claimPrize('sell')" id="sell-btn" class="w-full bg-[#22c55e] py-4 rounded-xl font-black uppercase text-xs mb-3">Продать всё</button>
         </div>
     </div>
 
     <script>
         const SB_URL = "https://bajufluzgcguxconhxuj.supabase.co";
-        const SB_KEY = "sb_publishable_xuPKFyBBL2xlXdiaMl_ZkQ_oF0aAznZ";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhanVmbHV6Z2NndXhjb25oeHVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODI4NTUsImV4cCI6MjA5Mzc1ODg1NX0.LtqDCLlMlaWluUdnx0uc3Wt-w8jimw9gyLYMwW9eAxs";
         const SB = supabase.createClient(SB_URL, SB_KEY);
         const tg = window.Telegram.WebApp;
         
@@ -151,7 +151,7 @@
                 btn.style.background = "#059669"; // Green
                 btn.disabled = isSpinning;
             } else {
-                btn.style.background = ""; // Reset to purple
+                btn.style.background = ""; // Reset to original accent
                 const cost = 100 * multi;
                 btn.innerText = `КРУТИТЬ ЗА ${cost} ★`;
                 btn.disabled = isSpinning || (user.stars < cost);
@@ -257,7 +257,7 @@
                 container.innerHTML += `
                     <div class="bg-white/5 p-2 rounded-xl border border-white/5">
                         <img src="img/${w.img}" class="w-10 h-10 mx-auto" onerror="this.src='img/star.png'">
-                        <p class="text-[10px] font-black text-purple-400 mt-1">${w.price}★</p>
+                        <p class="text-[10px] font-black text-green-400 mt-1">${w.price}★</p>
                     </div>`;
             });
             document.getElementById('total-win-price').innerText = total;
@@ -267,7 +267,6 @@
         async function claimPrize(type) {
             tg.HapticFeedback.impactOccurred('light');
             document.getElementById('sell-btn').disabled = true;
-            document.getElementById('keep-btn').disabled = true;
 
             const { data: fresh } = await SB.from('users').select('*').eq('user_id', user.user_id).single();
             
