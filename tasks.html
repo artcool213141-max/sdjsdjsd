@@ -9,67 +9,151 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        :root { --accent: #22c55e; }
         
-        * { -webkit-tap-highlight-color: transparent; user-select: none; }
+        :root { 
+            --accent: #22c55e; 
+        }
+        
+        * { 
+            -webkit-tap-highlight-color: transparent; 
+            user-select: none; 
+            box-sizing: border-box;
+        }
         
         body { 
-            background: #050505; color: white; font-family: 'Inter', sans-serif; 
-            margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; 
+            background: #050505; 
+            color: white; 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; 
+            overflow: hidden; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
         }
 
+        /* Шапка приложения */
         .header-panel { 
-            padding: 12px 20px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a; 
+            padding: 12px 20px; 
+            background: #0a0a0a; 
+            border-bottom: 1px solid #1a1a1a; 
             padding-top: calc(12px + var(--tg-safe-area-inset-top, 0px));
         }
 
+        /* Основной контейнер для контента */
         .tasks-container {
-            flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px;
+            flex-grow: 1; 
+            overflow-y: auto; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 16px;
             scrollbar-width: none;
         }
-        .tasks-container::-webkit-scrollbar { display: none; }
+        .tasks-container::-webkit-scrollbar { 
+            display: none; 
+        }
 
-        /* НОВАЯ СТРУКТУРА КАРТОЧКИ: ВСЁ ПО ЦЕНТРУ И ВЕРТИКАЛЬНО */
+        /* Главная вертикальная карточка задания */
         .task-card {
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid #151515;
             border-radius: 24px;
-            padding: 20px;
+            padding: 24px;
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            gap: 14px;
-            transition: 0.2s;
+            gap: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
         }
 
-        .task-icon {
-            width: 56px; height: 56px; background: rgba(34, 197, 94, 0.07);
-            border-radius: 18px; display: flex; align-items: center; justify-content: center;
-            font-size: 26px; color: var(--accent); border: 1px solid rgba(34, 197, 94, 0.1);
+        /* Обертка для логотипа задания */
+        .task-icon-wrap {
+            width: 72px; 
+            height: 72px; 
+            background: rgba(34, 197, 94, 0.03);
+            border-radius: 22px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            border: 1px solid rgba(34, 197, 94, 0.12); 
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        .task-icon-wrap img {
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover;
         }
 
-        /* КНОПКИ В ОДИН РЯД */
+        /* Контейнер для трех кнопок в ряд */
         .btn-row {
-            display: flex; width: 100%; gap: 8px; margin-top: 4px;
+            display: flex; 
+            width: 100%; 
+            gap: 8px; 
+            margin-top: 6px;
         }
 
+        /* Базовый класс для кнопок управления */
         .btn-action {
-            flex: 1; text-align: center; font-weight: 900; font-size: 11px;
-            padding: 12px 4px; border-radius: 12px; text-transform: uppercase;
-            transition: 0.2s; tracking-wider: 0.05em;
+            flex: 1; 
+            text-align: center; 
+            font-weight: 900; 
+            font-size: 11px;
+            padding: 14px 4px; 
+            border-radius: 14px; 
+            text-transform: uppercase;
+            transition: all 0.2s ease; 
+            tracking-wider: 0.05em;
         }
-        .btn-action:active { transform: scale(0.95); }
+        .btn-action:active { 
+            transform: scale(0.95); 
+        }
 
-        .btn-go { background: #111; color: #fff; border: 1px solid #222; }
-        .btn-verify { background: var(--accent); color: black; box-shadow: 0 0 15px rgba(34, 197, 94, 0.15); }
-        .btn-verify:disabled { opacity: 0.4; filter: grayscale(1); box-shadow: none; }
-        .btn-skip { background: rgba(255,255,255,0.03); color: #666; border: 1px solid #1a1a1a; }
+        /* Кнопка Перейти */
+        .btn-go { 
+            background: #111; 
+            color: #fff; 
+            border: 1px solid #222; 
+        }
+        .btn-go:active {
+            background: #161616;
+        }
 
+        /* Кнопка Проверить */
+        .btn-verify { 
+            background: var(--accent); 
+            color: black; 
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); 
+        }
+        .btn-verify:disabled { 
+            opacity: 0.4; 
+            filter: grayscale(1); 
+            box-shadow: none; 
+        }
+
+        /* Кнопка Пропустить */
+        .btn-skip { 
+            background: rgba(255,255,255,0.02); 
+            color: #555; 
+            border: 1px solid #141414; 
+        }
+        .btn-skip:active {
+            color: #777;
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* Модальное окно успешного выполнения */
         #success-modal { 
-            display: none; position: fixed; inset: 0; z-index: 999; 
-            background: rgba(0,0,0,0.92); backdrop-filter: blur(10px); 
-            align-items: center; justify-content: center; 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            z-index: 999; 
+            background: rgba(0,0,0,0.94); 
+            backdrop-filter: blur(12px); 
+            align-items: center; 
+            justify-content: center; 
         }
     </style>
 </head>
@@ -77,14 +161,14 @@
 
     <header class="header-panel flex justify-between items-center">
         <div class="flex items-center gap-3">
-            <button onclick="goHome()" class="flex items-center justify-center w-8 h-8 rounded-xl bg-[#111] border border-[#222] active:scale-90 transition-transform">
+            <button onclick="goHome()" class="flex items-center justify-center w-9 h-9 rounded-xl bg-[#111] border border-[#222] active:scale-90 transition-transform">
                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                 </svg>
             </button>
             <div class="font-black italic text-lg tracking-tighter">STARS<span class="text-[#22c55e]">TASKS</span></div>
         </div>
-        <div class="flex items-center gap-2 bg-[#111] px-4 py-1.5 rounded-full border border-[#222]">
+        <div class="flex items-center gap-2 bg-[#111] px-4 py-2 rounded-full border border-[#222]">
             <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
             <span id="val-stars" class="font-black text-sm">0.00</span>
         </div>
@@ -96,21 +180,22 @@
     </div>
 
     <div class="tasks-container" id="tasks-list">
-        <div class="text-center text-gray-500 text-xs py-8">Загрузка списка заданий...</div>
+        <div class="text-center text-gray-500 text-xs py-12">Синхронизация с базой данных...</div>
     </div>
 
     <div id="success-modal">
-        <div class="bg-[#0f0f0f] border border-[#22c55e] rounded-[24px] w-[85%] p-6 text-center">
-            <div class="text-5xl mb-3">⭐</div>
-            <h2 class="text-lg font-black uppercase italic text-green-400 tracking-tight">Задание выполнено!</h2>
-            <div class="bg-white/5 py-3 rounded-xl border border-white/5 my-4 flex flex-col items-center justify-center">
-                <p id="reward-text" class="text-2xl font-black text-green-400">+0.00 ★</p>
+        <div class="bg-[#0f0f0f] border border-[#22c55e] rounded-[28px] w-[85%] p-6 text-center shadow-2xl">
+            <div class="text-6xl mb-4 animate-bounce">⭐</div>
+            <h2 class="text-xl font-black uppercase italic text-green-400 tracking-tight">Задание выполнено!</h2>
+            <div class="bg-white/5 py-4 rounded-2xl border border-white/5 my-5 flex flex-col items-center justify-center">
+                <p id="reward-text" class="text-3xl font-black text-green-400">+0.00 ★</p>
             </div>
-            <button onclick="closeModal()" class="w-full bg-[#22c55e] py-4 rounded-xl font-black text-black uppercase text-xs tracking-wider">Отлично</button>
+            <button onclick="closeModal()" class="w-full bg-[#22c55e] py-4 rounded-xl font-black text-black uppercase text-xs tracking-wider active:scale-95 transition-transform">Отлично</button>
         </div>
     </div>
 
     <script>
+        // Инициализация Supabase Client
         const SB_URL = "https://bajufluzgcguxconhxuj.supabase.co";
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhanVmbHV6Z2NndXhjb25oeHVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODI4NTUsImV4cCI6MjA5Mzc1ODg1NX0.LtqDCLlMlaWluUdnx0uc3Wt-w8jimw9gyLYMwW9eAxs";
         const SB = supabase.createClient(SB_URL, SB_KEY);
@@ -119,98 +204,116 @@
         tg.expand();
 
         let user = null;
+        let TASKS = [];             
         let completedTaskIds = [];
-        let skippedTaskIds = []; // Массив для пропущенных во время этой сессии заданий
+        let skippedTaskIds = [];
 
-        // Список твоих заданий
-        const TASKS = [
-            { 
-                id: "tg_sponsor_1", 
-                icon: "📢",         
-                title: "Канал Спонсора #1", 
-                desc: "Подпишись на нашего партнера", 
-                reward: 1.00,       
-                link: "https://t.me/tesyruere", 
-                channel: "@tesyruere" 
-            },
-            { 
-                id: "tg_sponsor_2", 
-                icon: "💎", 
-                title: "Канал Спонсора #2", 
-                desc: "Топовые дропы тут", 
-                reward: 0.70, 
-                link: "https://t.me/telegram", 
-                channel: "@telegram" 
-            }
+        // СПИСОК ТВОИХ КАРТИНОК ИЗ ПАПКИ imgtsk НА ГИТХАБЕ
+        // Сюда можешь вписать любые названия файлов картинок, которые ты туда загрузил!
+        const RANDOM_LOGOS = [
+            "pepe.png",
+            "logo1.png",
+            "logo2.png",
+            "sponsor.png",
+            "crypto.png"
         ];
+
+        // Функция получения рандомного элемента из массива логотипов
+        function getRandomLogo() {
+            const randomIndex = Math.floor(Math.random() * RANDOM_LOGOS.length);
+            return RANDOM_LOGOS[randomIndex];
+        }
 
         function goHome() {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             window.location.href = 'index.html';
         }
 
+        // Авторизация и загрузка данных из таблиц Supabase
         async function checkAuth() {
             let userId = tg.initDataUnsafe?.user?.id || 7140366080;
 
             try {
-                let { data, error } = await SB.from('users').select('*').eq('id', userId).maybeSingle();
-                if (error) throw error;
+                // 1. Подтягиваем или создаем юзера
+                let { data: userData, error: userErr } = await SB.from('users').select('*').eq('id', userId).maybeSingle();
+                if (userErr) throw userErr;
                 
-                if (!data) {
+                if (!userData) {
                     const { data: newUser, error: insError } = await SB.from('users').insert([
                         { id: userId, balance: 0, username: tg.initDataUnsafe?.user?.username || "Player", tasks_completed: 0 }
                     ]).select().single();
                     if (insError) throw insError;
-                    data = newUser;
+                    userData = newUser;
                 }
-                user = data;
+                user = userData;
                 document.getElementById('val-stars').innerText = Number(user.balance || 0).toFixed(2);
 
+                // 2. Вытаскиваем массив id выполненных квестов
                 let { data: doneTasks, error: taskErr } = await SB.from('completed_tasks').select('task_id').eq('user_id', userId);
                 if (!taskErr && doneTasks) {
                     completedTaskIds = doneTasks.map(t => t.task_id);
                 }
 
+                // 3. Загружаем все активные квесты из глобальной таблицы
+                let { data: dbTasks, error: dbTasksErr } = await SB.from('tasks_list').select('*');
+                if (dbTasksErr) throw dbTasksErr;
+                TASKS = dbTasks || [];
+
                 renderTasks();
             } catch (e) {
-                console.error("Ошибка инициализации:", e);
-                document.getElementById('tasks-list').innerHTML = `<div class="text-center text-red-500 text-xs py-8">Ошибка загрузки данных базы</div>`;
+                console.error("Критический сбой инициализации:", e);
+                document.getElementById('tasks-list').innerHTML = `
+                    <div class="text-center text-red-500 text-xs py-12 font-bold">
+                        Ошибка связи с сервером БД. Перезапустите приложение.
+                    </div>
+                `;
             }
         }
 
+        // Отрисовка очереди квестов
         function renderTasks() {
             const listEl = document.getElementById('tasks-list');
             listEl.innerHTML = "";
 
-            // Фильтруем: убираем выполненные И пропущенные задания
+            // Фильтруем пул: исключаем выполненные в бд и пропущенные в текущей сессии
             const activeTasks = TASKS.filter(task => !completedTaskIds.includes(task.id) && !skippedTaskIds.includes(task.id));
 
-            // Если доступных квестов нет — выводим сообщение про 15 минут
+            // Заглушка, если заданий больше нет
             if (activeTasks.length === 0) {
                 listEl.innerHTML = `
-                    <div class="flex flex-col items-center justify-center text-center p-8 bg-white/5 border border-white/5 rounded-24 mt-4">
-                        <div class="text-4xl mb-3">⏳</div>
+                    <div class="flex flex-col items-center justify-center text-center p-8 bg-white/5 border border-white/5 rounded-[28px] mt-6 shadow-inner animate-fade-in">
+                        <div class="text-5xl mb-4">⏳</div>
                         <h3 class="text-sm font-black text-gray-300 uppercase tracking-wider">Все задания выполнены!</h3>
-                        <p class="text-xs text-gray-500 mt-2 max-w-[240px]">Новые задания обновляются каждые 15 минут. Возвращайся скорее!</p>
+                        <p class="text-[11px] text-gray-500 mt-2 max-w-[220px] leading-relaxed">
+                            Новые задания обновляются каждые 15 минут. Гааааз, возвращайся позже!
+                        </p>
                     </div>
                 `;
                 return;
             }
 
-            // Выводим только ПЕРВОЕ актуальное задание (чтобы они появлялись по очереди)
+            // Показываем ровно ОДНО задание из начала очереди
             const task = activeTasks[0];
+
+            // Генерируем абсолютно рандомное имя файла логотипа из нашего списка картинок
+            const randomImageName = getRandomLogo();
+            const iconUrl = `imgtsk/${randomImageName}`;
 
             const card = document.createElement('div');
             card.className = "task-card";
             
             card.innerHTML = `
                 <div>
-                    <h3 class="text-base font-black tracking-tight">${task.title}</h3>
-                    <p class="text-xs text-gray-400 mt-0.5">${task.desc}</p>
-                    <p class="text-xs text-green-400 font-black mt-1">+${task.reward.toFixed(2)} ★</p>
+                    <h3 class="text-base font-black tracking-tight text-white/90">${task.title}</h3>
+                    <p class="text-xs text-gray-400 mt-1 max-w-[260px] mx-auto">${task.desc_text || 'Без описания квеста'}</p>
+                    <p class="text-xs text-green-400 font-black mt-2 bg-green-500/10 px-3 py-1 rounded-full inline-block">
+                        +${Number(task.reward).toFixed(2)} ★
+                    </p>
                 </div>
 
-                <div class="task-icon">${task.icon}</div>
+                <div class="task-icon-wrap">
+                    <img src="${iconUrl}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
+                </div>
 
                 <div class="btn-row">
                     <button onclick="goToLink('${task.link}')" class="btn-action btn-go">Перейти</button>
@@ -221,6 +324,7 @@
             listEl.appendChild(card);
         }
 
+        // Переход по ссылке спонсора
         function goToLink(link) {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
             if (tg.openTelegramLink) {
@@ -230,12 +334,14 @@
             }
         }
 
+        // Скип текущего квеста
         function skipTask(id) {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            skippedTaskIds.push(id); // Добавляем в скипнутые
-            renderTasks(); // Перерендериваем — покажется следующее задание
+            skippedTaskIds.push(id);
+            renderTasks(); // Карта обновится, подтянется следующее задание
         }
 
+        // Верификация подписки через Edge Function
         async function verifyTask(id, reward) {
             const btn = document.getElementById(`btn-${id}`);
             btn.disabled = true;
@@ -244,7 +350,6 @@
             const currentTask = TASKS.find(t => t.id === id);
 
             try {
-                // ТВОЯ РАБОЧАЯ СЛУЖБА СУПАБЕЙС
                 const targetUrl = "https://bajufluzgcguxconhxuj.supabase.co/functions/v1/clever-service";
 
                 const response = await fetch(targetUrl, {
@@ -270,16 +375,16 @@
 
                 if (result.success) {
                     user.balance = result.newBalance;
-                    completedTaskIds.push(id); // Записываем в выполненные
+                    completedTaskIds.push(id);
                     
                     document.getElementById('val-stars').innerText = result.newBalance.toFixed(2);
 
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 
-                    document.getElementById('reward-text').innerText = `+${reward.toFixed(2)} ★`;
+                    document.getElementById('reward-text').innerText = `+${Number(reward).toFixed(2)} ★`;
                     document.getElementById('success-modal').style.display = 'flex';
                     
-                    renderTasks(); // Задание исчезнет, и подтянется новое!
+                    renderTasks(); 
                 } else {
                     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
                     
@@ -296,7 +401,7 @@
                 }
             } catch (err) {
                 console.error("Критическая ошибка fetch:", err);
-                alert("Ошибка соединения с сервером Supabase.");
+                alert("Ошибка соединения с сервером верификации.");
                 btn.disabled = false;
                 btn.innerText = "Проверить";
             }
@@ -306,6 +411,7 @@
             document.getElementById('success-modal').style.display = 'none';
         }
 
+        // Запуск сессии при загрузке страницы
         checkAuth();
     </script>
 </body>
