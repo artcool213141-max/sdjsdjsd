@@ -227,7 +227,8 @@ async function verifyTask(id, reward) {
 
             try {
                 // ЖЕСТКИЙ АДРЕС ТВОЕЙ ФУНКЦИИ БЕЗ ПЕРЕМЕННЫХ
-                const targetUrl = "https://bajufluzgcguxconhxuj.supabase.co/functions/v1/check-subscription";
+const targetUrl = "https://bajufluzgcguxconhxuj.supabase.co/functions/v1/check-subscription";
+const response = await fetch(targetUrl, { ...
                 
                 console.log("Отправляем запрос на:", targetUrl); // Для отладки в консоли
 
