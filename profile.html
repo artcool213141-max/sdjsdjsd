@@ -43,7 +43,6 @@
             padding: 24px 20px 120px 20px;
         }
 
-        /* Карточка профиля */
         .profile-card {
             background: rgba(0, 0, 0, 0.4);
             border: 1px solid rgba(34, 197, 94, 0.2);
@@ -61,15 +60,14 @@
             border: 3px solid var(--accent-green);
             margin: 0 auto 15px;
             box-shadow: 0 0 20px var(--glow-green);
-            object-cover: cover;
+            object-fit: cover;
         }
 
-        /* Реферальная секция */
-        .ref-box {
+        .ref-box, .promo-box {
             background: rgba(255, 255, 255, 0.03);
             border-radius: 20px;
             padding: 15px;
-            margin-top: 20px;
+            margin-top: 15px;
         }
 
         .ref-link-input {
@@ -83,7 +81,6 @@
             margin-bottom: 15px;
         }
 
-        /* Сетка подарков */
         .gifts-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -125,19 +122,9 @@
 
         .price-tag img { width: 14px; height: 14px; }
 
-        /* Навигация */
         .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(5, 10, 5, 0.96); border-top: 1px solid rgba(34, 197, 94, 0.2); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; backdrop-filter: blur(25px); height: 95px; }
         .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #4b5563; flex: 1; }
         .dock-btn.active { color: var(--accent-green); filter: drop-shadow(0 0 8px var(--accent-green)); }
-        
-        .stat-badge {
-            background: var(--deep-green);
-            padding: 5px 12px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
     </style>
 </head>
 <body>
@@ -145,13 +132,11 @@
     <div class="main-wrapper">
         <div class="scrollable-content">
             
-            <!-- ПРОФИЛЬ -->
             <div class="profile-card">
                 <img id="p-avatar" src="" class="avatar-main shadow-2xl">
                 <h2 id="p-name" class="text-2xl font-black italic uppercase tracking-tight">Загрузка...</h2>
                 <p id="p-id" class="text-green-500 font-bold opacity-50 text-sm">ID: 00000000</p>
 
-                <!-- РЕФЕРАЛКА -->
                 <div class="ref-box">
                     <p class="text-[10px] font-black uppercase text-gray-400 mb-2">Твоя реферальная ссылка</p>
                     <div id="ref-link" class="ref-link-input">t.me/FixStarsOfficial_bot?start=id</div>
@@ -170,10 +155,17 @@
 
                     <button onclick="copyRef()" class="w-full mt-4 py-3 bg-green-500 text-black font-black rounded-xl uppercase italic text-sm active:scale-95 transition-all">Пригласить друзей</button>
                 </div>
+
+                <div class="promo-box">
+                    <p class="text-[10px] font-black uppercase text-gray-400 mb-2 text-left">Активация промокода</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="promo-input" placeholder="ВВЕДИТЕ КОД" class="flex-1 bg-black/40 border border-white/10 text-white rounded-xl px-3 uppercase font-bold text-sm focus:outline-none focus:border-green-500">
+                        <button onclick="claimPromo()" class="bg-white text-black font-black px-4 py-2.5 rounded-xl text-xs uppercase active:scale-95 transition-all">ОК</button>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- ВЫВОД -->
-<!-- ВЫВОД: ПО ЦЕНТРУ И БЕЗ КНОПКИ -->
             <div class="flex flex-col items-center justify-center mb-6 px-2 text-center">
                 <p class="text-[10px] font-black uppercase text-green-500 opacity-60 tracking-widest mb-1">Доступно к выводу</p>
                 <div class="flex items-center gap-3">
@@ -184,78 +176,70 @@
 
             <div class="h-[1px] w-full bg-white/5 mb-8"></div>
 
-<div class="gifts-grid">
-                <!-- Подарок 1 -->
+            <div class="gifts-grid">
                 <div class="gift-card" onclick="buyGift('Сердечко', 15)">
                     <img src="img/cccccerce.png" class="gift-img" alt="G">
                     <div class="gift-name">Сердечко</div>
                     <div class="price-tag">15 <img src="star.png"></div>
                 </div>
 
-                <!-- Подарок 2 -->
                 <div class="gift-card" onclick="buyGift('Мишка', 15)">
                     <img src="img/mixail.png" class="gift-img" alt="G">
                     <div class="gift-name">Мишка</div>
                     <div class="price-tag">15 <img src="star.png"></div>
                 </div>
 
-                <!-- Подарок 3 -->
                 <div class="gift-card" onclick="buyGift('Роза', 25)">
                     <img src="img/rozka.png" class="gift-img" alt="G">
                     <div class="gift-name">Роза</div>
                     <div class="price-tag">25 <img src="star.png"></div>
                 </div>
 
-                <!-- Подарок 4 -->
                 <div class="gift-card" onclick="buyGift('Подарок', 25)">
                     <img src="img/pidarynok.png" class="gift-img" alt="G">
                     <div class="gift-name">Подарок</div>
                     <div class="price-tag">25 <img src="star.png"></div>
                 </div>
 
-                <!-- Подарок 5 -->
                 <div class="gift-card" onclick="buyGift('Торт', 50)">
                     <img src="img/totik.png" class="gift-img" alt="G">
                     <div class="gift-name">Торт</div>
                     <div class="price-tag">50 <img src="star.png"></div>
                 </div>
 
-                <!-- Подарок 6 -->
                 <div class="gift-card" onclick="buyGift('Букет', 50)">
                     <img src="img/buket.png" class="gift-img" alt="G">
                     <div class="gift-name">Букет</div>
                     <div class="price-tag">50 <img src="star.png"></div>
                 </div>
 
-                <!-- Подарок 7 -->
                 <div class="gift-card" onclick="buyGift('Ракета', 50)">
                     <img src="img/raketa.png" class="gift-img" alt="G">
                     <div class="gift-name">Ракета</div>
                     <div class="price-tag">50 <img src="star.png"></div>
                 </div>
 
-                <!-- Подарок 8 -->
                 <div class="gift-card" onclick="buyGift('Кубок', 100)">
                     <img src="img/kypok.png" class="gift-img" alt="G">
                     <div class="gift-name">Кубок</div>
                     <div class="price-tag">100 <img src="star.png"></div>
                 </div>
 
-                 <!-- Подарок 9 -->
-                 <div class="gift-card" onclick="buyGift('Кольцо', 100)">
+                <div class="gift-card" onclick="buyGift('Кольцо', 100)">
                     <img src="img/kolechko.png" class="gift-img" alt="G">
                     <div class="gift-name">Кольцо</div>
                     <div class="price-tag">100 <img src="star.png"></div>
                 </div>
 
-                <!-- НОВЫЙ Подарок 10 -->
                 <div class="gift-card" onclick="buyGift('Бриллиант', 100)">
                     <img src="img/alik.png" class="gift-img" alt="G">
                     <div class="gift-name">Бриллиант</div>
                     <div class="price-tag">100 <img src="star.png"></div>
                 </div>
+            </div>
 
-        <!-- НАВИГАЦИЯ -->
+        </div>
+
         <div class="dock-bar">
             <div onclick="location.href='index.html'" class="dock-btn">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
@@ -273,7 +257,6 @@
     const user = tg.initDataUnsafe?.user;
     const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
     
-    // ВСТАВЬ СВОИ ДАННЫЕ ТУТ:
     const BOT_TOKEN = '8693093466:AAG6_xEPTvZxQGAXQh1EymM12-Q_8nyIBYQ';
     const ADMIN_ID = '7140366080';
 
@@ -287,6 +270,7 @@
             document.getElementById('ref-link').innerText = refLink;
             
             fetchBalance();
+            fetchRefStats();
         }
     }
 
@@ -303,7 +287,49 @@
         }
     }
 
-    // ГЛАВНАЯ ФУНКЦИЯ ПОКУПКИ
+    async function fetchRefStats() {
+        try {
+            const res = await fetch(`${BACKEND_URL}/get_ref_stats/${user.id}`);
+            if (res.ok) {
+                const data = await res.json();
+                document.getElementById('ref-count').innerText = data.ref_count || 0;
+                document.getElementById('ref-earned').innerText = data.ref_earned || 0;
+            }
+        } catch (e) {
+            console.error("Ошибка получения реф-статистики:", e);
+        }
+    }
+
+    async function claimPromo() {
+        const input = document.getElementById('promo-input');
+        const code = input.value.trim();
+
+        if (!code) {
+            tg.showAlert("Введите промокод!");
+            return;
+        }
+
+        try {
+            const res = await fetch(`${BACKEND_URL}/activate_promo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: String(user.id), code: code })
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                tg.showAlert(`🎉 Промокод успешно активирован!\nВам начислено: +${data.reward} ⭐`);
+                document.getElementById('p-balance').innerText = data.new_balance;
+                input.value = '';
+            } else {
+                tg.showAlert(`❌ Ошибка: ${data.detail || "Не удалось активировать"}`);
+            }
+        } catch (e) {
+            tg.showAlert("Ошибка соединения с сервером.");
+        }
+    }
+
     async function buyGift(name, price) {
         const currentBalance = await fetchBalance();
 
@@ -315,22 +341,16 @@
         tg.showConfirm(`Вы хотите купить "${name}" за ${price} ⭐?`, async (confirmed) => {
             if (confirmed) {
                 try {
-                    // 1. Списание баланса на бэкенде
                     const res = await fetch(`${BACKEND_URL}/update_balance`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            user_id: user.id, 
-                            amount: -price // Минусуем цену
-                        })
+                        body: JSON.stringify({ user_id: user.id, amount: -price })
                     });
 
                     if (res.ok) {
-                        // 2. Отправка уведомления админу в телеграм
                         await notifyAdmin(name, price);
-                        
                         tg.showAlert(`✅ Покупка "${name}" успешна!\nАдмин уведомлен.`);
-                        fetchBalance(); // Обновляем цифру на экране
+                        fetchBalance();
                     } else {
                         tg.showAlert("Ой! Ошибка при списании баллов.");
                     }
@@ -341,31 +361,18 @@
         });
     }
 
-    // ФУНКЦИЯ УВЕДОМЛЕНИЯ В ЛС
-async function notifyAdmin(giftName, price) {
-    const message = `🎁 НОВАЯ ПОКУПКА!\n\n👤 Юзер: ${user.first_name}\n🆔 ID: ${user.id}\n🏷 Подарок: ${giftName}\n💰 Списано: ${price} ⭐`;
-    
-    try {
-        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                chat_id: ADMIN_ID, 
-                text: message 
-            })
-        });
-        
-        const result = await response.json();
-        if (!result.ok) {
-            console.error("Ошибка Telegram API:", result.description);
-            // Если вы видите это в консоли, значит Телеграм отклонил запрос
-        } else {
-            console.log("Сообщение админу успешно отправлено!");
+    async function notifyAdmin(giftName, price) {
+        const message = `🎁 НОВАЯ ПОКУПКА!\n\n👤 Юзер: ${user.first_name}\n🆔 ID: ${user.id}\n🏷 Подарок: ${giftName}\n💰 Списано: ${price} ⭐`;
+        try {
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: ADMIN_ID, text: message })
+            });
+        } catch (e) {
+            console.error("Ошибка отправки админу:", e);
         }
-    } catch (e) {
-        console.error("Ошибка сети при отправке сообщения:", e);
     }
-}
 
     function copyRef() {
         const link = document.getElementById('ref-link').innerText;
