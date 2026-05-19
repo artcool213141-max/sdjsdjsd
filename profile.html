@@ -269,7 +269,8 @@
             document.getElementById('p-id').innerText = `ID: ${user.id}`;
             document.getElementById('p-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name}`;
             
-            const refLink = `https://t.me/FixStarsOfficial_bot?start=${user.id}`;
+            // Формат: t.me/ИМЯ_БОТА/ИМЯ_ПРИЛОЖЕНИЯ?startapp=ID
+            const refLink = `https://t.me/FixStarsOfficial_bot/app?startapp=${user.id}`;
             document.getElementById('ref-link').innerText = refLink;
             
             fetchBalance();
@@ -277,10 +278,17 @@
         }
     }
 
-    async function fetchBalance() {
+async function fetchBalance() {
         if (!user) return 0;
         try {
-            // Исправлено: передаем username и start_param в бэкенд
+            // ВРЕМЕННЫЙ ТЕСТОВЫЙ АЛЕРТ: покажет, что видит фронтенд
+            if (startParam) {
+                tg.showAlert(`DEBUG: Обнаружен реферал! start_param = ${startParam}`);
+            } else {
+                tg.showAlert("DEBUG: Телеграм НЕ передал start_param. Он пустой.");
+            }
+
+            // Формируем URL для бэкенда
             let url = `${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(user.username || user.first_name || 'Unknown')}`;
             
             if (startParam) {
@@ -294,6 +302,8 @@
             return bal;
         } catch (e) {
             console.error("Ошибка баланса:", e);
+            // Если упадет сетевая ошибка, тоже выведем на экран для дебага
+            tg.showAlert("Ошибка запроса к бэкенду: " + e.message);
             return 0;
         }
     }
