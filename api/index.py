@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from pydantic import BaseModel
@@ -9,6 +9,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -19,13 +20,19 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Модель для приема данных при покупке
+# Модели для валидации запросов
 class UpdateBalanceRequest(BaseModel):
-    user_id: int
+    user_id: str
     amount: int
 
+class PromoRequest(BaseModel):
+    user_id: str
+    code: str
+
+
+# 1. ПОЛУЧЕНИЕ БАЛАНСА
 @app.get("/get_balance/{user_id}")
-async def get_balance(user_id: int, username: str = "Unknown"):
+async def get_balance(user_id: str, username: str = "Unknown"):
     try:
         result = supabase.table("users").select("balance").eq("id", user_id).execute()
         
@@ -43,28 +50,84 @@ async def get_balance(user_id: int, username: str = "Unknown"):
     except Exception as e:
         return {"error": str(e), "balance": 0}
 
-# НОВАЯ ФУНКЦИЯ ДЛЯ СПИСАНИЯ ПРИ ПОКУПКЕ ПОДАРКА
+
+# 2. СПИСАНИЕ ПРИ ПОКУПКЕ ПОДАРКА
 @app.post("/update_balance")
 async def update_balance(request: UpdateBalanceRequest):
     try:
-        # 1. Получаем текущий баланс
         result = supabase.table("users").select("balance").eq("id", request.user_id).execute()
         
         if not result.data:
             return {"error": "User not found"}
 
         current_balance = result.data[0]["balance"]
-        
-        # 2. Считаем новый баланс (amount будет отрицательным, например -15)
         new_balance = current_balance + request.amount
 
         if new_balance < 0:
             return {"error": "Insufficient funds"}
 
-        # 3. Сохраняем в базу
         supabase.table("users").update({"balance": new_balance}).eq("id", request.user_id).execute()
-
         return {"status": "success", "new_balance": new_balance}
 
     except Exception as e:
         return {"error": str(e)}
+
+
+# 3. НОВЫЙ ЭНДПОИНТ: СТАТИСТИКА РЕФЕРАЛОВ
+@app.get("/get_ref_stats/{user_id}")
+async def get_ref_stats(user_id: str):
+    try:
+        result = supabase.table("users").select("ref_count", "ref_earned").eq("id", user_id).execute()
+        if result.data and len(result.data) > 0:
+            return {
+                "ref_count": result.data[0].get("ref_count", 0),
+                "ref_earned": result.data[0].get("ref_earned", 0)
+            }
+        return {"ref_count": 0, "ref_earned": 0}
+    except Exception as e:
+        return {"error": str(e), "ref_count": 0, "ref_earned": 0}
+
+
+# 4. НОВЫЙ ЭНДПОИНТ: АКТИВАЦИЯ ПРОМОКОДОВ
+@app.post("/activate_promo")
+async def activate_promo(req: PromoRequest):
+    try:
+        user_id = req.user_id
+        code = req.code.strip().upper()
+
+        # Проверяем существование промокода
+        promo_res = supabase.table("promo_codes").select("*").eq("code", code).execute()
+        if not promo_res.data:
+            raise HTTPException(status_code=400, detail="Промокод не найден")
+        
+        promo = promo_res.data[0]
+        
+        # Проверяем лимиты использования
+        if promo.get("current_uses", 0) >= promo.get("max_uses", 100):
+            raise HTTPException(status_code=400, detail="Срок действия промокода истек")
+
+        # Проверяем, не активировал ли этот юзер его ранее
+        check_act = supabase.table("promo_activations").select("id").eq("user_id", user_id).eq("code", code).execute()
+        if check_act.data:
+            raise HTTPException(status_code=400, detail="Вы уже активировали этот промокод")
+
+        # Записываем активацию (защита от повторного ввода)
+        supabase.table("promo_activations").insert({"user_id": user_id, "code": code}).execute()
+
+        # Получаем текущий баланс юзера и прибавляем награду
+        user_res = supabase.table("users").select("balance").eq("id", user_id).execute()
+        current_balance = user_res.data[0]["balance"] if user_res.data else 0
+        new_balance = current_balance + float(promo["reward"])
+        
+        # Обновляем баланс юзера
+        supabase.table("users").update({"balance": new_balance}).eq("id", user_id).execute()
+
+        # Инкрементируем счетчик промокода
+        supabase.table("promo_codes").update({"current_uses": promo.get("current_uses", 0) + 1}).eq("code", code).execute()
+
+        return {"success": True, "reward": promo["reward"], "new_balance": new_balance}
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
