@@ -218,7 +218,7 @@ const TASKS = [
             btn.setAttribute("onclick", `verifyTask('${id}', ${reward})`);
         }
 
-        async function verifyTask(id, reward) {
+async function verifyTask(id, reward) {
             const btn = document.getElementById(`btn-${id}`);
             btn.disabled = true;
             btn.innerText = "Проверяем...";
@@ -226,8 +226,12 @@ const TASKS = [
             const currentTask = TASKS.find(t => t.id === id);
 
             try {
-                // Фикс №2: Передаем корректный заголовок авторизации для Edge-функций
-                const response = await fetch(`${SB_URL}/functions/v1/check-subscription`, {
+                // ЖЕСТКИЙ АДРЕС ТВОЕЙ ФУНКЦИИ БЕЗ ПЕРЕМЕННЫХ
+                const targetUrl = "https://bajufluzgcguxconhxuj.supabase.co/functions/v1/check-subscription";
+                
+                console.log("Отправляем запрос на:", targetUrl); // Для отладки в консоли
+
+                const response = await fetch(targetUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -241,10 +245,9 @@ const TASKS = [
                     })
                 });
 
-                // Если сервер упал с жесткой ошибкой, перехватываем её до JSON-парсинга
                 if (!response.ok) {
                     const errText = await response.text();
-                    throw new Error(errText || "Ошибка сервера");
+                    throw new Error(errText || `Ошибка сервера: ${response.status}`);
                 }
 
                 const result = await response.json();
@@ -269,15 +272,15 @@ const TASKS = [
                     } else if (result.reason === 'already_done') {
                         alert("Это задание уже было выполнено ранее.");
                     } else {
-                        alert("Ошибка: " + (result.error || "Не удалось проверить подписку"));
+                        alert("Ошибка верификации: " + (result.error || "Не удалось проверить подписку"));
                     }
                     
                     btn.disabled = false;
                     btn.innerText = "Проверить";
                 }
             } catch (err) {
-                console.error("Ошибка верификации:", err);
-                alert("Ошибка верификации! Убедись, что твой аккаунт создан в БД, а бот добавлен в админы канала.");
+                console.error("Критическая ошибка fetch:", err);
+                alert("Ошибка соединения с сервером Supabase. Проверь консоль браузера.");
                 btn.disabled = false;
                 btn.innerText = "Проверить";
             }
