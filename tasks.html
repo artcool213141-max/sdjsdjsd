@@ -216,7 +216,7 @@
             btn.setAttribute("onclick", `verifyTask('${id}', ${reward})`);
         }
 
-        async function verifyTask(id, reward) {
+async function verifyTask(id, reward) {
             const btn = document.getElementById(`btn-${id}`);
             btn.disabled = true;
             btn.innerText = "Проверяем...";
@@ -224,7 +224,8 @@
             const currentTask = TASKS.find(t => t.id === id);
 
             try {
-                const targetUrl = "https://bajufluzgcguxconhxuj.supabase.co/functions/v1/check-subscription";
+                // ПОДСТАВИЛ ТВОЮ РЕАЛЬНУЮ ССЫЛКУ НА ФУНКЦИЮ:
+                const targetUrl = "https://bajufluzgcguxconhxuj.supabase.co/functions/v1/clever-service";
 
                 const response = await fetch(targetUrl, {
                     method: 'POST',
