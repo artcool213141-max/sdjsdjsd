@@ -109,6 +109,19 @@ async def get_ref_stats(user_id: str):
     except Exception as e:
         return {"error": str(e), "ref_count": 0, "ref_earned": 0}
 
+# 5. ПОЛУЧЕНИЕ СПИСКА ВЫПОЛНЕННЫХ ЗАДАНИЙ
+@app.get("/get_completed_tasks/{user_id}")
+async def get_completed_tasks(user_id: str):
+    try:
+        result = supabase.table("tasks_completed") \
+            .select("task_id") \
+            .eq("user_id", user_id) \
+            .execute()
+        # Возвращаем массив ID выполненных заданий
+        return {"completed": [row["task_id"] for row in result.data]}
+    except Exception as e:
+        return {"completed": []}
+
 
 # 4. АКТИВАЦИЯ ПРОМОКОДОВ
 @app.post("/activate_promo")
