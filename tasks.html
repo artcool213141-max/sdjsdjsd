@@ -338,8 +338,11 @@
             const listEl = document.getElementById('tasks-list');
             listEl.innerHTML = "";
 
-            // Фильтруем пул: исключаем выполненные в бд и пропущенные в текущей сессии
-            const activeTasks = TASKS.filter(task => !completedTaskIds.includes(task.id) && !skippedTaskIds.includes(task.id));
+// Внутри функции renderTasks, убедись, что фильтр выглядит так:
+const activeTasks = TASKS.filter(task => 
+    !completedTaskIds.includes(task.id) && 
+    !skippedTaskIds.includes(task.id)
+);
 
             // Заглушка, если заданий больше нет
             if (activeTasks.length === 0) {
@@ -404,71 +407,44 @@
             renderTasks(); // Карта обновится, подтянется следующее задание
         }
 
-        // Верификация подписки через Edge Function
-        async function verifyTask(id, reward) {
-            const btn = document.getElementById(`btn-${id}`);
-            btn.disabled = true;
-            btn.innerText = "ЧЕК...";
+async function verifyTask(id, reward) {
+    const btn = document.getElementById(`btn-${id}`);
+    
+    // Блокируем кнопку намертво
+    btn.disabled = true;
+    btn.style.opacity = "0.4";
+    btn.innerText = "ПРОВЕРКА...";
 
-            const currentTask = TASKS.find(t => t.id === id);
+    const currentTask = TASKS.find(t => t.id === id);
 
-            try {
-                const targetUrl = "https://bajufluzgcguxconhxuj.supabase.co/functions/v1/clever-service";
+    try {
+        const response = await fetch("https://bajufluzgcguxconhxuj.supabase.co/functions/v1/clever-service", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, taskId: id, channelChatId: currentTask.channel, reward: reward })
+        });
 
-                const response = await fetch(targetUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SB_KEY}`
-                    },
-                    body: JSON.stringify({
-                        userId: user.id,
-                        taskId: id,
-                        channelChatId: currentTask.channel,
-                        reward: reward
-                    })
-                });
+        const result = await response.json();
 
-                if (!response.ok) {
-                    const errText = await response.text();
-                    throw new Error(errText || `Ошибка сервера: ${response.status}`);
-                }
-
-                const result = await response.json();
-
-                if (result.success) {
-                    user.balance = result.newBalance;
-                    completedTaskIds.push(id);
-                    
-                    document.getElementById('val-stars').innerText = result.newBalance.toFixed(2);
-
-                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-
-                    document.getElementById('reward-text').innerText = `+${Number(reward).toFixed(2)} ★`;
-                    document.getElementById('success-modal').style.display = 'flex';
-                    
-                    renderTasks(); 
-                } else {
-                    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-                    
-                    if (result.reason === 'not_member') {
-                        alert("Вы не подписались на канал спонсора!");
-                    } else if (result.reason === 'already_done') {
-                        alert("Это задание уже было выполнено ранее.");
-                    } else {
-                        alert("Ошибка верификации: " + (result.error || "Не удалось проверить подписку"));
-                    }
-                    
-                    btn.disabled = false;
-                    btn.innerText = "Проверить";
-                }
-            } catch (err) {
-                console.error("Критическая ошибка fetch:", err);
-                alert("Ошибка соединения с сервером верификации.");
-                btn.disabled = false;
-                btn.innerText = "Проверить";
-            }
+        if (result.success) {
+            completedTaskIds.push(id); // Локально добавляем в список, чтобы задание скрылось
+            document.getElementById('reward-text').innerText = `+${Number(reward).toFixed(2)} ★`;
+            document.getElementById('success-modal').style.display = 'flex';
+            renderTasks(); // Перерисовываем список, кнопка исчезнет
+        } else {
+            // Если сервер вернул 'already_done', значит юзер пытался обмануть систему
+            alert(result.reason === 'already_done' ? "Задание уже выполнено!" : "Ошибка: " + result.reason);
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            btn.innerText = "Проверить";
         }
+    } catch (err) {
+        alert("Ошибка сети!");
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.innerText = "Проверить";
+    }
+}
 
         function closeModal() {
             document.getElementById('success-modal').style.display = 'none';
