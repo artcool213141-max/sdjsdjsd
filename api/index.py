@@ -37,50 +37,37 @@ async def get_balance(user_id: str, username: str = "Unknown", start_param: str 
         # Проверяем, есть ли юзер в базе
         result = supabase.table("users").select("balance").eq("id", user_id).execute()
         
-        # Если юзер УЖЕ СУЩЕСТВУЕТ, просто отдаем его баланс
+        # Если юзер уже есть
         if result.data and len(result.data) > 0:
             return {"balance": result.data[0]["balance"]}
         
-        # ЕСЛИ ЮЗЕР НОВЫЙ (Первый раз открыл Mini App)
-        else:
-            # Создаем нового пользователя с базовыми реферными счетчиками на 0
-            new_user = {
-                "id": user_id, 
-                "balance": 0, 
-                "username": username,
-                "ref_count": 0,
-                "ref_earned": 0
-            }
-            supabase.table("users").insert(new_user).execute()
+        # ЕСЛИ ЮЗЕР НОВЫЙ
+        new_user = {"id": user_id, "balance": 0, "username": username, "ref_count": 0, "ref_earned": 0}
+        supabase.table("users").insert(new_user).execute()
+        
+        # Реферальная логика
+        if start_param and start_param != user_id:
+            check_ref = supabase.table("referrals").select("invited_id").eq("invited_id", user_id).execute()
             
-            # Если он пришел по чьей-то реф-ссылке (start_param — это ID пригласившего)
-            if start_param and start_param != user_id:
+            if not check_ref.data: 
                 try:
-                    # Ищем того, кто пригласил
-                    referrer = supabase.table("users").select("balance", "ref_count", "ref_earned").eq("id", start_param).execute()
+                    # Записываем факт приглашения
+                    supabase.table("referrals").insert({"invited_id": user_id, "referrer_id": start_param}).execute()
                     
-                    if referrer.data and len(referrer.data) > 0:
+                    # Начисляем бонус пригласившему
+                    referrer = supabase.table("users").select("balance", "ref_count", "ref_earned").eq("id", start_param).execute()
+                    if referrer.data:
                         ref_user = referrer.data[0]
-                        
-                        # ТВОЯ НАСТРОЙКА: 3 звезды за одного реферала
-                        bonus = 3  
-                        
-                        # Высчитываем новые значения для пригласившего
-                        current_balance = ref_user.get("balance", 0)
-                        current_ref_count = ref_user.get("ref_count", 0) if ref_user.get("ref_count") is not None else 0
-                        current_ref_earned = ref_user.get("ref_earned", 0) if ref_user.get("ref_earned") is not None else 0
-                        
-                        # Начисляем 3 звезды и прибавляем +1 к счетчику рефералов в базе
+                        bonus = 3
                         supabase.table("users").update({
-                            "balance": current_balance + bonus,
-                            "ref_count": current_ref_count + 1,
-                            "ref_earned": current_ref_earned + bonus
+                            "balance": ref_user["balance"] + bonus,
+                            "ref_count": ref_user.get("ref_count", 0) + 1,
+                            "ref_earned": ref_user.get("ref_earned", 0) + bonus
                         }).eq("id", start_param).execute()
-                        
                 except Exception as ref_err:
                     print(f"Ошибка начисления реф-бонуса: {ref_err}")
-            
-            return {"balance": 0}
+        
+        return {"balance": 0}
             
     except Exception as e:
         return {"error": str(e), "balance": 0}
