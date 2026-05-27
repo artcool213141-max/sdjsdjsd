@@ -210,6 +210,27 @@ async function syncData() {
     }
 }
 
+async function completeTask(taskId, rewardAmount) {
+    const res = await fetch(`${BACKEND_URL}/complete_task`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            user_id: String(user.id), 
+            task_id: taskId, 
+            reward: rewardAmount 
+        })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+        tg.showAlert(`🎉 Задание выполнено! +${rewardAmount} звезд.`);
+        document.getElementById('bal-stars').innerText = data.new_balance;
+    } else {
+        tg.showAlert(`❌ ${data.detail || "Ошибка"}`);
+    }
+}
+
 window.onload = () => {
     tg.expand();
     tg.ready();
