@@ -145,3 +145,41 @@ async def activate_promo(req: PromoRequest):
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка сервера: {str(e)}")
+
+# Модель для задания
+class TaskRequest(BaseModel):
+    user_id: str
+    task_id: str
+    reward: int
+
+@app.post("/complete_task")
+async def complete_task(req: TaskRequest):
+    try:
+        # 1. Проверяем, не выполнял ли юзер это задание раньше
+        check = supabase.table("tasks_completed")\
+            .select("id")\
+            .eq("user_id", req.user_id)\
+            .eq("task_id", req.task_id)\
+            .execute()
+        
+        if check.data:
+            raise HTTPException(status_code=400, detail="Задание уже выполнено!")
+
+        # 2. Если не выполнял — записываем в базу выполненных
+        supabase.table("tasks_completed").insert({
+            "user_id": req.user_id, 
+            "task_id": req.task_id
+        }).execute()
+
+        # 3. Начисляем баллы
+        user = supabase.table("users").select("balance").eq("id", req.user_id).execute()
+        new_balance = user.data[0]["balance"] + req.reward
+        
+        supabase.table("users").update({"balance": new_balance}).eq("id", req.user_id).execute()
+
+        return {"success": True, "new_balance": new_balance}
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
