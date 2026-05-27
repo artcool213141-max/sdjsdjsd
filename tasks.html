@@ -49,9 +49,10 @@
             gap: 16px;
             scrollbar-width: none;
         }
-        .tasks-container::-webkit-scrollbar { 
-            display: none; 
-        }
+.tasks-container {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* Плавная прокрутка на iOS */
+}
 
         /* Главная вертикальная карточка задания */
         .task-card {
@@ -333,62 +334,58 @@
             }
         }
 
-        // Отрисовка очереди квестов
-        function renderTasks() {
-            const listEl = document.getElementById('tasks-list');
-            listEl.innerHTML = "";
+// Отрисовка очереди квестов
+function renderTasks() {
+    const listEl = document.getElementById('tasks-list');
+    listEl.innerHTML = "";
 
-// Внутри функции renderTasks, убедись, что фильтр выглядит так:
-const activeTasks = TASKS.filter(task => 
-    !completedTaskIds.includes(task.id) && 
-    !skippedTaskIds.includes(task.id)
-);
+    // 1. Фильтруем только активные задания
+    const activeTasks = TASKS.filter(task => 
+        !completedTaskIds.includes(task.id) && 
+        !skippedTaskIds.includes(task.id)
+    );
 
-            // Заглушка, если заданий больше нет
-            if (activeTasks.length === 0) {
-                listEl.innerHTML = `
-                    <div class="flex flex-col items-center justify-center text-center p-8 bg-white/5 border border-white/5 rounded-[28px] mt-6 shadow-inner animate-fade-in">
-                        <div class="text-5xl mb-4">⏳</div>
-                        <h3 class="text-sm font-black text-gray-300 uppercase tracking-wider">Все задания выполнены!</h3>
-                        <p class="text-[11px] text-gray-500 mt-2 max-w-[220px] leading-relaxed">
-                            Новые задания обновляются каждые 15 минут. Гааааз, возвращайся позже!
-                        </p>
-                    </div>
-                `;
-                return;
-            }
+    // 2. Если заданий нет — показываем сообщение
+    if (activeTasks.length === 0) {
+        listEl.innerHTML = `
+            <div class="flex flex-col items-center justify-center text-center p-8 bg-white/5 border border-white/5 rounded-[28px] mt-6 shadow-inner">
+                <div class="text-5xl mb-4">⏳</div>
+                <h3 class="text-sm font-black text-gray-300 uppercase tracking-wider">Все задания выполнены!</h3>
+            </div>
+        `;
+        return;
+    }
 
-            // Показываем ровно ОДНО задание из начала очереди
-            const task = activeTasks[0];
+    // 3. Рендерим ВСЕ активные задания циклом
+    activeTasks.forEach(task => {
+        const iconUrl = `imgtsk/${getRandomLogo()}`;
 
-            // Генерируем абсолютно рандомное имя файла логотипа из нашего списка картинок
-            const randomImageName = getRandomLogo();
-            const iconUrl = `imgtsk/${randomImageName}`;
-
-            const card = document.createElement('div');
-            card.className = "task-card";
-            
-            card.innerHTML = `
-                <div>
-                    <h3 class="text-base font-black tracking-tight text-white/90">${task.title}</h3>
-                    <p class="text-xs text-gray-400 mt-1 max-w-[260px] mx-auto">${task.desc_text || 'Без описания квеста'}</p>
-                    <p class="text-xs text-green-400 font-black mt-2 bg-green-500/10 px-3 py-1 rounded-full inline-block">
+        const card = document.createElement('div');
+        card.className = "task-card";
+        
+        card.innerHTML = `
+            <div class="flex items-center w-full gap-4">
+                <div class="task-icon-wrap !w-14 !h-14 shrink-0">
+                    <img src="${iconUrl}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
+                </div>
+                <div class="flex-grow text-left">
+                    <h3 class="text-sm font-black text-white/90">${task.title}</h3>
+                    <p class="text-[11px] text-gray-400 mt-0.5">${task.desc_text || 'Выполни квест'}</p>
+                    <p class="text-[10px] text-green-400 font-bold mt-1 bg-green-500/10 px-2 py-0.5 rounded-md inline-block">
                         +${Number(task.reward).toFixed(2)} ★
                     </p>
                 </div>
-
-                <div class="task-icon-wrap">
-                    <img src="${iconUrl}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
-                </div>
-
-                <div class="btn-row">
-                    <button onclick="goToLink('${task.link}')" class="btn-action btn-go">Перейти</button>
-                    <button id="btn-${task.id}" onclick="verifyTask('${task.id}', ${task.reward})" class="btn-action btn-verify">Проверить</button>
-                    <button onclick="skipTask('${task.id}')" class="btn-action btn-skip">Пропустить</button>
-                </div>
-            `;
-            listEl.appendChild(card);
-        }
+            </div>
+            
+            <div class="btn-row">
+                <button onclick="goToLink('${task.link}')" class="btn-action btn-go">Перейти</button>
+                <button id="btn-${task.id}" onclick="verifyTask('${task.id}', ${task.reward})" class="btn-action btn-verify">Проверить</button>
+                <button onclick="skipTask('${task.id}')" class="btn-action btn-skip">Пропустить</button>
+            </div>
+        `;
+        listEl.appendChild(card);
+    });
+}
 
         // Переход по ссылке спонсора
         function goToLink(link) {
