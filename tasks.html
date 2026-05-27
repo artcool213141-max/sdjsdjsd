@@ -406,55 +406,37 @@ function renderTasks() {
 
 async function verifyTask(id, reward) {
     const btn = document.getElementById(`btn-${id}`);
-    
-    // Блокируем кнопку
     btn.disabled = true;
-    btn.style.opacity = "0.4";
     btn.innerText = "ПРОВЕРКА...";
-
-    const currentTask = TASKS.find(t => t.id === id);
 
     try {
         const response = await fetch("https://bajufluzgcguxconhxuj.supabase.co/functions/v1/clever-service", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                userId: user.id, 
-                taskId: id, 
-                channelChatId: currentTask?.channel, 
-                reward: reward 
-            })
+            body: JSON.stringify({ userId: user.id, taskId: id, channelChatId: currentTask.channel, reward: reward })
         });
 
-        // Пытаемся распарсить JSON, если придет не JSON — сработает catch
-        const result = await response.json().catch(() => ({}));
+        const result = await response.json();
+        console.log("ОТВЕТ СЕРВЕРА:", result); // <-- ГЛЯНЬ ЭТО В КОНСОЛИ (F12)
 
         if (result.success) {
+            // Задание выполнено, скрываем его локально
             completedTaskIds.push(id);
-            document.getElementById('reward-text').innerText = `+${Number(reward).toFixed(2)} ★`;
-            document.getElementById('success-modal').style.display = 'flex';
-            renderTasks(); 
+            renderTasks();
+            alert("Задание выполнено!");
+        } else if (result.reason === 'already_done') {
+            completedTaskIds.push(id);
+            renderTasks();
+            alert("Задание уже было выполнено ранее.");
         } else {
-            // Безопасное получение причины ошибки
-            const reason = result.reason || "unknown";
-
-            if (reason === 'already_done') {
-                // Если задание уже выполнено — просто убираем его из списка
-                if (!completedTaskIds.includes(id)) completedTaskIds.push(id);
-                renderTasks();
-            } else {
-                alert("Ошибка: " + (result.reason || "Неизвестная ошибка сервера"));
-                btn.disabled = false;
-                btn.style.opacity = "1";
-                btn.innerText = "Проверить";
-            }
+            alert("Ошибка: " + (result.reason || "Неизвестная ошибка"));
+            btn.disabled = false;
+            btn.innerText = "Проверить";
         }
     } catch (err) {
-        console.error("Ошибка при проверке:", err);
-        alert("Ошибка связи с сервером. Попробуйте позже.");
+        console.error(err);
+        alert("Ошибка сети!");
         btn.disabled = false;
-        btn.style.opacity = "1";
-        btn.innerText = "Проверить";
     }
 }
 
