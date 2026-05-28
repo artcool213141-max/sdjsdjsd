@@ -212,17 +212,26 @@ async def complete_task(req: TaskRequest):
         if check.data:
             raise HTTPException(status_code=400, detail="Задание уже выполнено!")
 
-        # 2. Если не выполнял — записываем в базу выполненных
+        # 2. Получаем текущие данные пользователя для расчета
+        user_res = supabase.table("users").select("balance", "tasks_completed").eq("id", req.user_id).execute()
+        if not user_res.data:
+            raise HTTPException(status_code=404, detail="Пользователь не найден")
+        
+        current_user = user_res.data[0]
+        new_balance = current_user["balance"] + req.reward
+        new_tasks_count = current_user.get("tasks_completed", 0) + 1
+
+        # 3. Записываем выполнение задания
         supabase.table("tasks_completed").insert({
             "user_id": req.user_id, 
             "task_id": req.task_id
         }).execute()
 
-        # 3. Начисляем баллы
-        user = supabase.table("users").select("balance").eq("id", req.user_id).execute()
-        new_balance = user.data[0]["balance"] + req.reward
-        
-        supabase.table("users").update({"balance": new_balance}).eq("id", req.user_id).execute()
+        # 4. Обновляем баланс и счетчик заданий у юзера
+        supabase.table("users").update({
+            "balance": new_balance,
+            "tasks_completed": new_tasks_count
+        }).eq("id", req.user_id).execute()
 
         return {"success": True, "new_balance": new_balance}
 
