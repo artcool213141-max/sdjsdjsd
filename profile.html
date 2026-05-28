@@ -280,34 +280,28 @@
     }
 
 async function fetchBalance() {
-        if (!user) return 0;
-        try {
-            // ВРЕМЕННЫЙ ТЕСТОВЫЙ АЛЕРТ: покажет, что видит фронтенд
-            if (startParam) {
-                tg.showAlert(`DEBUG: Обнаружен реферал! start_param = ${startParam}`);
-            } else {
-                tg.showAlert("DEBUG: Телеграм НЕ передал start_param. Он пустой.");
-            }
-
-            // Формируем URL для бэкенда
-            let url = `${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(user.username || user.first_name || 'Unknown')}`;
-            
-            if (startParam) {
-                url += `&start_param=${encodeURIComponent(startParam)}`;
-            }
-
-            const res = await fetch(url);
-            const data = await res.json();
-            const bal = data.balance || 0;
-            document.getElementById('p-balance').innerText = bal;
-            return bal;
-        } catch (e) {
-            console.error("Ошибка баланса:", e);
-            // Если упадет сетевая ошибка, тоже выведем на экран для дебага
-            tg.showAlert("Ошибка запроса к бэкенду: " + e.message);
-            return 0;
+    if (!user) return 0;
+    try {
+        // УДАЛЕНО: Блок tg.showAlert, который выводил дебаг
+        
+        // Формируем URL для бэкенда
+        let url = `${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(user.username || user.first_name || 'Unknown')}`;
+        
+        if (startParam) {
+            url += `&start_param=${encodeURIComponent(startParam)}`;
         }
+
+        const res = await fetch(url);
+        const data = await res.json();
+        const bal = data.balance || 0;
+        document.getElementById('p-balance').innerText = bal;
+        return bal;
+    } catch (e) {
+        console.error("Ошибка баланса:", e);
+        // УДАЛЕНО: Ошибочный алерт, который мешал
+        return 0;
     }
+}
 
     async function fetchRefStats() {
         if (!user) return;
