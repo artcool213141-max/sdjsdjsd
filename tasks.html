@@ -410,23 +410,26 @@ const activeTasks = TASKS.filter(task =>
 async function verifyTask(id, reward, channel) {
     const btn = document.getElementById(`btn-${id}`);
     btn.disabled = true;
-    btn.style.opacity = "0.4";
-    btn.innerText = "ПРОВЕРКА...";
-
+    
+    // Используем SB_KEY (anon key), который у вас уже есть в начале кода
     try {
         const response = await fetch("https://bajufluzgcguxconhxuj.supabase.co/functions/v1/clever-service", {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SB_KEY}` // ДОБАВИТЬ ЭТУ СТРОКУ
+            },
             body: JSON.stringify({ 
                 userId: user.id, 
                 taskId: id, 
-                channelChatId: channel, // Используем аргумент, который пришел из кнопки
+                channelChatId: channel, 
                 reward: reward 
             })
         });
-
+        
         const result = await response.json();
-
+        // ... (остальной код)
+        
         if (result.success) {
             completedTaskIds.push(id); // Локально добавляем в список, чтобы задание скрылось
             document.getElementById('reward-text').innerText = `+${Number(reward).toFixed(2)} ★`;
