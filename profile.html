@@ -6,126 +6,140 @@
     <title>Profile - FixStars</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
-        
-        :root { 
-            --bg-dark: #050a05; 
-            --accent-green: #22c55e; 
-            --deep-green: #14532d; 
-            --glow-green: rgba(34, 197, 94, 0.2); 
-        }
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+    
+    :root { 
+        --bg-dark: #050a05; 
+        --accent-green: #22c55e; 
+        --deep-green: #14532d; 
+        --glow-green: rgba(34, 197, 94, 0.2); 
+    }
 
-        body { 
-            background-color: var(--bg-dark); 
-            color: white; 
-            font-family: 'Inter', sans-serif; 
-            margin: 0; 
-            min-height: 100vh;
-            width: 100vw;
-            overflow-x: hidden;
-            user-select: none; 
-            -webkit-tap-highlight-color: transparent; 
-        }
+    body { 
+        background-color: var(--bg-dark); 
+        color: white; 
+        font-family: 'Inter', sans-serif; 
+        margin: 0; 
+        min-height: 100vh;
+        width: 100vw;
+        overflow-x: hidden;
+        user-select: none; 
+        -webkit-tap-highlight-color: transparent; 
+    }
 
-        .main-wrapper { 
-            background: radial-gradient(circle at 50% 10%, #064e3b 0%, #050a05 60%); 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            position: relative; 
-            z-index: 1; 
-        }
+    .main-wrapper { 
+        background: radial-gradient(circle at 50% 10%, #064e3b 0%, #050a05 60%); 
+        min-height: 100vh; 
+        display: flex; 
+        flex-direction: column; 
+        position: relative; 
+        z-index: 1; 
+    }
 
-        .scrollable-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 24px 20px 120px 20px;
-        }
+    .scrollable-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px 20px 120px 20px;
+    }
 
-        .profile-card {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            border-radius: 30px;
-            padding: 30px 20px;
-            text-align: center;
-            backdrop-filter: blur(10px);
-            margin-bottom: 20px;
-        }
+    .profile-card {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(34, 197, 94, 0.2);
+        border-radius: 30px;
+        padding: 30px 20px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        margin-bottom: 20px;
+    }
 
-        .avatar-main {
-            width: 100px;
-            height: 100px;
-            border-radius: 35px;
-            border: 3px solid var(--accent-green);
-            margin: 0 auto 15px;
-            box-shadow: 0 0 20px var(--glow-green);
-            object-fit: cover;
-        }
+    .avatar-main {
+        width: 100px;
+        height: 100px;
+        border-radius: 35px;
+        border: 3px solid var(--accent-green);
+        margin: 0 auto 15px;
+        box-shadow: 0 0 20px var(--glow-green);
+        object-fit: cover;
+    }
 
-        .ref-box, .promo-box {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 20px;
-            padding: 15px;
-            margin-top: 15px;
-        }
+    .ref-box, .promo-box {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 20px;
+        padding: 15px;
+        margin-top: 15px;
+    }
 
-        .ref-link-input {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px dashed var(--accent-green);
-            color: var(--accent-green);
-            padding: 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            word-break: break-all;
-            margin-bottom: 15px;
-        }
+    .ref-link-input {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px dashed var(--accent-green);
+        color: var(--accent-green);
+        padding: 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        word-break: break-all;
+        margin-bottom: 15px;
+    }
 
-        .gifts-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 20px;
-        }
+    .gifts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px; 
+        margin-top: 20px;
+    }
 
-        .gift-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-            border: 1px solid rgba(34, 197, 94, 0.15);
-            border-radius: 24px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            transition: all 0.2s;
-        }
-        
-        .gift-card:active { transform: scale(0.95); background: rgba(34, 197, 94, 0.1); }
+    .gift-card {
+        background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
+        border: 1px solid rgba(34, 197, 94, 0.15);
+        border-radius: 24px;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        justify-content: space-between;
+    }
 
-        .gift-img {
-            width: 60px;
-            height: 60px;
-            margin-bottom: 8px;
-            filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.3));
-        }
+    .gift-img {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 8px;
+        filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.3));
+    }
 
-        .gift-name { font-weight: 800; text-transform: uppercase; font-size: 13px; margin-bottom: 4px; }
-        
-        .price-tag {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            color: var(--accent-green);
-            font-weight: 900;
-            font-size: 14px;
-        }
+    .gift-name { font-weight: 800; text-transform: uppercase; font-size: 13px; margin-bottom: 4px; }
+    
+    .price-tag {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        color: var(--accent-green);
+        font-weight: 900;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
 
-        .price-tag img { width: 14px; height: 14px; }
+    .price-tag img { width: 14px; height: 14px; }
 
-        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(5, 10, 5, 0.96); border-top: 1px solid rgba(34, 197, 94, 0.2); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; backdrop-filter: blur(25px); height: 95px; }
-        .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #4b5563; flex: 1; }
-        .dock-btn.active { color: var(--accent-green); filter: drop-shadow(0 0 8px var(--accent-green)); }
-    </style>
+    /* Стиль для кнопки внутри карточки */
+    .btn-withdraw {
+        width: 100%;
+        padding: 8px;
+        background: var(--accent-green);
+        color: black;
+        font-weight: 900;
+        font-size: 11px;
+        text-transform: uppercase;
+        border-radius: 12px;
+        transition: all 0.2s;
+    }
+    .btn-withdraw:active { transform: scale(0.95); opacity: 0.8; }
+
+    .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(5, 10, 5, 0.96); border-top: 1px solid rgba(34, 197, 94, 0.2); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; backdrop-filter: blur(25px); height: 95px; }
+    .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #4b5563; flex: 1; }
+    .dock-btn.active { color: var(--accent-green); filter: drop-shadow(0 0 8px var(--accent-green)); }
+</style>
 </head>
 <body>
 
@@ -176,12 +190,12 @@
 
             <div class="h-[1px] w-full bg-white/5 mb-8"></div>
 
-            <div class="gifts-grid">
-                <div class="gift-card" onclick="buyGift('Сердечко', 15)">
-                    <img src="img/cccccerce.png" class="gift-img" alt="G">
-                    <div class="gift-name">Сердечко</div>
-                    <div class="price-tag">15 <img src="star.png"></div>
-                </div>
+<div class="gift-card">
+    <img src="img/cccccerce.png" class="gift-img">
+    <div class="gift-name">Сердечко</div>
+    <div class="price-tag">15 <img src="star.png"></div>
+    <button class="btn-withdraw" onclick="buyGift('Сердечко', 15)">Вывести</button>
+</div>
 
                 <div class="gift-card" onclick="buyGift('Мишка', 15)">
                     <img src="img/mixail.png" class="gift-img" alt="G">
