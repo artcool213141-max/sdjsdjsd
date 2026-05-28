@@ -72,6 +72,40 @@ async def get_balance(user_id: str, username: str = "Unknown", start_param: str 
     except Exception as e:
         return {"error": str(e), "balance": 0}
 
+# 6. ПРОВЕРКА РЕФЕРАЛЬНОГО БОНУСА
+@app.get("/check_referral_bonus/{user_id}")
+async def check_referral_bonus(user_id: str):
+    try:
+        # 1. Находим всех, кого пригласил этот пользователь
+        refs = supabase.table("referrals") \
+            .select("invited_id") \
+            .eq("referrer_id", user_id) \
+            .execute()
+        
+        invited_ids = [r["invited_id"] for r in refs.data]
+        
+        if not invited_ids:
+            return {"qualified_refs": 0}
+
+        # 2. Считаем, сколько из них выполнили 10+ заданий
+        # ВАЖНО: Предполагаем, что у вас в таблице users есть колонка tasks_completed
+        qualified = supabase.table("users") \
+            .select("id") \
+            .in_("id", invited_ids) \
+            .gte("tasks_completed", 10) \
+            .execute()
+        
+        count = len(qualified.data)
+        
+        # 3. (Опционально) Если вы хотите, чтобы при нажатии 
+        # бонус начислялся автоматически один раз:
+        # Тут можно добавить логику проверки, получал ли юзер бонус за это ранее
+        
+        return {"qualified_refs": count}
+        
+    except Exception as e:
+        return {"error": str(e), "qualified_refs": 0}
+
 
 # 2. СПИСАНИЕ ПРИ ПОКУПКЕ ПОДАРКА
 @app.post("/update_balance")
