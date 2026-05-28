@@ -352,49 +352,98 @@ async function fetchBalance() {
         }
     }
 
-    async function buyGift(name, price) {
-        const currentBalance = await fetchBalance();
+async function buyGift(name, price) {
+    // 1. Сначала проверяем условия (друзья и задания)
+    try {
+        const res = await fetch(`${BACKEND_URL}/check_referral_bonus/${user.id}`);
+        const data = await res.json();
+        
+        const taskRes = await fetch(`${BACKEND_URL}/get_completed_tasks/${user.id}`);
+        const taskData = await taskRes.json();
+        const taskCount = taskData.completed ? taskData.completed.length : 0;
 
-        if (currentBalance < price) {
-            tg.showAlert(`❌ Недостаточно звёзд!\nНужно: ${price}\nУ вас: ${currentBalance}`);
-            return;
+        const qualifiedRefs = data.qualified_refs || 0;
+
+        // Если условия не выполнены — показываем модалку и прерываем покупку
+        if (qualifiedRefs < 3 || taskCount < 10) {
+            let message = "⚠️ Недостаточно активности для заказа:\n\n";
+            message += qualifiedRefs < 3 ? `• Пригласить 3 друзей (сейчас: ${qualifiedRefs}/3)\n` : "✅ 3 друга приглашено!\n";
+            message += taskCount < 10 ? `• Выполнить 10 заданий (сейчас: ${taskCount}/10)` : "✅ 10 заданий выполнено!";
+            
+            tg.showAlert(message);
+            return; // Дальше код не идет
         }
+    } catch (e) {
+        tg.showAlert("Ошибка проверки условий. Попробуйте позже.");
+        return;
+    }
 
-        tg.showConfirm(`Вы хотите купить "${name}" за ${price} ⭐?`, async (confirmed) => {
-            if (confirmed) {
-                try {
-                    const res = await fetch(`${BACKEND_URL}/update_balance`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ user_id: String(user.id), amount: -price })
-                    });
+    // 2. Если условия выполнены, проверяем баланс
+    const currentBalance = await fetchBalance();
+    if (currentBalance < price) {
+        tg.showAlert(`❌ Недостаточно звёзд!\nНужно: ${price}\nУ вас: ${currentBalance}`);
+        return;
+    }
 
-                    if (res.ok) {
-                        await notifyAdmin(name, price);
-                        tg.showAlert(`✅ Покупка "${name}" успешна!\nАдмин уведомлен.`);
-                        fetchBalance();
-                    } else {
-                        tg.showAlert("Ой! Ошибка при списании баллов.");
-                    }
-                } catch (e) {
-                    tg.showAlert("Ошибка сети или сервера.");
+    // 3. Если всё ок, подтверждаем покупку
+    tg.showConfirm(`Вы хотите купить "${name}" за ${price} ⭐?`, async (confirmed) => {
+        if (confirmed) {
+            try {
+                const res = await fetch(`${BACKEND_URL}/update_balance`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: String(user.id), amount: -price })
+                });
+
+                if (res.ok) {
+                    await notifyAdmin(name, price);
+                    tg.showAlert(`✅ Покупка "${name}" успешна!\nАдмин скоро свяжется.`);
+                    fetchBalance();
+                } else {
+                    tg.showAlert("Ой! Ошибка при списании баллов.");
                 }
+            } catch (e) {
+                tg.showAlert("Ошибка сети или сервера.");
             }
-        });
-    }
-
-    async function notifyAdmin(giftName, price) {
-        const message = `🎁 НОВАЯ ПОКУПКА!\n\n👤 Юзер: ${user.first_name}\n🆔 ID: ${user.id}\n🏷 Подарок: ${giftName}\n💰 Списано: ${price} ⭐`;
-        try {
-            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: ADMIN_ID, text: message })
-            });
-        } catch (e) {
-            console.error("Ошибка отправки админу:", e);
         }
+    });
+}
+
+// Замените переменную ADMIN_ID на жестко заданную прямо в функции
+async function notifyAdmin(giftName, price) {
+    const ADMIN_ID = '8015661230'; // ID администратора
+    
+    // Формируем красивое сообщение для админа
+    const message = `
+🎁 **НОВАЯ ЗАЯВКА НА ВЫВОД**
+
+👤 **Пользователь:** ${user.first_name || 'Без имени'}
+🆔 **Telegram ID:** ${user.id}
+🔗 **Username:** @${user.username || 'отсутствует'}
+🏷 **Тип товара:** ${giftName}
+💰 **Стоимость:** ${price} ⭐
+
+Статус: **Ожидает проверки условий**
+`;
+
+    try {
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                chat_id: ADMIN_ID, 
+                text: message,
+                parse_mode: 'Markdown' // Добавили поддержку жирного шрифта
+            })
+        });
+
+        if (!response.ok) {
+            console.error("Ошибка при отправке админу, статус:", response.status);
+        }
+    } catch (e) {
+        console.error("Ошибка сети при отправке админу:", e);
     }
+}
 
     function copyRef() {
         const link = document.getElementById('ref-link').innerText;
