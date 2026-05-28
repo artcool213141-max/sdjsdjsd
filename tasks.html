@@ -312,7 +312,7 @@
                 document.getElementById('val-stars').innerText = Number(user.balance || 0).toFixed(2);
 
                 // 2. Вытаскиваем массив id выполненных квестов
-                let { data: doneTasks, error: taskErr } = await SB.from('completed_tasks').select('task_id').eq('user_id', userId);
+                let { data: doneTasks, error: taskErr } = await SB.from('tasks_completed').select('task_id').eq('user_id', userId);
                 if (!taskErr && doneTasks) {
                     completedTaskIds = doneTasks.map(t => t.task_id);
                 }
