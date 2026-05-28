@@ -440,11 +440,20 @@ async function notifyAdmin(giftName, price) {
     }
 }
 
-    function copyRef() {
-        const link = document.getElementById('ref-link').innerText;
-        const fullUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('Присоединяйся к FixStars! 🌟')}`;
-        tg.openTelegramLink(fullUrl);
-    }
+// Переменная для хранения ссылки
+function copyRef() {
+    // Открываем первую модалку
+    document.getElementById('invite-modal').classList.remove('hidden');
+}
+
+function nextInviteStep() {
+    // Закрываем модалку и открываем системное окно телеги
+    document.getElementById('invite-modal').classList.add('hidden');
+    
+    const link = document.getElementById('ref-link').innerText;
+    const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent('🌟 Забирай бонусы в FixStars! Переходи по ссылке:')}`;
+    tg.openTelegramLink(shareUrl);
+}
 
     window.onload = () => {
         tg.expand();
