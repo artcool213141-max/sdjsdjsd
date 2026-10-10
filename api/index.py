@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ТВОИ НОВЫЕ ДАННЫЕ SUPABASE
+# ТВОИ ДАННЫЕ SUPABASE
 SUPABASE_URL = "https://xbklrdpguqsuvqndcujb.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhia2xyZHBndXFzdXZxbmRjdWpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzQ0NzUsImV4cCI6MjEwNzIxMDQ3NX0.IeK3NGOTu_J1jDOd_XjHQUOySnkbFh4uThGCPeu-Wu4"
 
@@ -82,7 +82,7 @@ async def get_balance(user_id: str, username: str = "Unknown", start_param: str 
     except Exception as e:
         return {"error": str(e), "balance": 0}
 
-# 6. ПРОВЕРКА РЕФЕРАЛЬНОГО БОНУСА
+# 2. ПРОВЕРКА РЕФЕРАЛЬНОГО БОНУСА
 @app.get("/check_referral_bonus/{user_id}")
 async def check_referral_bonus(user_id: str):
     try:
@@ -108,7 +108,7 @@ async def check_referral_bonus(user_id: str):
     except Exception as e:
         return {"error": str(e), "qualified_refs": 0}
 
-# 2. СПИСАНИЕ ПРИ ПОКУПКЕ ПОДАРКА
+# 3. СПИСАНИЕ ПРИ ПОКУПКЕ ПОДАРКА
 @app.post("/update_balance")
 async def update_balance(request: UpdateBalanceRequest):
     try:
@@ -129,7 +129,7 @@ async def update_balance(request: UpdateBalanceRequest):
     except Exception as e:
         return {"error": str(e)}
 
-# 3. СТАТИСТИКА РЕФЕРАЛОВ ДЛЯ ПРОФИЛЯ
+# 4. СТАТИСТИКА РЕФЕРАЛОВ ДЛЯ ПРОФИЛЯ
 @app.get("/get_ref_stats/{user_id}")
 async def get_ref_stats(user_id: str):
     try:
@@ -155,7 +155,7 @@ async def get_completed_tasks(user_id: str):
     except Exception as e:
         return {"completed": []}
 
-# 4. АКТИВАЦИЯ ПРОМОКОДОВ
+# 6. АКТИВАЦИЯ ПРОМОКОДОВ
 @app.post("/activate_promo")
 async def activate_promo(req: PromoRequest):
     try:
