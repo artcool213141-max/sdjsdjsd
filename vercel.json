@@ -1,5 +1,6 @@
 {
+  "version": 2,
   "rewrites": [
-    { "source": "/get_balance/(.*)", "destination": "/api/index.py" }
+    { "source": "/(.*)", "destination": "/index.py" }
   ]
 }
