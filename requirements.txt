@@ -3,4 +3,5 @@ python-dotenv
 flask
 supabase
 fastapi
-
+httpx
+pydantic
