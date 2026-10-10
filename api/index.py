@@ -22,13 +22,19 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# Главная страница (автоматически отдает твой index.html из корня проекта)
+# Главная страница (безопасный поиск index.html для Vercel)
 @app.get("/", response_class=HTMLResponse)
 async def serve_home():
-    html_path = os.path.join(os.path.dirname(__file__), "..", "index.html")
-    if os.path.exists(html_path):
-        with open(html_path, "r", encoding="utf-8") as f:
-            return f.read()
+    possible_paths = [
+        "index.html",
+        "../index.html",
+        os.path.join(os.path.dirname(__file__), "..", "index.html"),
+        "/var/task/index.html"
+    ]
+    for path in possible_paths:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                return f.read()
     return "<h1>FixStars API is Running</h1>"
 
 # Модели для валидации запросов
@@ -44,27 +50,21 @@ class PromoRequest(BaseModel):
 @app.get("/get_balance/{user_id}")
 async def get_balance(user_id: str, username: str = "Unknown", start_param: str = None):
     try:
-        # Проверяем, есть ли юзер в базе
         result = supabase.table("users").select("balance").eq("id", user_id).execute()
         
-        # Если юзер уже есть
         if result.data and len(result.data) > 0:
             return {"balance": result.data[0]["balance"]}
         
-        # ЕСЛИ ЮЗЕР НОВЫЙ
         new_user = {"id": user_id, "balance": 0, "username": username, "ref_count": 0, "ref_earned": 0}
         supabase.table("users").insert(new_user).execute()
         
-        # Реферальная логика
         if start_param and start_param != user_id:
             check_ref = supabase.table("referrals").select("invited_id").eq("invited_id", user_id).execute()
             
             if not check_ref.data: 
                 try:
-                    # Записываем факт приглашения
                     supabase.table("referrals").insert({"invited_id": user_id, "referrer_id": start_param}).execute()
                     
-                    # Начисляем бонус пригласившему
                     referrer = supabase.table("users").select("balance", "ref_count", "ref_earned").eq("id", start_param).execute()
                     if referrer.data:
                         ref_user = referrer.data[0]
