@@ -13,7 +13,7 @@ except ImportError:
 router = APIRouter()
 
 BOTOHUB_TOKEN = os.environ.get("BOTOHUB_TOKEN", "")
-BH_REWARD = float(os.environ.get("BH_REWARD", "0.3"))   # сколько звёзд даём за задание BotoHub
+BH_REWARD = float(os.environ.get("BH_REWARD", "0.3"))
 
 
 class InitReq(BaseModel):
@@ -46,7 +46,6 @@ def ensure_user(user: dict):
 
 
 async def is_member(channel: str, user_id: int):
-    """True / False, либо None если бот не смог проверить (не админ в канале и т.п.)."""
     try:
         async with httpx.AsyncClient(timeout=10) as c:
             r = await c.get(
@@ -67,6 +66,11 @@ async def is_member(channel: str, user_id: int):
     except Exception as e:
         print("is_member exception:", repr(e))
         return None
+
+
+@router.get("/tasks/env_check")
+async def tasks_env_check():
+    return {"BOTOHUB_TOKEN": bool(BOTOHUB_TOKEN), "BH_REWARD": BH_REWARD}
 
 
 @router.post("/tasks/list")
@@ -148,7 +152,7 @@ async def bh_task(req: BhReq):
 
     rewarded = 0.0
     new_balance = None
-    if data.get("prev_success"):
+    if data.get("prev_success") and not skip:
         res = rpc("complete_task", {
             "p_user_id": uid,
             "p_task_id": "bh:" + (prev_link or uuid.uuid4().hex),
