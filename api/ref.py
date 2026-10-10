@@ -1,5 +1,3 @@
-# ref.py — бэкенд реферальной системы (FastAPI + Supabase)
-
 import os, hmac, hashlib, json, time
 from urllib.parse import parse_qsl
 
@@ -14,9 +12,16 @@ supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVIC
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 ADMIN_ID = os.environ["ADMIN_ID"]
 
+# Цены только на сервере, клиенту верить нельзя
+GIFTS = {
+    "Сердечко": 15, "Мишка": 15,
+    "Роза": 25, "Подарок": 25,
+    "Торт": 50, "Букет": 50, "Ракета": 50,
+    "Кубок": 100, "Кольцо": 100, "Бриллиант": 100,
+}
+
 
 def validate_init_data(init_data: str, max_age: int = 86400) -> dict:
-    """Проверяет подпись Telegram и возвращает user (с is_premium). Подделать нельзя."""
     data = dict(parse_qsl(init_data, keep_blank_values=True))
     received_hash = data.pop("hash", None)
     if not received_hash:
@@ -34,6 +39,14 @@ def validate_init_data(init_data: str, max_age: int = 86400) -> dict:
     return json.loads(data["user"])
 
 
+def rpc(name: str, params: dict):
+    try:
+        return supabase.rpc(name, params).execute().data
+    except Exception as e:
+        print(f"RPC {name} error:", repr(e))
+        raise HTTPException(500, f"db error: {str(e)[:200]}")
+
+
 class RefReq(BaseModel):
     init_data: str
     start_param: str | None = None
@@ -48,15 +61,18 @@ class ClaimReq(BaseModel):
     referral_id: int
 
 
-class NotifyReq(BaseModel):
+class PromoReq(BaseModel):
+    init_data: str
+    code: str
+
+
+class BuyReq(BaseModel):
     init_data: str
     gift_name: str
-    price: int
 
 
 @router.get("/ref_ping")
 async def ref_ping():
-    """Проверка: открой https://ТВОЙ-ДОМЕН/ref_ping — должно быть {"ok": true}."""
     try:
         supabase.rpc("get_ref_stats", {"p_user_id": "0"}).execute()
         return {"ok": True}
@@ -67,52 +83,67 @@ async def ref_ping():
 @router.post("/register_referral")
 async def register_referral(req: RefReq):
     user = validate_init_data(req.init_data)
-
     if not req.start_param or not req.start_param.isdigit():
         return {"success": False, "reason": "no_ref"}
 
-    res = supabase.rpc("register_referral", {
+    return rpc("register_referral", {
         "p_referred_id": int(user["id"]),
         "p_referrer_id": int(req.start_param),
         "p_is_premium": bool(user.get("is_premium", False)),
         "p_username": user.get("username") or user.get("first_name"),
-    }).execute()
-    return res.data
+    })
 
 
 @router.post("/get_referrals")
 async def get_referrals(req: InitReq):
     user = validate_init_data(req.init_data)
-    res = supabase.rpc("get_referral_list", {"p_user_id": str(user["id"])}).execute()
-    return res.data
+    return rpc("get_referral_list", {"p_user_id": str(user["id"])})
 
 
 @router.post("/claim_referral")
 async def claim_referral(req: ClaimReq):
     user = validate_init_data(req.init_data)
-    res = supabase.rpc("claim_referral", {
-        "p_user_id": str(user["id"]),
-        "p_ref_id": req.referral_id,
-    }).execute()
-    return res.data
+    return rpc("claim_referral", {"p_user_id": str(user["id"]), "p_ref_id": req.referral_id})
 
 
 @router.post("/claim_all_referrals")
 async def claim_all_referrals(req: InitReq):
     user = validate_init_data(req.init_data)
-    res = supabase.rpc("claim_all_referrals", {"p_user_id": str(user["id"])}).execute()
-    return res.data
+    return rpc("claim_all_referrals", {"p_user_id": str(user["id"])})
 
 
 @router.get("/get_ref_stats/{user_id}")
 async def get_ref_stats(user_id: int):
-    res = supabase.rpc("get_ref_stats", {"p_user_id": str(user_id)}).execute()
-    return res.data
+    return rpc("get_ref_stats", {"p_user_id": str(user_id)})
 
 
-@router.post("/notify_withdraw")
-async def notify_withdraw(req: NotifyReq):
+@router.post("/activate_promo")
+async def activate_promo(req: PromoReq):
     user = validate_init_data(req.init_data)
+    code = req.code.strip()
+    if not code:
+        raise HTTPException(400, "Введите промокод")
+
+    res = rpc("activate_promo", {"p_user_id": str(user["id"]), "p_code": code})
+    if not res.get("success"):
+        raise HTTPException(400, res.get("error") or "Не удалось активировать")
+    return res
+
+
+@router.post("/buy_gift")
+async def buy_gift(req: BuyReq):
+    user = validate_init_data(req.init_data)
+    price = GIFTS.get(req.gift_name)
+    if price is None:
+        raise HTTPException(400, "Неизвестный подарок")
+
+    res = rpc("buy_gift", {
+        "p_user_id": str(user["id"]),
+        "p_gift": req.gift_name,
+        "p_price": price,
+    })
+    if not res.get("success"):
+        return res
 
     text = (
         "🎁 НОВАЯ ЗАЯВКА НА ВЫВОД\n\n"
@@ -120,11 +151,16 @@ async def notify_withdraw(req: NotifyReq):
         f"🆔 Telegram ID: {user['id']}\n"
         f"🔗 Username: @{user.get('username') or 'отсутствует'}\n"
         f"🏷 Товар: {req.gift_name}\n"
-        f"💰 Стоимость: {req.price} ⭐"
+        f"💰 Стоимость: {price} ⭐"
     )
-    async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.post(
-            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-            json={"chat_id": ADMIN_ID, "text": text},
-        )
-    return {"success": r.status_code == 200}
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            await client.post(
+                f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+                json={"chat_id": ADMIN_ID, "text": text},
+            )
+    except Exception as e:
+        # заказ уже записан в gift_orders, админ увидит его в базе
+        print("notify admin error:", repr(e))
+
+    return res
