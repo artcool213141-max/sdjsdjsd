@@ -8,6 +8,14 @@
   ],
   "routes": [
     {
+      "src": "/img/(.*)",
+      "destination": "/img/$1"
+    },
+    {
+      "src": "/(.*)\\.(png|jpg|jpeg|gif|svg|ico|css|js)",
+      "destination": "/$1.$2"
+    },
+    {
       "src": "/(.*)",
       "destination": "/api/index.py"
     }
