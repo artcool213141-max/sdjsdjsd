@@ -5,8 +5,10 @@ from supabase import create_client, Client
 
 try:
     from ref import router as ref_router
+    from tasks import router as tasks_router
 except ImportError:
     from api.ref import router as ref_router
+    from api.tasks import router as tasks_router
 
 app = FastAPI()
 
@@ -19,6 +21,7 @@ app.add_middleware(
 )
 
 app.include_router(ref_router)
+app.include_router(tasks_router)
 
 _url = os.environ.get("SUPABASE_URL")
 _key = os.environ.get("SUPABASE_SERVICE_KEY")
@@ -64,15 +67,8 @@ async def get_completed_tasks(user_id: str):
 
 @app.post("/complete_task")
 async def complete_task(req: dict):
-    # ВРЕМЕННО: пока не вижу tasks.html. Просто записываем факт выполнения.
-    user_id = str(req.get("user_id", ""))
-    task_id = str(req.get("task_id", ""))
-    if supabase is not None and user_id and task_id:
-        try:
-            supabase.table("completed_tasks").upsert(
-                {"user_id": user_id, "task_id": task_id},
-                on_conflict="user_id,task_id",
-            ).execute()
-        except Exception as e:
-            print("complete_task error:", repr(e))
+    # ОТКЛЮЧЕНО: раньше писало в completed_tasks без всякой проверки, и любой мог
+    # накрутить себе задания. Теперь задания засчитывает только api/tasks.py
+    # (проверка подписки / BotoHub на сервере). Роут оставлен, чтобы старые
+    # страницы не получали 404.
     return {"success": True}
