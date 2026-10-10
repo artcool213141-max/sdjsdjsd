@@ -8,33 +8,33 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
-        
-        :root { 
-            --bg-dark: #050a05; 
-            --accent-green: #22c55e; 
-            --deep-green: #14532d; 
-            --glow-green: rgba(34, 197, 94, 0.2); 
+
+        :root {
+            --bg-dark: #050a05;
+            --accent-green: #22c55e;
+            --deep-green: #14532d;
+            --glow-green: rgba(34, 197, 94, 0.2);
         }
 
-        body { 
-            background-color: var(--bg-dark); 
-            color: white; 
-            font-family: 'Inter', sans-serif; 
-            margin: 0; 
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
             min-height: 100vh;
             width: 100vw;
             overflow-x: hidden;
-            user-select: none; 
-            -webkit-tap-highlight-color: transparent; 
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .main-wrapper { 
-            background: radial-gradient(circle at 50% 10%, #064e3b 0%, #050a05 60%); 
-            min-height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-            position: relative; 
-            z-index: 1; 
+        .main-wrapper {
+            background: radial-gradient(circle at 50% 10%, #064e3b 0%, #050a05 60%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
         }
 
         .scrollable-content {
@@ -81,6 +81,77 @@
             margin-bottom: 15px;
         }
 
+        /* Кнопка "кого засчитываем" */
+        .info-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid rgba(34, 197, 94, 0.5);
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--accent-green);
+            font-weight: 900;
+            font-size: 13px;
+            font-style: italic;
+            font-family: Georgia, serif;
+            box-shadow: 0 0 10px var(--glow-green);
+            transition: all 0.2s;
+        }
+        .info-btn:active { transform: scale(0.88); background: rgba(34, 197, 94, 0.25); }
+
+        /* Модалка */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+        .modal-card {
+            width: 100%;
+            max-width: 360px;
+            background: linear-gradient(160deg, #0b1f14 0%, #050a05 100%);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 28px;
+            padding: 24px 20px 20px;
+            box-shadow: 0 0 40px var(--glow-green);
+            transform: translateY(20px) scale(0.96);
+            transition: transform 0.25s;
+        }
+        .modal-overlay.open .modal-card { transform: translateY(0) scale(1); }
+
+        .rule-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 16px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+            text-align: left;
+        }
+        .rule-reward {
+            min-width: 52px;
+            text-align: center;
+            font-weight: 900;
+            font-size: 15px;
+            color: var(--accent-green);
+        }
+        .rule-reward.premium { color: #facc15; }
+        .rule-text { font-size: 12px; line-height: 1.35; color: #d1d5db; font-weight: 600; }
+        .rule-text b { color: white; }
+
         .gifts-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -98,9 +169,8 @@
             align-items: center;
             text-align: center;
             transition: all 0.2s;
-            
         }
-        
+
         .gift-card:active { transform: scale(0.95); background: rgba(34, 197, 94, 0.1); }
 
         .gift-img {
@@ -111,7 +181,7 @@
         }
 
         .gift-name { font-weight: 800; text-transform: uppercase; font-size: 13px; margin-bottom: 4px; }
-        
+
         .price-tag {
             display: flex;
             align-items: center;
@@ -132,16 +202,21 @@
 
     <div class="main-wrapper">
         <div class="scrollable-content">
-            
+
             <div class="profile-card">
                 <img id="p-avatar" src="" class="avatar-main shadow-2xl">
                 <h2 id="p-name" class="text-2xl font-black italic uppercase tracking-tight">Загрузка...</h2>
                 <p id="p-id" class="text-green-500 font-bold opacity-50 text-sm">ID: 00000000</p>
 
                 <div class="ref-box">
-                    <p class="text-[10px] font-black uppercase text-gray-400 mb-2">Твоя реферальная ссылка</p>
+                    <!-- Заголовок + кнопка справа -->
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-[10px] font-black uppercase text-gray-400">Твоя реферальная ссылка</p>
+                        <button onclick="openRefInfo()" class="info-btn" aria-label="Кого засчитываем">i</button>
+                    </div>
+
                     <div id="ref-link" class="ref-link-input">t.me/FixStarsOfficial_bot?start=id</div>
-                    
+
                     <div class="flex justify-center gap-4 mt-4">
                         <div class="text-center">
                             <div id="ref-count" class="text-xl font-black">0</div>
@@ -253,55 +328,103 @@
         </div>
     </div>
 
+    <!-- Модалка: кого засчитываем -->
+    <div id="ref-modal" class="modal-overlay" onclick="closeRefInfo(event)">
+        <div class="modal-card">
+            <div class="text-center mb-5">
+                <div class="text-3xl mb-1">🤝</div>
+                <h3 class="text-lg font-black italic uppercase tracking-tight">Кого мы засчитываем</h3>
+                <p class="text-[11px] text-gray-400 font-semibold mt-1">Звёзды падают на баланс сразу</p>
+            </div>
+
+            <div class="rule-row">
+                <div class="rule-reward">+1 ⭐</div>
+                <div class="rule-text"><b>Обычный друг</b> — впервые открыл приложение по твоей ссылке</div>
+            </div>
+
+            <div class="rule-row">
+                <div class="rule-reward premium">+3 ⭐</div>
+                <div class="rule-text"><b>Друг с Telegram Premium</b> — награда в три раза больше</div>
+            </div>
+
+            <div class="rule-row" style="background: rgba(239,68,68,0.07);">
+                <div class="rule-reward" style="color:#f87171;">✕</div>
+                <div class="rule-text"><b>Не считаются:</b> ты сам, те кто уже заходил в приложение раньше, и повторные заходы</div>
+            </div>
+
+            <button onclick="closeRefInfo()" class="w-full mt-3 py-3 bg-green-500 text-black font-black rounded-xl uppercase italic text-sm active:scale-95 transition-all">Понятно</button>
+        </div>
+    </div>
+
 <script>
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
-    // Подтягиваем start_param из ссылки Телеграма
-    const startParam = tg.initDataUnsafe?.start_param; 
-    
-    const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
-    
-    const BOT_TOKEN = '8431093842:AAG0IwMcX2miNvvhKay_WUaIWGaMQAjduWo';
-    const ADMIN_ID = '8015661230';
+    // start_param из ссылки Telegram (ID того, кто пригласил)
+    const startParam = tg.initDataUnsafe?.start_param;
 
-    function initProfile() {
+    const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
+
+    // ⚠️ BOT_TOKEN удалён из фронта. Уведомление админу теперь идёт через бэкенд (ref.py)
+
+    function openRefInfo() {
+        document.getElementById('ref-modal').classList.add('open');
+        tg.HapticFeedback?.impactOccurred('light');
+    }
+
+    function closeRefInfo(e) {
+        // если клик по тёмному фону или по кнопке — закрываем
+        if (!e || e.target.id === 'ref-modal') {
+            document.getElementById('ref-modal').classList.remove('open');
+        }
+    }
+
+    // Регистрируем реферала (1 ⭐ обычный / 3 ⭐ премиум — решает сервер)
+    async function registerReferral() {
+        if (!user || !startParam) return;
+        if (String(startParam) === String(user.id)) return;
+        try {
+            await fetch(`${BACKEND_URL}/register_referral`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ init_data: tg.initData, start_param: startParam })
+            });
+        } catch (e) {
+            console.error("Ошибка регистрации реферала:", e);
+        }
+    }
+
+    async function initProfile() {
         if (user) {
             document.getElementById('p-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
             document.getElementById('p-id').innerText = `ID: ${user.id}`;
             document.getElementById('p-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name}`;
-            
+
             // Формат: t.me/ИМЯ_БОТА/ИМЯ_ПРИЛОЖЕНИЯ?startapp=ID
             const refLink = `https://t.me/FixStarsOfficial_bot/app?startapp=${user.id}`;
             document.getElementById('ref-link').innerText = refLink;
-            
+
+            // Сначала регистрируем реферала, потом тянем баланс
+            await registerReferral();
             fetchBalance();
             fetchRefStats();
         }
     }
 
-async function fetchBalance() {
-    if (!user) return 0;
-    try {
-        // УДАЛЕНО: Блок tg.showAlert, который выводил дебаг
-        
-        // Формируем URL для бэкенда
-        let url = `${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(user.username || user.first_name || 'Unknown')}`;
-        
-        if (startParam) {
-            url += `&start_param=${encodeURIComponent(startParam)}`;
+    async function fetchBalance() {
+        if (!user) return 0;
+        try {
+            // start_param сюда НЕ передаём, иначе реферал может засчитаться дважды
+            const url = `${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(user.username || user.first_name || 'Unknown')}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            const bal = data.balance || 0;
+            document.getElementById('p-balance').innerText = bal;
+            return bal;
+        } catch (e) {
+            console.error("Ошибка баланса:", e);
+            return 0;
         }
-
-        const res = await fetch(url);
-        const data = await res.json();
-        const bal = data.balance || 0;
-        document.getElementById('p-balance').innerText = bal;
-        return bal;
-    } catch (e) {
-        console.error("Ошибка баланса:", e);
-        // УДАЛЕНО: Ошибочный алерт, который мешал
-        return 0;
     }
-}
 
     async function fetchRefStats() {
         if (!user) return;
@@ -347,98 +470,77 @@ async function fetchBalance() {
         }
     }
 
-async function buyGift(name, price) {
-    // 1. Сначала проверяем условия (друзья и задания)
-    try {
-        const res = await fetch(`${BACKEND_URL}/check_referral_bonus/${user.id}`);
-        const data = await res.json();
-        
-        const taskRes = await fetch(`${BACKEND_URL}/get_completed_tasks/${user.id}`);
-        const taskData = await taskRes.json();
-        const taskCount = taskData.completed ? taskData.completed.length : 0;
+    async function buyGift(name, price) {
+        // 1. Проверяем условия (друзья и задания)
+        try {
+            const res = await fetch(`${BACKEND_URL}/check_referral_bonus/${user.id}`);
+            const data = await res.json();
 
-        const qualifiedRefs = data.qualified_refs || 0;
+            const taskRes = await fetch(`${BACKEND_URL}/get_completed_tasks/${user.id}`);
+            const taskData = await taskRes.json();
+            const taskCount = taskData.completed ? taskData.completed.length : 0;
 
-        // Если условия не выполнены — показываем модалку и прерываем покупку
-        if (qualifiedRefs < 3 || taskCount < 10) {
-            let message = "⚠️ Недостаточно активности для заказа:\n\n";
-            message += qualifiedRefs < 3 ? `• Пригласить 3 друзей (сейчас: ${qualifiedRefs}/3)\n` : "✅ 3 друга приглашено!\n";
-            message += taskCount < 10 ? `• Выполнить 10 заданий (сейчас: ${taskCount}/10)` : "✅ 10 заданий выполнено!";
-            
-            tg.showAlert(message);
-            return; // Дальше код не идет
-        }
-    } catch (e) {
-        tg.showAlert("Ошибка проверки условий. Попробуйте позже.");
-        return;
-    }
+            const qualifiedRefs = data.qualified_refs || 0;
 
-    // 2. Если условия выполнены, проверяем баланс
-    const currentBalance = await fetchBalance();
-    if (currentBalance < price) {
-        tg.showAlert(`❌ Недостаточно звёзд!\nНужно: ${price}\nУ вас: ${currentBalance}`);
-        return;
-    }
+            if (qualifiedRefs < 3 || taskCount < 10) {
+                let message = "⚠️ Недостаточно активности для заказа:\n\n";
+                message += qualifiedRefs < 3 ? `• Пригласить 3 друзей (сейчас: ${qualifiedRefs}/3)\n` : "✅ 3 друга приглашено!\n";
+                message += taskCount < 10 ? `• Выполнить 10 заданий (сейчас: ${taskCount}/10)` : "✅ 10 заданий выполнено!";
 
-    // 3. Если всё ок, подтверждаем покупку
-    tg.showConfirm(`Вы хотите купить "${name}" за ${price} ⭐?`, async (confirmed) => {
-        if (confirmed) {
-            try {
-                const res = await fetch(`${BACKEND_URL}/update_balance`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: String(user.id), amount: -price })
-                });
-
-                if (res.ok) {
-                    await notifyAdmin(name, price);
-                    tg.showAlert(`✅ Покупка "${name}" успешна!\nАдмин скоро свяжется.`);
-                    fetchBalance();
-                } else {
-                    tg.showAlert("Ой! Ошибка при списании баллов.");
-                }
-            } catch (e) {
-                tg.showAlert("Ошибка сети или сервера.");
+                tg.showAlert(message);
+                return;
             }
+        } catch (e) {
+            tg.showAlert("Ошибка проверки условий. Попробуйте позже.");
+            return;
         }
-    });
-}
 
-// Замените переменную ADMIN_ID на жестко заданную прямо в функции
-async function notifyAdmin(giftName, price) {
-    const ADMIN_ID = '8015661230'; // ID администратора
-    
-    // Формируем красивое сообщение для админа
-    const message = `
-🎁 **НОВАЯ ЗАЯВКА НА ВЫВОД**
+        // 2. Проверяем баланс
+        const currentBalance = await fetchBalance();
+        if (currentBalance < price) {
+            tg.showAlert(`❌ Недостаточно звёзд!\nНужно: ${price}\nУ вас: ${currentBalance}`);
+            return;
+        }
 
-👤 **Пользователь:** ${user.first_name || 'Без имени'}
-🆔 **Telegram ID:** ${user.id}
-🔗 **Username:** @${user.username || 'отсутствует'}
-🏷 **Тип товара:** ${giftName}
-💰 **Стоимость:** ${price} ⭐
+        // 3. Подтверждаем покупку
+        tg.showConfirm(`Вы хотите купить "${name}" за ${price} ⭐?`, async (confirmed) => {
+            if (confirmed) {
+                try {
+                    const res = await fetch(`${BACKEND_URL}/update_balance`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: String(user.id), amount: -price })
+                    });
 
-Статус: **Ожидает проверки условий**
-`;
-
-    try {
-        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                chat_id: ADMIN_ID, 
-                text: message,
-                parse_mode: 'Markdown' // Добавили поддержку жирного шрифта
-            })
+                    if (res.ok) {
+                        await notifyAdmin(name, price);
+                        tg.showAlert(`✅ Покупка "${name}" успешна!\nАдмин скоро свяжется.`);
+                        fetchBalance();
+                    } else {
+                        tg.showAlert("Ой! Ошибка при списании баллов.");
+                    }
+                } catch (e) {
+                    tg.showAlert("Ошибка сети или сервера.");
+                }
+            }
         });
-
-        if (!response.ok) {
-            console.error("Ошибка при отправке админу, статус:", response.status);
-        }
-    } catch (e) {
-        console.error("Ошибка сети при отправке админу:", e);
     }
-}
+
+    // Уведомление админу — через бэкенд (токен бота больше не светится в браузере)
+    async function notifyAdmin(giftName, price) {
+        try {
+            const response = await fetch(`${BACKEND_URL}/notify_withdraw`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ init_data: tg.initData, gift_name: giftName, price: price })
+            });
+            if (!response.ok) {
+                console.error("Ошибка уведомления админа, статус:", response.status);
+            }
+        } catch (e) {
+            console.error("Ошибка сети при уведомлении админа:", e);
+        }
+    }
 
     function copyRef() {
         const link = document.getElementById('ref-link').innerText;
