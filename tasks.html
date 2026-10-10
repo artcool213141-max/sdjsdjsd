@@ -3,158 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>StarsDrop - Tasks</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>FixStars - Tasks</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        
-        :root { 
-            --accent: #22c55e; 
-        }
-        
-        * { 
-            -webkit-tap-highlight-color: transparent; 
-            user-select: none; 
-            box-sizing: border-box;
-        }
-        
-        body { 
-            background: #050505; 
-            color: white; 
-            font-family: 'Inter', sans-serif; 
-            margin: 0; 
-            overflow: hidden; 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column; 
-        }
-
-        /* Шапка приложения */
-        .header-panel { 
-            padding: 12px 20px; 
-            background: #0a0a0a; 
-            border-bottom: 1px solid #1a1a1a; 
-            padding-top: calc(12px + var(--tg-safe-area-inset-top, 0px));
-        }
-
-        /* Основной контейнер для контента */
-        .tasks-container {
-            flex-grow: 1; 
-            overflow-y: auto; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 16px;
-            scrollbar-width: none;
-        }
-        .tasks-container::-webkit-scrollbar { 
-            display: none; 
-        }
-
-        /* Главная вертикальная карточка задания */
-        .task-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid #151515;
-            border-radius: 24px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            gap: 18px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: all 0.3s ease;
-        }
-
-        /* Обертка для логотипа задания */
-        .task-icon-wrap {
-            width: 72px; 
-            height: 72px; 
-            background: rgba(34, 197, 94, 0.03);
-            border-radius: 22px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            border: 1px solid rgba(34, 197, 94, 0.12); 
-            overflow: hidden;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-        }
-        .task-icon-wrap img {
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover;
-        }
-
-        /* Контейнер для трех кнопок в ряд */
-        .btn-row {
-            display: flex; 
-            width: 100%; 
-            gap: 8px; 
-            margin-top: 6px;
-        }
-
-        /* Базовый класс для кнопок управления */
-        .btn-action {
-            flex: 1; 
-            text-align: center; 
-            font-weight: 900; 
-            font-size: 11px;
-            padding: 14px 4px; 
-            border-radius: 14px; 
-            text-transform: uppercase;
-            transition: all 0.2s ease; 
-            tracking-wider: 0.05em;
-        }
-        .btn-action:active { 
-            transform: scale(0.95); 
-        }
-
-        /* Кнопка Перейти */
-        .btn-go { 
-            background: #111; 
-            color: #fff; 
-            border: 1px solid #222; 
-        }
-        .btn-go:active {
-            background: #161616;
-        }
-
-        /* Кнопка Проверить */
-        .btn-verify { 
-            background: var(--accent); 
-            color: black; 
-            box-shadow: 0 0 20px rgba(34, 197, 94, 0.2); 
-        }
-        .btn-verify:disabled { 
-            opacity: 0.4; 
-            filter: grayscale(1); 
-            box-shadow: none; 
-        }
-
-        /* Кнопка Пропустить */
-        .btn-skip { 
-            background: rgba(255,255,255,0.02); 
-            color: #555; 
-            border: 1px solid #141414; 
-        }
-        .btn-skip:active {
-            color: #777;
-            background: rgba(255,255,255,0.05);
-        }
-
-        /* Модальное окно успешного выполнения */
-        #success-modal { 
-            display: none; 
-            position: fixed; 
-            inset: 0; 
-            z-index: 999; 
-            background: rgba(0,0,0,0.94); 
-            backdrop-filter: blur(12px); 
-            align-items: center; 
-            justify-content: center; 
-        }
+        :root { --accent: #22c55e; }
+        * { -webkit-tap-highlight-color: transparent; user-select: none; box-sizing: border-box; }
+        body { background: #050a05; color: white; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        .header-panel { padding: 12px 20px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a; padding-top: calc(12px + var(--tg-safe-area-inset-top, 0px)); }
+        .tasks-container { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; scrollbar-width: none; }
+        .tasks-container::-webkit-scrollbar { display: none; }
+        .task-card { background: linear-gradient(160deg, rgba(34,197,94,0.07) 0%, rgba(255,255,255,0.02) 100%); border: 1px solid rgba(34,197,94,0.18); border-radius: 28px; padding: 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .task-hero { width: 104px; height: 104px; object-fit: contain; filter: drop-shadow(0 0 18px rgba(34,197,94,0.35)); animation: float 3.5s ease-in-out infinite; }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .btn-row { display: flex; width: 100%; gap: 8px; margin-top: 6px; }
+        .btn-action { flex: 1; text-align: center; font-weight: 900; font-size: 11px; padding: 14px 4px; border-radius: 14px; text-transform: uppercase; transition: all 0.2s ease; }
+        .btn-action:active { transform: scale(0.95); }
+        .btn-action:disabled { opacity: 0.4; }
+        .btn-go { background: #111; color: #fff; border: 1px solid #222; }
+        .btn-verify { background: var(--accent); color: black; box-shadow: 0 0 20px rgba(34,197,94,0.25); }
+        .btn-skip { background: rgba(255,255,255,0.02); color: #666; border: 1px solid #141414; }
+        #success-modal { display: none; position: fixed; inset: 0; z-index: 999; background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -162,32 +32,30 @@
     <header class="header-panel flex justify-between items-center">
         <div class="flex items-center gap-3">
             <button onclick="goHome()" class="flex items-center justify-center w-9 h-9 rounded-xl bg-[#111] border border-[#222] active:scale-90 transition-transform">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                </svg>
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
             </button>
-            <div class="font-black italic text-lg tracking-tighter">STARS<span class="text-[#22c55e]">TASKS</span></div>
+            <div class="font-black italic text-lg tracking-tighter">FIX<span class="text-[#22c55e]">TASKS</span></div>
         </div>
         <div class="flex items-center gap-2 bg-[#111] px-4 py-2 rounded-full border border-[#222]">
-            <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
+            <img src="img/star.png" class="w-4 h-4" onerror="this.style.display='none'">
             <span id="val-stars" class="font-black text-sm">0.00</span>
         </div>
     </header>
 
     <div class="p-4 bg-[#0a0a0a]/50 border-b border-[#111]">
         <h2 class="text-xs uppercase font-black tracking-widest text-gray-500">Доступные задания</h2>
-        <p class="text-[11px] text-gray-400 mt-0.5">Выполняй квесты спонсоров и получай ★ на счет</p>
+        <p class="text-[11px] text-gray-400 mt-0.5">Выполняй задания спонсоров и получай ★ на счёт</p>
     </div>
 
     <div class="tasks-container" id="tasks-list">
-        <div class="text-center text-gray-500 text-xs py-12">Синхронизация с базой данных...</div>
+        <div class="text-center text-gray-500 text-xs py-12">Загрузка заданий...</div>
     </div>
 
     <div id="success-modal">
-        <div class="bg-[#0f0f0f] border border-[#22c55e] rounded-[28px] w-[85%] p-6 text-center shadow-2xl">
+        <div class="bg-[#0f0f0f] border border-[#22c55e] rounded-[28px] w-[85%] max-w-sm p-6 text-center shadow-2xl">
             <div class="text-6xl mb-4 animate-bounce">⭐</div>
             <h2 class="text-xl font-black uppercase italic text-green-400 tracking-tight">Задание выполнено!</h2>
-            <div class="bg-white/5 py-4 rounded-2xl border border-white/5 my-5 flex flex-col items-center justify-center">
+            <div class="bg-white/5 py-4 rounded-2xl border border-white/5 my-5">
                 <p id="reward-text" class="text-3xl font-black text-green-400">+0.00 ★</p>
             </div>
             <button onclick="closeModal()" class="w-full bg-[#22c55e] py-4 rounded-xl font-black text-black uppercase text-xs tracking-wider active:scale-95 transition-transform">Отлично</button>
@@ -195,267 +63,205 @@
     </div>
 
     <script>
-        // Инициализация Supabase Client
-        const SB_URL = "https://bajufluzgcguxconhxuj.supabase.co";
-        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJhanVmbHV6Z2NndXhjb25oeHVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxODI4NTUsImV4cCI6MjA5Mzc1ODg1NX0.LtqDCLlMlaWluUdnx0uc3Wt-w8jimw9gyLYMwW9eAxs";
-        const SB = supabase.createClient(SB_URL, SB_KEY);
         const tg = window.Telegram.WebApp;
-        
-        tg.expand();
+        const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
 
-        let user = null;
-        let TASKS = [];             
-        let completedTaskIds = [];
-        let skippedTaskIds = [];
+        // Картинки из папки img/ (поменяй на свои, если нужно)
+        const IMAGES = ["pepe.png", "chassiki.png", "cccccerce.png", "mixail.png", "rozka.png", "pidarynok.png", "totik.png", "buket.png", "raketa.png", "kypok.png", "kolechko.png", "alik.png"];
 
-        // СПИСОК ТВОИХ КАРТИНОК ИЗ ПАПКИ imgtsk НА ГИТХАБЕ
-        // Сюда можешь вписать любые названия файлов картинок, которые ты туда загрузил!
-// АКТУАЛЬНЫЙ СПИСОК КАРТИНОК ИЗ ПРАВИЛЬНОЙ ПАПКИ (66 шт.)
-        const RANDOM_LOGOS = [
-            "1may.jpg",
-            "2025.jpg",
-            "bear.png",
-            "book.jpg",
-            "booox.png",
-            "botinok.png",
-            "box.png",
-            "car.png",
-            "ccolso2.png",
-            "cerrrdce.jpg",
-            "chassiki.png",
-            "chemodan.jpg",
-            "ciga.png",
-            "colso.png",
-            "costum.jpg",
-            "cvetk.PNG",
-            "cvetok.png",
-            "dog.png",
-            "dyxi.png",
-            "fonarik.jpg",
-            "gribb.PNG",
-            "grob.jpg",
-            "gyba.png",
-            "happybirthday.jpg",
-            "heart.png",
-            "helmet.png",
-            "hero.jpg",
-            "kalendar.png",
-            "kepka.png",
-            "kirpitch.jpg",
-            "kkolso.png",
-            "kkoolsoo.png",
-            "koks.jpg",
-            "koktel.png",
-            "kot.png",
-            "kotel.png",
-            "krovatka.jpg",
-            "kryg.PNG",
-            "lolipop.png",
-            "lucky.jpg",
-            "mafin.jpg",
-            "meczcc.png",
-            "metch.png",
-            "mini.png",
-            "narkotiki.png",
-            "obyv.jpg",
-            "ochki.jpg",
-            "orel.jpg",
-            "otkritka.jpg",
-            "paska.jpg",
-            "pepe.png",
-            "rozza.png",
-            "rykzak.jpg",
-            "shapka.png",
-            "shar.jpg",
-            "shlem.png",
-            "sliva.png",
-            "soska.jpg",
-            "sshapka.PNG",
-            "statyyetka.png",
-            "tnt.png",
-            "tyfli.PNG",
-            "venok.png",
-            "yayko.png",
-            "zhele.png",
-            "zirka.PNG",
-            "zmei.png"
-        ];
+        let own = [];                 // свои задания (каналы), ещё не выполненные
+        let skipped = new Set();      // пропущенные в этой сессии
+        let bh = { link: null, loaded: false, error: false };
+        let bhReward = 0.3;
+        let cur = null;               // текущая карточка
+        let busy = false;
 
-        // Функция получения рандомного элемента из массива логотипов
-        function getRandomLogo() {
-            const randomIndex = Math.floor(Math.random() * RANDOM_LOGOS.length);
-            return RANDOM_LOGOS[randomIndex];
+        const listEl = () => document.getElementById('tasks-list');
+
+        function esc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        function pickImg(key) {
+            let h = 0;
+            for (const c of String(key)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+            return 'img/' + IMAGES[h % IMAGES.length];
+        }
+        function setBalance(v) { document.getElementById('val-stars').innerText = Number(v || 0).toFixed(2); }
+        function haptic(t) { try { tg.HapticFeedback && tg.HapticFeedback.impactOccurred(t || 'light'); } catch (_) {} }
+        function goHome() { haptic(); window.location.href = 'index.html'; }
+
+        async function api(path, body) {
+            const res = await fetch(BACKEND_URL + path, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ init_data: tg.initData, ...(body || {}) })
+            });
+            let data = {};
+            try { data = await res.json(); } catch (_) {}
+            if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
+            return data;
         }
 
-        function goHome() {
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            window.location.href = 'index.html';
-        }
-
-        // Авторизация и загрузка данных из таблиц Supabase
-        async function checkAuth() {
-            let userId = tg.initDataUnsafe?.user?.id || 7140366080;
-
-            try {
-                // 1. Подтягиваем или создаем юзера
-                let { data: userData, error: userErr } = await SB.from('users').select('*').eq('id', userId).maybeSingle();
-                if (userErr) throw userErr;
-                
-                if (!userData) {
-                    const { data: newUser, error: insError } = await SB.from('users').insert([
-                        { id: userId, balance: 0, username: tg.initDataUnsafe?.user?.username || "Player", tasks_completed: 0 }
-                    ]).select().single();
-                    if (insError) throw insError;
-                    userData = newUser;
-                }
-                user = userData;
-                document.getElementById('val-stars').innerText = Number(user.balance || 0).toFixed(2);
-
-                // 2. Вытаскиваем массив id выполненных квестов
-                let { data: doneTasks, error: taskErr } = await SB.from('tasks_completed').select('task_id').eq('user_id', userId);
-                if (!taskErr && doneTasks) {
-                    completedTaskIds = doneTasks.map(t => t.task_id);
-                }
-
-                // 3. Загружаем все активные квесты из глобальной таблицы
-                let { data: dbTasks, error: dbTasksErr } = await SB.from('tasks_list').select('*');
-                if (dbTasksErr) throw dbTasksErr;
-                TASKS = dbTasks || [];
-
-                renderTasks();
-            } catch (e) {
-                console.error("Критический сбой инициализации:", e);
-                document.getElementById('tasks-list').innerHTML = `
-                    <div class="text-center text-red-500 text-xs py-12 font-bold">
-                        Ошибка связи с сервером БД. Перезапустите приложение.
-                    </div>
-                `;
-            }
-        }
-
-        // Отрисовка очереди квестов
-        function renderTasks() {
-            const listEl = document.getElementById('tasks-list');
-            listEl.innerHTML = "";
-
-// Внутри функции renderTasks, убедись, что фильтр выглядит так:
-const activeTasks = TASKS.filter(task => 
-    !completedTaskIds.includes(task.id) && 
-    !skippedTaskIds.includes(task.id)
-);
-
-            // Заглушка, если заданий больше нет
-            if (activeTasks.length === 0) {
-                listEl.innerHTML = `
-                    <div class="flex flex-col items-center justify-center text-center p-8 bg-white/5 border border-white/5 rounded-[28px] mt-6 shadow-inner animate-fade-in">
-                        <div class="text-5xl mb-4">⏳</div>
-                        <h3 class="text-sm font-black text-gray-300 uppercase tracking-wider">Все задания выполнены!</h3>
-                        <p class="text-[11px] text-gray-500 mt-2 max-w-[220px] leading-relaxed">
-                            Новые задания обновляются каждые 15 минут. Гааааз, возвращайся позже!
-                        </p>
-                    </div>
-                `;
-                return;
-            }
-
-            // Показываем ровно ОДНО задание из начала очереди
-            const task = activeTasks[0];
-
-            // Генерируем абсолютно рандомное имя файла логотипа из нашего списка картинок
-            const randomImageName = getRandomLogo();
-            const iconUrl = `imgtsk/${randomImageName}`;
-
-            const card = document.createElement('div');
-            card.className = "task-card";
-            
-            card.innerHTML = `
-                <div>
-                    <h3 class="text-base font-black tracking-tight text-white/90">${task.title}</h3>
-                    <p class="text-xs text-gray-400 mt-1 max-w-[260px] mx-auto">${task.desc_text || 'Без описания квеста'}</p>
-                    <p class="text-xs text-green-400 font-black mt-2 bg-green-500/10 px-3 py-1 rounded-full inline-block">
-                        +${Number(task.reward).toFixed(2)} ★
-                    </p>
-                </div>
-
-                <div class="task-icon-wrap">
-                    <img src="${iconUrl}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
-                </div>
-
-                <div class="btn-row">
-                    <button onclick="goToLink('${task.link}')" class="btn-action btn-go">Перейти</button>
-                    <button id="btn-${task.id}" onclick="verifyTask('${task.id}', ${task.reward}, '${task.channel}')" class="btn-action btn-verify">Проверить</button>
-                    <button onclick="skipTask('${task.id}')" class="btn-action btn-skip">Пропустить</button>
-                </div>
-            `;
-            listEl.appendChild(card);
-        }
-
-        // Переход по ссылке спонсора
-        function goToLink(link) {
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            if (tg.openTelegramLink) {
-                tg.openTelegramLink(link);
-            } else {
-                tg.openLink(link);
-            }
-        }
-
-        // Скип текущего квеста
-        function skipTask(id) {
-            if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            skippedTaskIds.push(id);
-            renderTasks(); // Карта обновится, подтянется следующее задание
-        }
-
-async function verifyTask(id, reward, channel) {
-    const btn = document.getElementById(`btn-${id}`);
-    btn.disabled = true;
-    
-    // Используем SB_KEY (anon key), который у вас уже есть в начале кода
-    try {
-        const response = await fetch("https://bajufluzgcguxconhxuj.supabase.co/functions/v1/clever-service", {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${SB_KEY}` // ДОБАВИТЬ ЭТУ СТРОКУ
-            },
-            body: JSON.stringify({ 
-                userId: user.id, 
-                taskId: id, 
-                channelChatId: channel, 
-                reward: reward 
-            })
-        });
-        
-        const result = await response.json();
-        // ... (остальной код)
-        
-        if (result.success) {
-            completedTaskIds.push(id); // Локально добавляем в список, чтобы задание скрылось
+        function showModal(reward) {
             document.getElementById('reward-text').innerText = `+${Number(reward).toFixed(2)} ★`;
             document.getElementById('success-modal').style.display = 'flex';
-            renderTasks(); // Перерисовываем список, кнопка исчезнет
-        } else {
-            // Если сервер вернул 'already_done', значит юзер пытался обмануть систему
-            alert(result.reason === 'already_done' ? "Задание уже выполнено!" : "Ошибка: " + result.reason);
-            btn.disabled = false;
-            btn.style.opacity = "1";
-            btn.innerText = "Проверить";
+            try { tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'); } catch (_) {}
         }
-    } catch (err) {
-        alert("Ошибка сети!");
-        btn.disabled = false;
-        btn.style.opacity = "1";
-        btn.innerText = "Проверить";
-    }
-}
+        function closeModal() { document.getElementById('success-modal').style.display = 'none'; }
 
-        function closeModal() {
-            document.getElementById('success-modal').style.display = 'none';
+        // ---- BotoHub ----
+        async function bhCall(action) {
+            const prev = bh.link;
+            const d = await api('/tasks/bh', { action });
+            bh.loaded = true;
+            if (d.ok === false) { bh.error = true; bh.link = null; return { ok: false, prev }; }
+            bh.error = false;
+            bh.link = d.link || null;
+            if (d.rewarded > 0) {
+                if (d.new_balance !== null && d.new_balance !== undefined) setBalance(d.new_balance);
+                showModal(d.rewarded);
+            }
+            return { ok: true, prev, link: d.link, rewarded: d.rewarded };
         }
 
-        // Запуск сессии при загрузке страницы
-        checkAuth();
+        // ---- Отрисовка ----
+        async function render() {
+            const t = own.find(x => !skipped.has(x.id));
+            if (t) {
+                return drawCard({
+                    kind: 'own', id: t.id, key: 'own' + t.id, link: t.link,
+                    title: t.title,
+                    desc: t.desc_text || 'Подпишись на канал и нажми «Проверить»',
+                    reward: t.reward
+                });
+            }
+
+            if (!bh.loaded) {
+                listEl().innerHTML = `<div class="text-center text-gray-500 text-xs py-12">Ищем задания спонсоров...</div>`;
+                try { await bhCall('get'); } catch (e) { bh.loaded = true; bh.error = true; bh.link = null; }
+            }
+
+            if (bh.link) {
+                return drawCard({
+                    kind: 'bh', key: 'bh' + bh.link, link: bh.link,
+                    title: 'Задание от спонсора',
+                    desc: 'Перейди по ссылке, подпишись или запусти бота и нажми «Проверить»',
+                    reward: bhReward
+                });
+            }
+            drawEmpty();
+        }
+
+        function drawCard(t) {
+            cur = t;
+            const el = listEl();
+            el.innerHTML = `
+                <div class="task-card">
+                    <img class="task-hero" src="${pickImg(t.key)}" alt="" onerror="this.style.display='none'">
+                    <div>
+                        <h3 class="text-base font-black tracking-tight text-white/90">${esc(t.title)}</h3>
+                        <p class="text-xs text-gray-400 mt-1 max-w-[260px] mx-auto">${esc(t.desc)}</p>
+                        <p class="text-xs text-green-400 font-black mt-3 bg-green-500/10 px-3 py-1 rounded-full inline-block">+${Number(t.reward).toFixed(2)} ★</p>
+                    </div>
+                    <div class="btn-row">
+                        <button onclick="goToLink()" class="btn-action btn-go">Перейти</button>
+                        <button id="btn-check" onclick="checkTask()" class="btn-action btn-verify">Проверить</button>
+                        <button id="btn-skip" onclick="skipTask()" class="btn-action btn-skip">Пропустить</button>
+                    </div>
+                </div>`;
+        }
+
+        function drawEmpty() {
+            cur = null;
+            const msg = bh.error
+                ? ['⚠️', 'Задания временно недоступны', 'Попробуй открыть раздел чуть позже.']
+                : ['⏳', 'Пока заданий нет', 'Новые задания появляются регулярно. Загляни позже!'];
+            listEl().innerHTML = `
+                <div class="flex flex-col items-center justify-center text-center p-8 bg-white/5 border border-white/5 rounded-[28px] mt-6">
+                    <div class="text-5xl mb-4">${msg[0]}</div>
+                    <h3 class="text-sm font-black text-gray-300 uppercase tracking-wider">${msg[1]}</h3>
+                    <p class="text-[11px] text-gray-500 mt-2 max-w-[220px] leading-relaxed">${msg[2]}</p>
+                </div>`;
+        }
+
+        // ---- Действия ----
+        function goToLink() {
+            if (!cur) return;
+            haptic();
+            if (/^https?:\/\/(t|telegram)\.me\//i.test(cur.link) && tg.openTelegramLink) tg.openTelegramLink(cur.link);
+            else tg.openLink(cur.link);
+        }
+
+        function setBusy(v) {
+            busy = v;
+            ['btn-check', 'btn-skip'].forEach(id => { const b = document.getElementById(id); if (b) b.disabled = v; });
+        }
+
+        async function checkTask() {
+            if (!cur || busy) return;
+            setBusy(true);
+            try {
+                if (cur.kind === 'own') {
+                    const d = await api('/tasks/check_own', { task_id: cur.id });
+                    if (d.success) {
+                        own = own.filter(x => x.id !== cur.id);
+                        setBalance(d.new_balance);
+                        showModal(d.reward);
+                    } else if (d.reason === 'not_subscribed') {
+                        tg.showAlert('Подписка не найдена. Подпишись на канал и нажми «Проверить» ещё раз.');
+                        setBusy(false); return;
+                    } else if (d.reason === 'already_done' || d.reason === 'not_found') {
+                        own = own.filter(x => x.id !== cur.id);
+                    } else {
+                        tg.showAlert('Не удалось проверить задание. Попробуй позже.');
+                        setBusy(false); return;
+                    }
+                } else {
+                    const r = await bhCall('check');
+                    if (r.ok && !(r.rewarded > 0) && r.link && r.link === r.prev) {
+                        tg.showAlert('Задание ещё не выполнено. Выполни его по ссылке и нажми «Проверить» снова.');
+                        setBusy(false); return;
+                    }
+                }
+            } catch (e) {
+                tg.showAlert('Ошибка сети. Попробуй ещё раз.');
+                setBusy(false); return;
+            }
+            setBusy(false);
+            render();
+        }
+
+        async function skipTask() {
+            if (!cur || busy) return;
+            haptic();
+            if (cur.kind === 'own') {
+                skipped.add(cur.id);
+                return render();
+            }
+            setBusy(true);
+            try { await bhCall('skip'); } catch (e) { tg.showAlert('Ошибка сети. Попробуй ещё раз.'); }
+            setBusy(false);
+            render();
+        }
+
+        // ---- Старт ----
+        window.onload = async () => {
+            try { tg.expand(); tg.ready(); } catch (_) {}
+            if (!tg.initData) {
+                listEl().innerHTML = `<div class="text-center text-gray-400 text-sm font-bold py-12">Открой приложение через Telegram</div>`;
+                return;
+            }
+            try {
+                const d = await api('/tasks/list');
+                own = d.own || [];
+                bhReward = Number(d.bh_reward || 0.3);
+                setBalance(d.balance);
+                render();
+            } catch (e) {
+                console.error(e);
+                listEl().innerHTML = `<div class="text-center text-red-400 text-xs py-12 font-bold">Не удалось загрузить задания. Перезапусти приложение.</div>`;
+            }
+        };
     </script>
 </body>
 </html>
