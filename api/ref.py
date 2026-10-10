@@ -1,12 +1,4 @@
 # ref.py — бэкенд реферальной системы (FastAPI + Supabase)
-#
-# Подключение в main.py (путь поправь под свою структуру):
-#     from img.ref import router as ref_router
-#     app.include_router(ref_router)
-#
-# pip install fastapi supabase httpx
-# ENV (Vercel -> Settings -> Environment Variables):
-#     SUPABASE_URL, SUPABASE_SERVICE_KEY (именно service_role ключ), BOT_TOKEN, ADMIN_ID
 
 import os, hmac, hashlib, json, time
 from urllib.parse import parse_qsl
@@ -64,7 +56,7 @@ class NotifyReq(BaseModel):
 
 @router.get("/ref_ping")
 async def ref_ping():
-    """Проверка: открой https://ТВОЙ-ДОМЕН/ref_ping — должно быть {"ok": true}. Потом можно удалить."""
+    """Проверка: открой https://ТВОЙ-ДОМЕН/ref_ping — должно быть {"ok": true}."""
     try:
         supabase.rpc("get_ref_stats", {"p_user_id": "0"}).execute()
         return {"ok": True}
@@ -82,7 +74,7 @@ async def register_referral(req: RefReq):
     res = supabase.rpc("register_referral", {
         "p_referred_id": int(user["id"]),
         "p_referrer_id": int(req.start_param),
-        "p_is_premium": bool(user.get("is_premium", False)),  # из подписанных данных Telegram
+        "p_is_premium": bool(user.get("is_premium", False)),
         "p_username": user.get("username") or user.get("first_name"),
     }).execute()
     return res.data
