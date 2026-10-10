@@ -1,12 +1,12 @@
 # ref.py — бэкенд реферальной системы (FastAPI + Supabase)
 #
-# Подключение в твоём main.py:
-#     from img.ref import router as ref_router      # путь поправь под свою структуру
+# Подключение в main.py (путь поправь под свою структуру):
+#     from img.ref import router as ref_router
 #     app.include_router(ref_router)
 #
 # pip install fastapi supabase httpx
 # ENV (Vercel -> Settings -> Environment Variables):
-#     SUPABASE_URL, SUPABASE_SERVICE_KEY, BOT_TOKEN, ADMIN_ID
+#     SUPABASE_URL, SUPABASE_SERVICE_KEY (именно service_role ключ), BOT_TOKEN, ADMIN_ID
 
 import os, hmac, hashlib, json, time
 from urllib.parse import parse_qsl
@@ -24,7 +24,7 @@ ADMIN_ID = os.environ["ADMIN_ID"]
 
 
 def validate_init_data(init_data: str, max_age: int = 86400) -> dict:
-    """Проверяет подпись Telegram и возвращает user (с is_premium)."""
+    """Проверяет подпись Telegram и возвращает user (с is_premium). Подделать нельзя."""
     data = dict(parse_qsl(init_data, keep_blank_values=True))
     received_hash = data.pop("hash", None)
     if not received_hash:
@@ -47,10 +47,29 @@ class RefReq(BaseModel):
     start_param: str | None = None
 
 
+class InitReq(BaseModel):
+    init_data: str
+
+
+class ClaimReq(BaseModel):
+    init_data: str
+    referral_id: int
+
+
 class NotifyReq(BaseModel):
     init_data: str
     gift_name: str
     price: int
+
+
+@router.get("/ref_ping")
+async def ref_ping():
+    """Проверка: открой https://ТВОЙ-ДОМЕН/ref_ping — должно быть {"ok": true}. Потом можно удалить."""
+    try:
+        supabase.rpc("get_ref_stats", {"p_user_id": "0"}).execute()
+        return {"ok": True}
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {str(e)[:300]}"}
 
 
 @router.post("/register_referral")
@@ -61,17 +80,41 @@ async def register_referral(req: RefReq):
         return {"success": False, "reason": "no_ref"}
 
     res = supabase.rpc("register_referral", {
-        "p_referred_id": user["id"],
+        "p_referred_id": int(user["id"]),
         "p_referrer_id": int(req.start_param),
-        "p_is_premium": bool(user.get("is_premium", False)),  # из подписанных данных
+        "p_is_premium": bool(user.get("is_premium", False)),  # из подписанных данных Telegram
         "p_username": user.get("username") or user.get("first_name"),
     }).execute()
     return res.data
 
 
+@router.post("/get_referrals")
+async def get_referrals(req: InitReq):
+    user = validate_init_data(req.init_data)
+    res = supabase.rpc("get_referral_list", {"p_user_id": str(user["id"])}).execute()
+    return res.data
+
+
+@router.post("/claim_referral")
+async def claim_referral(req: ClaimReq):
+    user = validate_init_data(req.init_data)
+    res = supabase.rpc("claim_referral", {
+        "p_user_id": str(user["id"]),
+        "p_ref_id": req.referral_id,
+    }).execute()
+    return res.data
+
+
+@router.post("/claim_all_referrals")
+async def claim_all_referrals(req: InitReq):
+    user = validate_init_data(req.init_data)
+    res = supabase.rpc("claim_all_referrals", {"p_user_id": str(user["id"])}).execute()
+    return res.data
+
+
 @router.get("/get_ref_stats/{user_id}")
 async def get_ref_stats(user_id: int):
-    res = supabase.rpc("get_ref_stats", {"p_user_id": user_id}).execute()
+    res = supabase.rpc("get_ref_stats", {"p_user_id": str(user_id)}).execute()
     return res.data
 
 
