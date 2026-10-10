@@ -1,22 +1,11 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/img/(.*)",
+      "source": "/img/(.*)",
       "destination": "/img/$1"
     },
     {
-      "src": "/(.*)\\.(png|jpg|jpeg|gif|svg|ico|css|js)",
-      "destination": "/$1.$2"
-    },
-    {
-      "src": "/(.*)",
+      "source": "/(.*)",
       "destination": "/api/index.py"
     }
   ]
