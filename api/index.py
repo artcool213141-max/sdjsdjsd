@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from pydantic import BaseModel
 
+# Импортируем роутер рефералов из файла ref.py
+from ref import router as ref_router
+
 app = FastAPI()
 
 app.add_middleware(
@@ -12,6 +15,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Подключаем реферальные роуты (теперь /ref_ping, /register_referral и др. будут доступны)
+app.include_router(ref_router)
 
 SUPABASE_URL = "https://xbklrdpguqsuvqndcujb.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhia2xyZHBndXFzdXZxbmRjdWpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzQ0NzUsImV4cCI6MjEwNzIxMDQ3NX0.IeK3NGOTu_J1jDOd_XjHQUOySnkbFh4uThGCPeu-Wu4"
