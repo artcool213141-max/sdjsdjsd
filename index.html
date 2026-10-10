@@ -140,121 +140,121 @@
             </div>
 
             <!-- МЕНЮ -->
-<div class="mt-10">
-<div onclick="window.location.href='tasks.html?v=' + Date.now()" class="game-card">
-    <img src="pepe.png" alt="Cases">
-    <div>
-        <div class="card-title">Задания</div>
-        <div class="card-desc">Выполняй простые задания и зарабатывай Stars</div>
-    </div>
-    <div class="ml-auto opacity-30">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
-        </svg>
-    </div>
-</div>
+            <div class="mt-10">
+                <div onclick="window.location.href='tasks.html?v=' + Date.now()" class="game-card">
+                    <img src="pepe.png" alt="Cases">
+                    <div>
+                        <div class="card-title">Задания</div>
+                        <div class="card-desc">Выполняй простые задания и зарабатывай Stars</div>
+                    </div>
+                    <div class="ml-auto opacity-30">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
+                </div>
 
-    <div onclick="window.location.href='wheel.html'" class="game-card">
-        <img src="chassiki.png" alt="Wheel">
-        <div>
-            <div class="card-title">Ежедневный бонус</div>
-            <div class="card-desc">Испытай свою удачу</div>
+                <div onclick="window.location.href='wheel.html'" class="game-card">
+                    <img src="chassiki.png" alt="Wheel">
+                    <div>
+                        <div class="card-title">Ежедневный бонус</div>
+                        <div class="card-desc">Испытай свою удачу</div>
+                    </div>
+                    <div class="ml-auto"><div class="w-3 h-3 bg-green-500 rounded-full animate-ping"></div></div>
+                </div>
+            </div>
         </div>
-        <div class="ml-auto"><div class="w-3 h-3 bg-green-500 rounded-full animate-ping"></div></div>
-    </div>
-</div>
 
-        <!-- ТУЛБАР: УБРАН ДЕПОЗИТ (КОШЕЛЕК) -->
-<div class="dock-bar">
-    <div class="dock-btn active">
-        <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011-1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
-        <span class="text-[10px] font-black uppercase italic">Главная</span>
+        <!-- ТУЛБАР -->
+        <div class="dock-bar">
+            <div class="dock-btn active">
+                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011-1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+                <span class="text-[10px] font-black uppercase italic">Главная</span>
+            </div>
+            <div onclick="window.location.href='profile.html'" class="dock-btn">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                <span class="text-[10px] font-black uppercase italic">Профиль</span>
+            </div>
+        </div>
     </div>
-    <!-- Просто меняем способ перехода -->
-    <div onclick="window.location.href='profile.html'" class="dock-btn">
-        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-        <span class="text-[10px] font-black uppercase italic">Профиль</span>
-    </div>
-</div>
 
 <script>
     const tg = window.Telegram.WebApp;
-    const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
-    const user = tg.initDataUnsafe?.user;
+    const BACKEND_URL = 'https://sdjsdjsd.vercel.app'; // Укажи свой актуальный URL бэкенда на Vercel
+    
+    // Безопасное получение юзера: если открыто вне Телеграма — ставим тестовый профиль
+    const tgUser = tg.initDataUnsafe?.user;
+    const user = (tgUser && tgUser.id) ? tgUser : { id: '12345', username: 'TestUser', first_name: 'Тестер' };
 
-async function syncData() {
-    if (!user) return;
-    try {
-        // Получаем имя пользователя из Telegram (username или имя+фамилия)
-        const username = user.username || `${user.first_name || ''} ${user.last_name || ''}`.trim() || "Player";
+    async function syncData() {
+        try {
+            const username = user.username || `${user.first_name || ''} ${user.last_name || ''}`.trim() || "Player";
+            const res = await fetch(`${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(username)}&t=${Date.now()}`);
+            
+            if (!res.ok) throw new Error("Ошибка сервера");
+            
+            const data = await res.json();
+            const starsVal = data.balance !== undefined ? data.balance : 0; 
+            
+            const starsElem = document.getElementById('bal-stars');
+            if (starsElem) {
+                starsElem.innerText = Math.floor(starsVal);
+            }
+            
+            console.log("Данные синхронизированы. Игрок:", username, "Баланс:", starsVal);
+        } catch (e) { 
+            console.warn("Не удалось обновить баланс:", e); 
+        }
+    }
 
-        // Запрос к API с передачей username для сохранения в базе
-        const res = await fetch(`${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(username)}&t=${Date.now()}`);
+    async function completeTask(taskId, rewardAmount) {
+        try {
+            const res = await fetch(`${BACKEND_URL}/complete_task`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    user_id: String(user.id), 
+                    task_id: taskId, 
+                    reward: rewardAmount 
+                })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                tg.showAlert(`🎉 Задание выполнено! +${rewardAmount} звезд.`);
+                document.getElementById('bal-stars').innerText = data.new_balance;
+            } else {
+                tg.showAlert(`❌ ${data.detail || "Ошибка"}`);
+            }
+        } catch (e) {
+            console.error("Ошибка выполнения задания:", e);
+        }
+    }
+
+    window.onload = () => {
+        try {
+            tg.expand();
+            tg.ready();
+            tg.headerColor = '#050a05';
+            tg.backgroundColor = '#050a05';
+        } catch (err) {}
         
-        if (!res.ok) throw new Error("Ошибка сервера");
-        
-        const data = await res.json();
-        
-        // Берем баланс из ответа (колонку 'balance')
-        const starsVal = data.balance !== undefined ? data.balance : 0; 
-        
-        // Обновляем число в интерфейсе бота
-        const starsElem = document.getElementById('bal-stars');
-        if (starsElem) {
-            starsElem.innerText = Math.floor(starsVal);
+        if (user) {
+            document.getElementById('display-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
+            document.getElementById('display-id').innerText = `ID: ${user.id}`;
+            document.getElementById('user-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name || 'T'}`;
+            
+            syncData();
         }
         
-        console.log("Данные синхронизированы. Игрок:", username, "Баланс:", starsVal);
-    } catch (e) { 
-        console.warn("Не удалось обновить баланс:", e); 
-    }
-}
+        setTimeout(() => {
+            document.getElementById('global-loader').style.display = 'none';
+            document.body.classList.add('loaded');
+        }, 800);
+    };
 
-async function completeTask(taskId, rewardAmount) {
-    const res = await fetch(`${BACKEND_URL}/complete_task`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            user_id: String(user.id), 
-            task_id: taskId, 
-            reward: rewardAmount 
-        })
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-        tg.showAlert(`🎉 Задание выполнено! +${rewardAmount} звезд.`);
-        document.getElementById('bal-stars').innerText = data.new_balance;
-    } else {
-        tg.showAlert(`❌ ${data.detail || "Ошибка"}`);
-    }
-}
-
-window.onload = () => {
-    tg.expand();
-    tg.ready();
-    // Красим хедер Telegram в цвет твоего нового дизайна
-    tg.headerColor = '#050a05';
-    tg.backgroundColor = '#050a05';
-    
-    if (user) {
-        document.getElementById('display-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
-        document.getElementById('display-id').innerText = `ID: ${user.id}`;
-        // Ставим аватарку, если её нет — генерим зеленую иконку с инициалами
-        document.getElementById('user-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name}`;
-        
-        // Запускаем синхронизацию с базой
-        syncData();
-    }
-    
-    // Убираем лоадер через 800мс
-    setTimeout(() => {
-        document.getElementById('global-loader').style.display = 'none';
-        document.body.classList.add('loaded');
-    }, 800);
-};
-
+    // Фоновая анимация звёздочек
     const canvas = document.getElementById('stars-canvas');
     const ctx = canvas.getContext('2d');
     let starsArr = [];
