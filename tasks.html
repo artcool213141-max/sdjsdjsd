@@ -66,14 +66,15 @@
         const tg = window.Telegram.WebApp;
         const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
 
-        // Картинки из папки img/ (поменяй на свои, если нужно)
         const IMAGES = ["pepe.png", "chassiki.png", "cccccerce.png", "mixail.png", "rozka.png", "pidarynok.png", "totik.png", "buket.png", "raketa.png", "kypok.png", "kolechko.png", "alik.png"];
 
-        let own = [];                 // свои задания (каналы), ещё не выполненные
-        let skipped = new Set();      // пропущенные в этой сессии
-        let bh = { link: null, loaded: false, error: false };
-        let bhReward = 0.3;
-        let cur = null;               // текущая карточка
+        let own = [];
+        let skipped = new Set();
+        const SRC = {
+            bh: { path: '/tasks/bh', link: null, loaded: false, error: false, reward: 0.3 },
+            sg: { path: '/tasks/sg', link: null, loaded: false, error: false, reward: 0.1 }
+        };
+        let cur = null;
         let busy = false;
 
         const listEl = () => document.getElementById('tasks-list');
@@ -109,19 +110,27 @@
         }
         function closeModal() { document.getElementById('success-modal').style.display = 'none'; }
 
-        // ---- BotoHub ----
-        async function bhCall(action) {
-            const prev = bh.link;
-            const d = await api('/tasks/bh', { action });
-            bh.loaded = true;
-            if (d.ok === false) { bh.error = true; bh.link = null; return { ok: false, prev }; }
-            bh.error = false;
-            bh.link = d.link || null;
+        // ---- Внешние источники (BotoHub / Subgram) ----
+        async function srcCall(name, action) {
+            const s = SRC[name];
+            const prev = s.link;
+            const d = await api(s.path, { action });
+            s.loaded = true;
+            if (d.ok === false) { s.error = true; s.link = null; return { ok: false, prev }; }
+            s.error = false;
+            s.link = d.link || null;
             if (d.rewarded > 0) {
                 if (d.new_balance !== null && d.new_balance !== undefined) setBalance(d.new_balance);
                 showModal(d.rewarded);
             }
             return { ok: true, prev, link: d.link, rewarded: d.rewarded };
+        }
+
+        async function ensureSrc(name) {
+            const s = SRC[name];
+            if (s.loaded) return;
+            listEl().innerHTML = `<div class="text-center text-gray-500 text-xs py-12">Ищем задания спонсоров...</div>`;
+            try { await srcCall(name, 'get'); } catch (e) { s.loaded = true; s.error = true; s.link = null; }
         }
 
         // ---- Отрисовка ----
@@ -136,26 +145,23 @@
                 });
             }
 
-            if (!bh.loaded) {
-                listEl().innerHTML = `<div class="text-center text-gray-500 text-xs py-12">Ищем задания спонсоров...</div>`;
-                try { await bhCall('get'); } catch (e) { bh.loaded = true; bh.error = true; bh.link = null; }
-            }
-
-            if (bh.link) {
-                return drawCard({
-                    kind: 'bh', key: 'bh' + bh.link, link: bh.link,
-                    title: 'Задание от спонсора',
-                    desc: 'Перейди по ссылке, подпишись или запусти бота и нажми «Проверить»',
-                    reward: bhReward
-                });
+            for (const name of ['bh', 'sg']) {
+                await ensureSrc(name);
+                if (SRC[name].link) {
+                    return drawCard({
+                        kind: name, key: name + SRC[name].link, link: SRC[name].link,
+                        title: 'Задание от спонсора',
+                        desc: 'Перейди по ссылке, подпишись или запусти бота и нажми «Проверить»',
+                        reward: SRC[name].reward
+                    });
+                }
             }
             drawEmpty();
         }
 
         function drawCard(t) {
             cur = t;
-            const el = listEl();
-            el.innerHTML = `
+            listEl().innerHTML = `
                 <div class="task-card">
                     <img class="task-hero" src="${pickImg(t.key)}" alt="" onerror="this.style.display='none'">
                     <div>
@@ -173,7 +179,8 @@
 
         function drawEmpty() {
             cur = null;
-            const msg = bh.error
+            const bothErr = SRC.bh.error && SRC.sg.error;
+            const msg = bothErr
                 ? ['⚠️', 'Задания временно недоступны', 'Попробуй открыть раздел чуть позже.']
                 : ['⏳', 'Пока заданий нет', 'Новые задания появляются регулярно. Загляни позже!'];
             listEl().innerHTML = `
@@ -217,8 +224,12 @@
                         setBusy(false); return;
                     }
                 } else {
-                    const r = await bhCall('check');
-                    if (r.ok && !(r.rewarded > 0) && r.link && r.link === r.prev) {
+                    const r = await srcCall(cur.kind, 'check');
+                    if (!r.ok) {
+                        tg.showAlert('Не удалось проверить задание. Попробуй позже.');
+                        setBusy(false); return;
+                    }
+                    if (!(r.rewarded > 0) && r.link && r.link === r.prev) {
                         tg.showAlert('Задание ещё не выполнено. Выполни его по ссылке и нажми «Проверить» снова.');
                         setBusy(false); return;
                     }
@@ -239,7 +250,7 @@
                 return render();
             }
             setBusy(true);
-            try { await bhCall('skip'); } catch (e) { tg.showAlert('Ошибка сети. Попробуй ещё раз.'); }
+            try { await srcCall(cur.kind, 'skip'); } catch (e) { tg.showAlert('Ошибка сети. Попробуй ещё раз.'); }
             setBusy(false);
             render();
         }
@@ -254,7 +265,8 @@
             try {
                 const d = await api('/tasks/list');
                 own = d.own || [];
-                bhReward = Number(d.bh_reward || 0.3);
+                SRC.bh.reward = Number(d.bh_reward || 0.3);
+                SRC.sg.reward = Number(d.sg_reward || 0.1);
                 setBalance(d.balance);
                 render();
             } catch (e) {
