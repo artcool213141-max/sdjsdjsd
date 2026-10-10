@@ -33,7 +33,6 @@
 
         body.loaded { opacity: 1; }
 
-        /* Блокировщик ПК */
         #pc-only-blocker { display: none; position: fixed; inset: 0; background: #000; z-index: 999999; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; }
         .qr-frame { background: white; padding: 15px; border-radius: 25px; box-shadow: 0 0 40px var(--accent-green); margin-bottom: 25px; }
 
@@ -56,17 +55,14 @@
         }
         .scrollable-content::-webkit-scrollbar { display: none; }
         
-        /* Баланс */
         .balance-container-v2 { display: flex; flex-direction: column; gap: 4px; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(34, 197, 94, 0.3); padding: 10px 16px; border-radius: 20px; backdrop-filter: blur(20px); }
         .balance-item-v2 { display: flex; align-items: center; justify-content: flex-end; gap: 8px; cursor: pointer; }
         .balance-item-v2 img { width: 20px; height: 20px; object-fit: contain; filter: drop-shadow(0 0 5px var(--accent-green)); }
         
-        /* Герой */
         .hero-zone { position: relative; animation: heroFloat 4s ease-in-out infinite; filter: drop-shadow(0 0 30px var(--glow-green)); text-align: center; margin: 25px 0; }
         @keyframes heroFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
         .hero-glow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 220px; height: 220px; background: radial-gradient(circle, var(--glow-green) 0%, transparent 70%); z-index: -1; filter: blur(35px); }
 
-        /* Кнопки меню */
         .game-card {
             background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
             border: 1px solid rgba(34, 197, 94, 0.2);
@@ -85,7 +81,6 @@
         .card-title { font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 17px; line-height: 1; letter-spacing: -0.5px; }
         .card-desc { font-size: 10px; font-weight: 700; color: var(--accent-green); text-transform: uppercase; opacity: 0.9; margin-top: 4px; }
 
-        /* Навигация */
         .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(5, 10, 5, 0.96); border-top: 1px solid rgba(34, 197, 94, 0.2); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; backdrop-filter: blur(25px); height: 95px; }
         .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #4b5563; flex: 1; }
         .dock-btn.active { color: var(--accent-green); filter: drop-shadow(0 0 8px var(--accent-green)); }
@@ -111,7 +106,7 @@
     
     <div class="main-wrapper">
         <div class="scrollable-content">
-            <!-- ШАПКА: ТОЛЬКО ПРОФИЛЬ И ЗВЕЗДЫ -->
+            <!-- ШАПКА -->
             <div class="flex justify-between items-center mb-8">
                 <div class="flex items-center gap-4">
                     <div class="relative">
@@ -126,7 +121,7 @@
                 <div class="balance-container-v2" onclick="tg.showAlert('Пополнение доступно в разделе STARS')">
                     <div class="balance-item-v2 text-green-400">
                         <span id="bal-stars" class="font-black text-xl">0</span>
-                        <img src="star.png" alt="STAR">
+                        <img src="img/star.png" alt="STAR">
                     </div>
                 </div>
             </div>
@@ -134,7 +129,7 @@
             <!-- ГЕРОЙ -->
             <div class="hero-zone">
                 <div class="hero-glow"></div>
-                <img src="hero.png" alt="HERO" class="w-44 h-44 mx-auto object-contain">
+                <img src="img/hero.png" alt="HERO" class="w-44 h-44 mx-auto object-contain">
                 <h1 class="text-5xl font-black italic mt-2 uppercase tracking-tighter">Fix<span class="text-green-500">Stars</span></h1>
                 <div class="h-1.5 w-16 bg-green-500 rounded-full mx-auto mt-2 shadow-lg shadow-green-500/50"></div>
             </div>
@@ -142,7 +137,7 @@
             <!-- МЕНЮ -->
             <div class="mt-10">
                 <div onclick="window.location.href='tasks.html?v=' + Date.now()" class="game-card">
-                    <img src="pepe.png" alt="Cases">
+                    <img src="img/pepe.png" alt="Cases">
                     <div>
                         <div class="card-title">Задания</div>
                         <div class="card-desc">Выполняй простые задания и зарабатывай Stars</div>
@@ -155,7 +150,7 @@
                 </div>
 
                 <div onclick="window.location.href='wheel.html'" class="game-card">
-                    <img src="chassiki.png" alt="Wheel">
+                    <img src="img/chassiki.png" alt="Wheel">
                     <div>
                         <div class="card-title">Ежедневный бонус</div>
                         <div class="card-desc">Испытай свою удачу</div>
@@ -180,9 +175,8 @@
 
 <script>
     const tg = window.Telegram.WebApp;
-    const BACKEND_URL = 'https://sdjsdjsd.vercel.app'; // Укажи свой актуальный URL бэкенда на Vercel
+    const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
     
-    // Безопасное получение юзера: если открыто вне Телеграма — ставим тестовый профиль
     const tgUser = tg.initDataUnsafe?.user;
     const user = (tgUser && tgUser.id) ? tgUser : { id: '12345', username: 'TestUser', first_name: 'Тестер' };
 
@@ -200,35 +194,8 @@
             if (starsElem) {
                 starsElem.innerText = Math.floor(starsVal);
             }
-            
-            console.log("Данные синхронизированы. Игрок:", username, "Баланс:", starsVal);
         } catch (e) { 
             console.warn("Не удалось обновить баланс:", e); 
-        }
-    }
-
-    async function completeTask(taskId, rewardAmount) {
-        try {
-            const res = await fetch(`${BACKEND_URL}/complete_task`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    user_id: String(user.id), 
-                    task_id: taskId, 
-                    reward: rewardAmount 
-                })
-            });
-
-            const data = await res.json();
-
-            if (res.ok) {
-                tg.showAlert(`🎉 Задание выполнено! +${rewardAmount} звезд.`);
-                document.getElementById('bal-stars').innerText = data.new_balance;
-            } else {
-                tg.showAlert(`❌ ${data.detail || "Ошибка"}`);
-            }
-        } catch (e) {
-            console.error("Ошибка выполнения задания:", e);
         }
     }
 
@@ -254,7 +221,6 @@
         }, 800);
     };
 
-    // Фоновая анимация звёздочек
     const canvas = document.getElementById('stars-canvas');
     const ctx = canvas.getContext('2d');
     let starsArr = [];
