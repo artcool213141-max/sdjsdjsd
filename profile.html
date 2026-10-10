@@ -322,31 +322,34 @@
 <script>
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
-    // start_param из ссылки Telegram (ID того, кто пригласил)
-    const startParam = tg.initDataUnsafe?.start_param;
-
     const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
 
-    // ⚠️ BOT_TOKEN удалён из фронта. Уведомление админу теперь идёт через бэкенд (ref.py)
+    async function api(path, body) {
+        const res = await fetch(BACKEND_URL + path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ init_data: tg.initData, ...(body || {}) })
+        });
+        let data = {};
+        try { data = await res.json(); } catch (_) {}
+        return { ok: res.ok, data };
+    }
 
     async function initProfile() {
-        if (user) {
-            document.getElementById('p-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
-            document.getElementById('p-id').innerText = `ID: ${user.id}`;
-            document.getElementById('p-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name}`;
-
-            fetchBalance();
-        }
+        if (!user) return;
+        document.getElementById('p-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
+        document.getElementById('p-id').innerText = `ID: ${user.id}`;
+        document.getElementById('p-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name}`;
+        fetchBalance();
     }
 
     async function fetchBalance() {
         if (!user) return 0;
         try {
-            // start_param сюда НЕ передаём, иначе реферал может засчитаться дважды
             const url = `${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(user.username || user.first_name || 'Unknown')}`;
             const res = await fetch(url);
             const data = await res.json();
-            const bal = data.balance || 0;
+            const bal = Math.floor(Number(data.balance) || 0);
             document.getElementById('p-balance').innerText = bal;
             return bal;
         } catch (e) {
@@ -358,27 +361,16 @@
     async function claimPromo() {
         const input = document.getElementById('promo-input');
         const code = input.value.trim();
-
-        if (!code) {
-            tg.showAlert("Введите промокод!");
-            return;
-        }
+        if (!code) { tg.showAlert("Введите промокод!"); return; }
 
         try {
-            const res = await fetch(`${BACKEND_URL}/activate_promo`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: String(user.id), code: code })
-            });
-
-            const data = await res.json();
-
-            if (res.ok && data.success) {
-                tg.showAlert(`🎉 Промокод успешно активирован!\nВам начислено: +${data.reward} ⭐`);
-                document.getElementById('p-balance').innerText = data.new_balance;
+            const { ok, data } = await api('/activate_promo', { code });
+            if (ok && data.success) {
+                tg.showAlert(`🎉 Промокод активирован!\nНачислено: +${data.reward} ⭐`);
+                document.getElementById('p-balance').innerText = Math.floor(Number(data.new_balance) || 0);
                 input.value = '';
             } else {
-                tg.showAlert(`❌ Ошибка: ${data.detail || "Не удалось активировать"}`);
+                tg.showAlert(`❌ ${data.detail || "Не удалось активировать"}`);
             }
         } catch (e) {
             tg.showAlert("Ошибка соединения с сервером.");
@@ -386,22 +378,20 @@
     }
 
     async function buyGift(name, price) {
-        // 1. Проверяем условия (друзья и задания)
+        // 1. Проверка условий (друзья и задания)
         try {
             const res = await fetch(`${BACKEND_URL}/get_ref_stats/${user.id}`);
             const data = await res.json();
-
             const taskRes = await fetch(`${BACKEND_URL}/get_completed_tasks/${user.id}`);
             const taskData = await taskRes.json();
-            const taskCount = taskData.completed ? taskData.completed.length : 0;
 
+            const taskCount = taskData.completed ? taskData.completed.length : 0;
             const qualifiedRefs = data.ref_count || 0;
 
             if (qualifiedRefs < 3 || taskCount < 10) {
                 let message = "⚠️ Недостаточно активности для заказа:\n\n";
                 message += qualifiedRefs < 3 ? `• Пригласить 3 друзей (сейчас: ${qualifiedRefs}/3)\n` : "✅ 3 друга приглашено!\n";
                 message += taskCount < 10 ? `• Выполнить 10 заданий (сейчас: ${taskCount}/10)` : "✅ 10 заданий выполнено!";
-
                 tg.showAlert(message);
                 return;
             }
@@ -410,55 +400,36 @@
             return;
         }
 
-        // 2. Проверяем баланс
+        // 2. Баланс
         const currentBalance = await fetchBalance();
         if (currentBalance < price) {
             tg.showAlert(`❌ Недостаточно звёзд!\nНужно: ${price}\nУ вас: ${currentBalance}`);
             return;
         }
 
-        // 3. Подтверждаем покупку
+        // 3. Подтверждение и покупка (цену сервер берёт сам)
         tg.showConfirm(`Вы хотите купить "${name}" за ${price} ⭐?`, async (confirmed) => {
-            if (confirmed) {
-                try {
-                    const res = await fetch(`${BACKEND_URL}/update_balance`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ user_id: String(user.id), amount: -price })
-                    });
-
-                    if (res.ok) {
-                        await notifyAdmin(name, price);
-                        tg.showAlert(`✅ Покупка "${name}" успешна!\nАдмин скоро свяжется.`);
-                        fetchBalance();
-                    } else {
-                        tg.showAlert("Ой! Ошибка при списании баллов.");
-                    }
-                } catch (e) {
-                    tg.showAlert("Ошибка сети или сервера.");
+            if (!confirmed) return;
+            try {
+                const { ok, data } = await api('/buy_gift', { gift_name: name });
+                if (ok && data.success) {
+                    tg.showAlert(`✅ Покупка "${name}" успешна!\nАдмин скоро свяжется.`);
+                    document.getElementById('p-balance').innerText = Math.floor(Number(data.new_balance) || 0);
+                } else if (data.error === 'balance') {
+                    tg.showAlert("❌ Недостаточно звёзд!");
+                } else if (data.error === 'conditions') {
+                    tg.showAlert(`⚠️ Нужно 3 друга и 10 заданий.\nСейчас: ${data.refs}/3 друзей, ${data.tasks}/10 заданий`);
+                } else {
+                    tg.showAlert(`Ошибка: ${data.detail || "не удалось оформить заказ"}`);
                 }
+            } catch (e) {
+                tg.showAlert("Ошибка сети или сервера.");
             }
         });
     }
 
-    // Уведомление админу — через бэкенд (токен бота больше не светится в браузере)
-    async function notifyAdmin(giftName, price) {
-        try {
-            const response = await fetch(`${BACKEND_URL}/notify_withdraw`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ init_data: tg.initData, gift_name: giftName, price: price })
-            });
-            if (!response.ok) {
-                console.error("Ошибка уведомления админа, статус:", response.status);
-            }
-        } catch (e) {
-            console.error("Ошибка сети при уведомлении админа:", e);
-        }
-    }
-
     window.onload = () => {
-        tg.expand();
+        try { tg.expand(); tg.ready(); } catch (_) {}
         initProfile();
     };
 </script>
