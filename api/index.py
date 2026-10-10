@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from supabase import create_client, Client
 from pydantic import BaseModel
+import os
 
 app = FastAPI()
 
@@ -14,11 +16,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ТВОИ ДАННЫЕ
+# ТВОИ НОВЫЕ ДАННЫЕ SUPABASE
 SUPABASE_URL = "https://xbklrdpguqsuvqndcujb.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhia2xyZHBndXFzdXZxbmRjdWpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzQ0NzUsImV4cCI6MjEwNzIxMDQ3NX0.IeK3NGOTu_J1jDOd_XjHQUOySnkbFh4uThGCPeu-Wu4"
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Главная страница (автоматически отдает твой index.html из корня проекта)
+@app.get("/", response_class=HTMLResponse)
+async def serve_home():
+    html_path = os.path.join(os.path.dirname(__file__), "..", "index.html")
+    if os.path.exists(html_path):
+        with open(html_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h1>FixStars API is Running</h1>"
 
 # Модели для валидации запросов
 class UpdateBalanceRequest(BaseModel):
@@ -28,7 +39,6 @@ class UpdateBalanceRequest(BaseModel):
 class PromoRequest(BaseModel):
     user_id: str
     code: str
-
 
 # 1. ПОЛУЧЕНИЕ БАЛАНСА + АВТО-РЕФЕРАЛКА С НАГРАДОЙ 3 ЗВЕЗДЫ
 @app.get("/get_balance/{user_id}")
@@ -76,7 +86,6 @@ async def get_balance(user_id: str, username: str = "Unknown", start_param: str 
 @app.get("/check_referral_bonus/{user_id}")
 async def check_referral_bonus(user_id: str):
     try:
-        # 1. Находим всех, кого пригласил этот пользователь
         refs = supabase.table("referrals") \
             .select("invited_id") \
             .eq("referrer_id", user_id) \
@@ -87,8 +96,6 @@ async def check_referral_bonus(user_id: str):
         if not invited_ids:
             return {"qualified_refs": 0}
 
-        # 2. Считаем, сколько из них выполнили 10+ заданий
-        # ВАЖНО: Предполагаем, что у вас в таблице users есть колонка tasks_completed
         qualified = supabase.table("users") \
             .select("id") \
             .in_("id", invited_ids) \
@@ -96,16 +103,10 @@ async def check_referral_bonus(user_id: str):
             .execute()
         
         count = len(qualified.data)
-        
-        # 3. (Опционально) Если вы хотите, чтобы при нажатии 
-        # бонус начислялся автоматически один раз:
-        # Тут можно добавить логику проверки, получал ли юзер бонус за это ранее
-        
         return {"qualified_refs": count}
         
     except Exception as e:
         return {"error": str(e), "qualified_refs": 0}
-
 
 # 2. СПИСАНИЕ ПРИ ПОКУПКЕ ПОДАРКА
 @app.post("/update_balance")
@@ -127,7 +128,6 @@ async def update_balance(request: UpdateBalanceRequest):
 
     except Exception as e:
         return {"error": str(e)}
-
 
 # 3. СТАТИСТИКА РЕФЕРАЛОВ ДЛЯ ПРОФИЛЯ
 @app.get("/get_ref_stats/{user_id}")
@@ -151,11 +151,9 @@ async def get_completed_tasks(user_id: str):
             .select("task_id") \
             .eq("user_id", user_id) \
             .execute()
-        # Возвращаем массив ID выполненных заданий
         return {"completed": [row["task_id"] for row in result.data]}
     except Exception as e:
         return {"completed": []}
-
 
 # 4. АКТИВАЦИЯ ПРОМОКОДОВ
 @app.post("/activate_promo")
@@ -202,7 +200,6 @@ class TaskRequest(BaseModel):
 @app.post("/complete_task")
 async def complete_task(req: TaskRequest):
     try:
-        # 1. Проверяем, не выполнял ли юзер это задание раньше
         check = supabase.table("tasks_completed")\
             .select("id")\
             .eq("user_id", req.user_id)\
@@ -212,7 +209,6 @@ async def complete_task(req: TaskRequest):
         if check.data:
             raise HTTPException(status_code=400, detail="Задание уже выполнено!")
 
-        # 2. Получаем текущие данные пользователя для расчета
         user_res = supabase.table("users").select("balance", "tasks_completed").eq("id", req.user_id).execute()
         if not user_res.data:
             raise HTTPException(status_code=404, detail="Пользователь не найден")
@@ -221,13 +217,11 @@ async def complete_task(req: TaskRequest):
         new_balance = current_user["balance"] + req.reward
         new_tasks_count = current_user.get("tasks_completed", 0) + 1
 
-        # 3. Записываем выполнение задания
         supabase.table("tasks_completed").insert({
             "user_id": req.user_id, 
             "task_id": req.task_id
         }).execute()
 
-        # 4. Обновляем баланс и счетчик заданий у юзера
         supabase.table("users").update({
             "balance": new_balance,
             "tasks_completed": new_tasks_count
