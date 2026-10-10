@@ -1,4 +1,5 @@
 import os, hmac, hashlib, json, time
+from typing import Optional
 from urllib.parse import parse_qsl
 
 import httpx
@@ -8,9 +9,12 @@ from supabase import create_client
 
 router = APIRouter()
 
-supabase = create_client(os.environ["SUPABASE_URL"], os.environ["SUPABASE_SERVICE_KEY"])
-BOT_TOKEN = os.environ["BOT_TOKEN"]
-ADMIN_ID = os.environ["ADMIN_ID"]
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
+ADMIN_ID = os.environ.get("ADMIN_ID", "")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY) if SUPABASE_URL and SUPABASE_SERVICE_KEY else None
 
 # Цены только на сервере, клиенту верить нельзя
 GIFTS = {
@@ -22,6 +26,8 @@ GIFTS = {
 
 
 def validate_init_data(init_data: str, max_age: int = 86400) -> dict:
+    if not BOT_TOKEN:
+        raise HTTPException(500, "BOT_TOKEN missing")
     data = dict(parse_qsl(init_data, keep_blank_values=True))
     received_hash = data.pop("hash", None)
     if not received_hash:
@@ -40,6 +46,8 @@ def validate_init_data(init_data: str, max_age: int = 86400) -> dict:
 
 
 def rpc(name: str, params: dict):
+    if supabase is None:
+        raise HTTPException(500, "supabase env missing")
     try:
         return supabase.rpc(name, params).execute().data
     except Exception as e:
@@ -49,7 +57,7 @@ def rpc(name: str, params: dict):
 
 class RefReq(BaseModel):
     init_data: str
-    start_param: str | None = None
+    start_param: Optional[str] = None
 
 
 class InitReq(BaseModel):
@@ -71,8 +79,20 @@ class BuyReq(BaseModel):
     gift_name: str
 
 
+@router.get("/env_check")
+async def env_check():
+    return {
+        "SUPABASE_URL": bool(SUPABASE_URL),
+        "SUPABASE_SERVICE_KEY": bool(SUPABASE_SERVICE_KEY),
+        "BOT_TOKEN": bool(BOT_TOKEN),
+        "ADMIN_ID": bool(ADMIN_ID),
+    }
+
+
 @router.get("/ref_ping")
 async def ref_ping():
+    if supabase is None:
+        return {"ok": False, "error": "SUPABASE_URL or SUPABASE_SERVICE_KEY missing"}
     try:
         supabase.rpc("get_ref_stats", {"p_user_id": "0"}).execute()
         return {"ok": True}
@@ -160,7 +180,6 @@ async def buy_gift(req: BuyReq):
                 json={"chat_id": ADMIN_ID, "text": text},
             )
     except Exception as e:
-        # заказ уже записан в gift_orders, админ увидит его в базе
         print("notify admin error:", repr(e))
 
     return res
