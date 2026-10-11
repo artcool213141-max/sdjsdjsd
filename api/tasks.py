@@ -15,9 +15,10 @@ router = APIRouter()
 BOTOHUB_TOKEN = os.environ.get("BOTOHUB_TOKEN", "")
 BH_REWARD = float(os.environ.get("BH_REWARD", "0.3"))
 
-SUBGRAM_TOKEN = os.environ.get("SUBGRAM_TOKEN", "")
-SUBGRAM_URL = os.environ.get("SUBGRAM_URL", "https://api.subgram.org").rstrip("/")
-SG_REWARD = float(os.environ.get("SG_REWARD", "0.1"))
+FLOWLY_API_KEY = os.environ.get("FLOWLY_API_KEY", "")
+FLOWLY_URL = os.environ.get("FLOWLY_URL", "https://flowly.guru/api/v1").rstrip("/")
+FL_REWARD = float(os.environ.get("FL_REWARD", "0.3"))
+FL_TYPES = [t.strip() for t in os.environ.get("FL_TYPES", "channel").split(",") if t.strip()]
 
 
 class InitReq(BaseModel):
@@ -29,7 +30,7 @@ class CheckReq(BaseModel):
     task_id: int
 
 
-class BhReq(BaseModel):
+class SrcReq(BaseModel):
     init_data: str
     action: Optional[str] = "get"   # get | check | skip
 
@@ -76,9 +77,10 @@ async def is_member(channel: str, user_id: int):
 async def tasks_env_check():
     return {
         "BOTOHUB_TOKEN": bool(BOTOHUB_TOKEN),
-        "SUBGRAM_TOKEN": bool(SUBGRAM_TOKEN),
+        "FLOWLY_API_KEY": bool(FLOWLY_API_KEY),
         "BH_REWARD": BH_REWARD,
-        "SG_REWARD": SG_REWARD,
+        "FL_REWARD": FL_REWARD,
+        "FL_TYPES": FL_TYPES,
     }
 
 
@@ -100,7 +102,7 @@ async def tasks_list(req: InitReq):
     balance = float(bal[0]["balance"] or 0) if bal else 0.0
 
     return {"balance": balance, "own": own, "done": len(done_ids),
-            "bh_reward": BH_REWARD, "sg_reward": SG_REWARD}
+            "bh_reward": BH_REWARD, "fl_reward": FL_REWARD}
 
 
 @router.post("/tasks/check_own")
@@ -148,7 +150,7 @@ async def bh_request(chat_id: int, skip: bool):
 
 
 @router.post("/tasks/bh")
-async def bh_task(req: BhReq):
+async def bh_task(req: SrcReq):
     user = validate_init_data(req.init_data)
     uid = str(user["id"])
     ensure_user(user)
@@ -189,160 +191,139 @@ async def bh_task(req: BhReq):
     }
 
 
-# ===================== Subgram =====================
-async def sg_request(path: str, payload: dict):
-    if not SUBGRAM_TOKEN:
-        print("SUBGRAM_TOKEN missing")
+# ===================== Flowly =====================
+async def fl_request(path: str, payload: dict):
+    """dict с ответом, либо None при любой ошибке (в т.ч. 503 — тогда ничего не засчитываем)."""
+    if not FLOWLY_API_KEY:
+        print("FLOWLY_API_KEY missing")
         return None
     try:
-        async with httpx.AsyncClient(timeout=10) as c:
+        async with httpx.AsyncClient(timeout=12) as c:
             r = await c.post(
-                SUBGRAM_URL + path,
-                headers={"Auth": SUBGRAM_TOKEN, "Content-Type": "application/json"},
+                FLOWLY_URL + path,
+                headers={"Auth": FLOWLY_API_KEY, "Content-Type": "application/json"},
                 json=payload,
             )
-        try:
-            data = r.json()
-        except Exception:
-            print("subgram bad json:", r.status_code, r.text[:200])
+        if r.status_code != 200:
+            print("flowly status:", path, r.status_code, r.text[:200])
             return None
-        if r.status_code >= 500 or data.get("status") == "error":
-            print("subgram error:", r.status_code, str(data)[:300])
-            return None
-        return data
+        return r.json()
     except Exception as e:
-        print("subgram exception:", repr(e))
+        print("flowly exception:", repr(e))
         return None
 
 
-def sg_done_resources(uid: str):
+def fl_done_ids(uid: str):
     rows = (db().table("completed_tasks").select("task_id")
-            .eq("user_id", uid).like("task_id", "sg:%").execute().data or [])
-    return [r["task_id"][3:] for r in rows]
+            .eq("user_id", uid).like("task_id", "fl:%").execute().data or [])
+    return {r["task_id"][3:] for r in rows}
 
 
-async def sg_fetch(user: dict, uid: str, extra_exclude=None):
-    """Возвращает dict спонсора, {} если спонсоров нет, None при ошибке."""
-    exclude = sg_done_resources(uid) + list(extra_exclude or [])
-    payload = {
-        "user_id": int(user["id"]),
-        "chat_id": int(user["id"]),
-        "action": "newtask",
-        "max_sponsors": 1,
-        "get_links": 1,
-        "is_premium": 1 if user.get("is_premium") else 0,
-        "first_name": user.get("first_name") or "",
-        "username": user.get("username") or "",
-        "language_code": user.get("language_code") or "ru",
-        "exclude_resource_ids": [str(x) for x in exclude[:500]],
-    }
-    data = await sg_request("/get-sponsors", payload)
-    if data is None:
-        return None
-    if data.get("status") != "warning":
-        return {}
-    for s in (data.get("additional") or {}).get("sponsors") or []:
-        if s.get("status") == "unsubscribed" and s.get("available_now") and s.get("link"):
-            return s
-    return {}
+def fl_get_state(uid: str):
+    st = db().table("fl_state").select("offer_id,link,skipped").eq("user_id", uid).execute().data
+    return st[0] if st else {"offer_id": None, "link": None, "skipped": ""}
 
 
-def sg_save(uid: str, sponsor: dict):
-    db().table("sg_state").upsert(
+def fl_save(uid: str, offer, skipped: str):
+    db().table("fl_state").upsert(
         {"user_id": uid,
-         "link": sponsor.get("link") if sponsor else None,
-         "resource_id": str(sponsor.get("resource_id")) if sponsor else None},
+         "offer_id": str(offer["offer_id"]) if offer else None,
+         "link": offer.get("link") if offer else None,
+         "skipped": skipped},
         on_conflict="user_id",
     ).execute()
 
 
-@router.post("/tasks/sg")
-async def sg_task(req: BhReq):
+async def fl_pick(user: dict, uid: str, skipped: str, prefer_id: Optional[str] = None):
+    """Возвращает offer (dict), {} если заданий нет, None при ошибке."""
+    data = await fl_request("/offers", {
+        "tg_user_id": int(user["id"]),
+        "lang": user.get("language_code") or "ru",
+        "is_premium": bool(user.get("is_premium")),
+        "offers_limit": 5,
+    })
+    if data is None:
+        return None
+    if data.get("status") != "not_ok":
+        return {}
+
+    done = fl_done_ids(uid)
+    skip_set = {x for x in skipped.split(",") if x}
+    good = []
+    for o in data.get("offers") or []:
+        oid = str(o.get("offer_id"))
+        if o.get("subscribed") or oid in done or oid in skip_set:
+            continue
+        if o.get("type") not in FL_TYPES or not o.get("link"):
+            continue
+        good.append(o)
+
+    if prefer_id:
+        for o in good:
+            if str(o["offer_id"]) == prefer_id:
+                return o
+    return good[0] if good else {}
+
+
+@router.post("/tasks/fl")
+async def fl_task(req: SrcReq):
     user = validate_init_data(req.init_data)
     uid = str(user["id"])
     ensure_user(user)
 
-    st = db().table("sg_state").select("link,resource_id").eq("user_id", uid).execute().data
-    cur = st[0] if st else {}
-    cur_link, cur_rid = cur.get("link"), cur.get("resource_id")
+    st = fl_get_state(uid)
+    cur_id, skipped = st.get("offer_id"), st.get("skipped") or ""
 
-    rewarded = 0.0
-    new_balance = None
-
-    if req.action == "get" and cur_link:
-        return {"ok": True, "link": cur_link, "rewarded": 0, "new_balance": None}
+    if req.action == "skip":
+        if cur_id:
+            skipped = (skipped + "," + cur_id).strip(",")
+        offer = await fl_pick(user, uid, skipped)
+        if offer is None:
+            return {"ok": False, "reason": "fl_unavailable"}
+        fl_save(uid, offer or None, skipped)
+        return {"ok": True, "link": (offer or {}).get("link"), "rewarded": 0, "new_balance": None}
 
     if req.action == "check":
-        if not cur_link:
-            sp = await sg_fetch(user, uid)
-            if sp is None:
-                return {"ok": False, "reason": "sg_unavailable"}
-            sg_save(uid, sp)
-            return {"ok": True, "link": sp.get("link"), "rewarded": 0, "new_balance": None}
+        if not cur_id:
+            offer = await fl_pick(user, uid, skipped)
+            if offer is None:
+                return {"ok": False, "reason": "fl_unavailable"}
+            fl_save(uid, offer or None, skipped)
+            return {"ok": True, "link": (offer or {}).get("link"), "rewarded": 0, "new_balance": None}
 
-        data = await sg_request("/get-user-subscriptions",
-                                {"user_id": int(user["id"]), "links": [cur_link]})
-        if data is None:
-            return {"ok": False, "reason": "sg_unavailable"}
+        chk = await fl_request("/check", {"tg_user_id": int(user["id"]), "offer_id": int(cur_id)})
+        if chk is None:
+            return {"ok": False, "reason": "fl_unavailable"}
 
-        sponsors = (data.get("additional") or {}).get("sponsors") or []
-        subscribed = any(s.get("status") == "subscribed" for s in sponsors)
-        if not subscribed:
-            return {"ok": True, "link": cur_link, "rewarded": 0, "new_balance": None}
+        status = chk.get("status")
+        if status == "not_subscribed":
+            return {"ok": True, "link": st.get("link"), "rewarded": 0, "new_balance": None}
 
-        res = rpc("complete_task", {
-            "p_user_id": uid,
-            "p_task_id": "sg:" + (cur_rid or uuid.uuid4().hex),
-            "p_reward": SG_REWARD,
-        })
-        if res.get("success"):
-            rewarded = SG_REWARD
-            new_balance = res.get("new_balance")
-
-        sp = await sg_fetch(user, uid)
-        sg_save(uid, sp or None)
+        rewarded, new_balance = 0.0, None
+        if status == "subscribed":
+            res = rpc("complete_task", {
+                "p_user_id": uid,
+                "p_task_id": f"fl:{cur_id}",
+                "p_reward": FL_REWARD,
+            })
+            if res.get("success"):
+                rewarded = FL_REWARD
+                new_balance = res.get("new_balance")
+        # subscribed или offer_unavailable: идём к следующему заданию
+        offer = await fl_pick(user, uid, skipped)
+        if offer is None:
+            offer = {}
+        fl_save(uid, offer or None, skipped)
         return {
             "ok": True,
-            "link": (sp or {}).get("link"),
+            "link": (offer or {}).get("link"),
             "rewarded": rewarded,
             "new_balance": float(new_balance) if new_balance is not None else None,
         }
 
-    # get без сохранённой ссылки, либо skip
-    extra = [cur_rid] if (req.action == "skip" and cur_rid) else []
-    sp = await sg_fetch(user, uid, extra)
-    if sp is None:
-        return {"ok": False, "reason": "sg_unavailable"}
-    sg_save(uid, sp or None)
-    return {"ok": True, "link": (sp or {}).get("link"), "rewarded": 0, "new_balance": None}
-
-# ===== ВРЕМЕННО: проверка BotoHub (удалить после проверки) =====
-DEBUG_KEY = os.environ.get("DEBUG_KEY", "")
-
-
-@router.get("/tasks/debug_bh")
-async def debug_bh(key: str, chat_id: int):
-    import hmac as _hmac
-    if not DEBUG_KEY or not _hmac.compare_digest(key, DEBUG_KEY):
-        raise HTTPException(403, "bad key")
-    if not BOTOHUB_TOKEN:
-        return {"error": "BOTOHUB_TOKEN missing"}
-
-    tests = {
-        "tasks_mode": ("/get-tasks", {"chat_id": chat_id, "is_task": True, "skip": False}),
-        "op_mode": ("/get-tasks", {"chat_id": chat_id}),
-        "extended": ("/get-tasks-extended", {"chat_id": chat_id, "max_op": 3}),
-    }
-    out = {}
-    async with httpx.AsyncClient(timeout=10) as c:
-        for name, (path, body) in tests.items():
-            try:
-                r = await c.post(
-                    "https://botohub.me" + path,
-                    headers={"Auth": BOTOHUB_TOKEN, "Content-Type": "application/json"},
-                    json=body,
-                )
-                out[name] = {"status": r.status_code, "body": r.text[:800]}
-            except Exception as e:
-                out[name] = {"error": repr(e)}
-    return out
+    # get
+    offer = await fl_pick(user, uid, skipped, prefer_id=cur_id)
+    if offer is None:
+        return {"ok": False, "reason": "fl_unavailable"}
+    fl_save(uid, offer or None, skipped)
+    return {"ok": True, "link": (offer or {}).get("link"), "rewarded": 0, "new_balance": None}
