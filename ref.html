@@ -422,10 +422,24 @@
         await loadReferrals();
     }
 
-    function shareRef() {
+    async function shareRef() {
         if (!REF_LINK) return;
-        const url = `https://t.me/share/url?url=${encodeURIComponent(REF_LINK)}&text=${encodeURIComponent('Присоединяйся к FixStars! 🌟')}`;
-        tg.openTelegramLink(url);
+
+        const fallback = () => {
+            const text = '⭐️ Зарабатывай Telegram Stars без вложений в FixStars!\nПростые задания: подписки, просмотры, приглашение друзей. Быстрые выплаты прямо в Telegram!\n👇 Начни зарабатывать прямо сейчас';
+            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(REF_LINK)}&text=${encodeURIComponent(text)}`);
+        };
+
+        try {
+            if (tg.shareMessage && tg.isVersionAtLeast && tg.isVersionAtLeast('8.0')) {
+                const d = await api('/share_ref');
+                if (d.ok && d.id) {
+                    tg.shareMessage(d.id, (sent) => { if (sent) toast('Отправлено'); });
+                    return;
+                }
+            }
+        } catch (e) { console.error(e); }
+        fallback();
     }
 
     function copyRef() {
