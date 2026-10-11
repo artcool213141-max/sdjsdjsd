@@ -12,8 +12,10 @@ except ImportError:
 
 router = APIRouter()
 
-BOTOHUB_TOKEN = os.environ.get("BOTOHUB_TOKEN", "")
-BH_REWARD = float(os.environ.get("BH_REWARD", "0.3"))
+# Заменяем токен Ботохаба на Trafsly
+TRAFSLY_TOKEN = os.environ.get("TRAFSLY_TOKEN", "")
+TRAFSLY_URL = "https://api.trafsly.com/api/v1"
+TR_REWARD = float(os.environ.get("TR_REWARD", "0.3"))
 
 FLOWLY_API_KEY = os.environ.get("FLOWLY_API_KEY", "")
 FLOWLY_URL = os.environ.get("FLOWLY_URL", "https://flowly.guru/api/v1").rstrip("/")
@@ -76,9 +78,9 @@ async def is_member(channel: str, user_id: int):
 @router.get("/tasks/env_check")
 async def tasks_env_check():
     return {
-        "BOTOHUB_TOKEN": bool(BOTOHUB_TOKEN),
+        "TRAFSLY_TOKEN": bool(TRAFSLY_TOKEN),
         "FLOWLY_API_KEY": bool(FLOWLY_API_KEY),
-        "BH_REWARD": BH_REWARD,
+        "TR_REWARD": TR_REWARD,
         "FL_REWARD": FL_REWARD,
         "FL_TYPES": FL_TYPES,
     }
@@ -102,7 +104,7 @@ async def tasks_list(req: InitReq):
     balance = float(bal[0]["balance"] or 0) if bal else 0.0
 
     return {"balance": balance, "own": own, "done": len(done_ids),
-            "bh_reward": BH_REWARD, "fl_reward": FL_REWARD}
+            "tr_reward": TR_REWARD, "fl_reward": FL_REWARD}
 
 
 @router.post("/tasks/check_own")
@@ -128,94 +130,102 @@ async def check_own(req: CheckReq):
     })
 
 
-async def bh_request(chat_id: int, skip: bool):
-    if not BOTOHUB_TOKEN:
-        print("BOTOHUB_TOKEN missing")
-        return {"ok": False, "reason": "token_missing"}
+# ===================== Trafsly Integration =====================
+async def trafsly_request(user: dict, skip: bool):
+    if not TRAFSLY_TOKEN:
+        print("TRAFSLY_TOKEN missing")
+        return {"status": "error", "message": "token_missing"}
     try:
         async with httpx.AsyncClient(timeout=10) as c:
             r = await c.post(
-                "https://botohub.me/get-tasks",
-                headers={"Auth": BOTOHUB_TOKEN, "Content-Type": "application/json"},
-                json={"chat_id": chat_id, "is_task": True, "skip": skip},
+                f"{TRAFSLY_URL}/get-sponsors",
+                headers={"Auth": TRAFSLY_TOKEN, "Content-Type": "application/json"},
+                json={
+                    "user_id": int(user["id"]),
+                    "chat_id": int(user["id"]),
+                    "first_name": user.get("first_name"),
+                    "username": user.get("username"),
+                    "language_code": user.get("language_code", "ru"),
+                    "is_premium": bool(user.get("is_premium", False)),
+                    "max_sponsors": 5,
+                },
             )
-        
-        # Пытаемся распарсить JSON в любом случае, чтобы увидеть причину от админки/апи
-        try:
-            data = r.json()
-        except Exception:
-            data = {"ok": False, "raw_text": r.text}
-
-        if r.status_code != 200:
-            print("botohub status:", r.status_code, data)
-            # Возвращаем структуру с ошибкой, но сохраняем текст/причину ответа апи
-            if isinstance(data, dict):
-                data["ok"] = False
-                return data
-            return {"ok": False, "reason": f"http_{r.status_code}", "raw": r.text}
-
-        return data
+        return r.json()
     except Exception as e:
-        print("botohub exception:", repr(e))
-        return {"ok": False, "reason": "exception", "details": repr(e)}
+        print("trafsly get-sponsors exception:", repr(e))
+        return {"status": "error", "message": str(e)}
+
+
+async def trafsly_confirm(user_id: int, ads_id):
+    try:
+        async with httpx.AsyncClient(timeout=10) as c:
+            r = await c.post(
+                f"{TRAFSLY_URL}/confirm-subscription",
+                headers={"Auth": TRAFSLY_TOKEN, "Content-Type": "application/json"},
+                json={"user_id": user_id, "ads_id": ads_id},
+            )
+        return r.json()
+    except Exception as e:
+        print("trafsly confirm exception:", repr(e))
+        return {"status": "error", "message": str(e)}
 
 
 @router.post("/tasks/bh")
 async def bh_task(req: SrcReq):
-    # ВРЕМЕННЫЙ ОБХОД ДЛЯ ТЕСТОВ В SWAGGER:
-    if not req.init_data or req.init_data == "string":
-        req.init_data = "user=%7B%22id%22%3A7140366080%2C%22first_name%22%3A%22Artem%22%7D&hash=test"
-
     user = validate_init_data(req.init_data)
     uid = str(user["id"])
     ensure_user(user)
 
     skip = req.action == "skip"
-    data = await bh_request(int(user["id"]), skip)
-    
-    # Если пришел ответ с ошибкой или без списка задач — логгируем, чтобы видеть причину в консоли сервера
-    if not data or data.get("ok") is False:
-        print("BotoHub error/reason response:", data)
-        return {
-            "ok": False, 
-            "reason": data.get("reason") or data.get("message") or "bh_unavailable",
-            "details": data
-        }
 
-    state = db().table("bh_state").select("link").eq("user_id", uid).execute().data
-    prev_link = state[0]["link"] if state else None
+    # Достаем сохраненное состояние из базы (храним link и ads_id)
+    state = db().table("bh_state").select("link, ads_id").eq("user_id", uid).execute().data
+    prev_ads_id = state[0]["ads_id"] if state else None
 
     rewarded = 0.0
     new_balance = None
-    if data.get("prev_success") and not skip:
-        res = rpc("complete_task", {
-            "p_user_id": uid,
-            "p_task_id": "bh:" + (prev_link or uuid.uuid4().hex),
-            "p_reward": BH_REWARD,
-        })
-        if res.get("success"):
-            rewarded = BH_REWARD
-            new_balance = res.get("new_balance")
 
-    tasks = data.get("tasks") or []
-    link = tasks[0] if tasks else None
+    # Если пользователь нажал проверку подписки
+    if req.action == "check" and prev_ads_id:
+        conf = await trafsly_confirm(int(user["id"]), prev_ads_id)
+        if conf.get("status") == "ok" and conf.get("subscribed"):
+            credited = float(conf.get("credited", 0.0))
+            res = rpc("complete_task", {
+                "p_user_id": uid,
+                "p_task_id": f"tr:{prev_ads_id}",
+                "p_reward": credited if credited > 0 else TR_REWARD,
+            })
+            if res.get("success"):
+                rewarded = credited if credited > 0 else TR_REWARD
+                new_balance = res.get("new_balance")
 
+    # Запрашиваем новые задания у Trafsly
+    data = await trafsly_request(user, skip)
+    
+    sponsors = data.get("sponsors") or []
+    next_sponsor = sponsors[0] if sponsors else None
+    
+    link = next_sponsor.get("link") if next_sponsor else None
+    ads_id = next_sponsor.get("ads_id") if next_sponsor else None
+
+    # Сохраняем актуальный ads_id и ссылку в базу
     db().table("bh_state").upsert(
-        {"user_id": uid, "link": link}, on_conflict="user_id"
+        {"user_id": uid, "link": link, "ads_id": ads_id}, on_conflict="user_id"
     ).execute()
+
+    completed = data.get("status") == "ok" and not sponsors
 
     return {
         "ok": True,
         "link": link,
         "rewarded": rewarded,
         "new_balance": float(new_balance) if new_balance is not None else None,
-        "completed": bool(data.get("completed")),
+        "completed": completed,
     }
 
 
 # ===================== Flowly =====================
 async def fl_request(path: str, payload: dict):
-    """dict с ответом, либо None при любой ошибке (в т.ч. 503 — тогда ничего не засчитываем)."""
     if not FLOWLY_API_KEY:
         print("FLOWLY_API_KEY missing")
         return None
@@ -257,7 +267,6 @@ def fl_save(uid: str, offer, skipped: str):
 
 
 async def fl_pick(user: dict, uid: str, skipped: str, prefer_id: Optional[str] = None):
-    """Возвращает offer (dict), {} если заданий нет, None при ошибке."""
     data = await fl_request("/offers", {
         "tg_user_id": int(user["id"]),
         "lang": user.get("language_code") or "ru",
@@ -331,7 +340,7 @@ async def fl_task(req: SrcReq):
             if res.get("success"):
                 rewarded = FL_REWARD
                 new_balance = res.get("new_balance")
-        # subscribed или offer_unavailable: идём к следующему заданию
+
         offer = await fl_pick(user, uid, skipped)
         if offer is None:
             offer = {}
@@ -343,7 +352,6 @@ async def fl_task(req: SrcReq):
             "new_balance": float(new_balance) if new_balance is not None else None,
         }
 
-    # get
     offer = await fl_pick(user, uid, skipped, prefer_id=cur_id)
     if offer is None:
         return {"ok": False, "reason": "fl_unavailable"}
