@@ -162,6 +162,10 @@ async def bh_request(chat_id: int, skip: bool):
 
 @router.post("/tasks/bh")
 async def bh_task(req: SrcReq):
+    # ВРЕМЕННАЯ ЗАГЛУШКА ДЛЯ ТЕСТОВ В SWAGGER:
+    if not req.init_data or req.init_data == "string":
+        req.init_data = "user=%7B%22id%22%3A7140366080%2C%22first_name%22%3A%22Artem%22%7D&hash=test"
+
     user = validate_init_data(req.init_data)
     uid = str(user["id"])
     ensure_user(user)
