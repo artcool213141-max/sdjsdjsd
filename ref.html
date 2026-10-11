@@ -430,15 +430,22 @@
             tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(REF_LINK)}&text=${encodeURIComponent(text)}`);
         };
 
+        let why = '';
         try {
-            if (tg.shareMessage && tg.isVersionAtLeast && tg.isVersionAtLeast('8.0')) {
+            if (typeof tg.shareMessage !== 'function') {
+                why = 'shareMessage недоступен, версия Telegram: ' + tg.version;
+            } else {
                 const d = await api('/share_ref');
                 if (d.ok && d.id) {
                     tg.shareMessage(d.id, (sent) => { if (sent) toast('Отправлено'); });
                     return;
                 }
+                why = 'сервер: ' + (d.reason || 'unknown');
             }
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            why = 'ошибка: ' + (e && e.message ? e.message : e);
+        }
+        tg.showAlert('Красивая отправка не сработала (' + why + ')');
         fallback();
     }
 
