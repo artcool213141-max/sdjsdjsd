@@ -14,6 +14,10 @@ SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 ADMIN_ID = os.environ.get("ADMIN_ID", "")
 
+REF_IMAGE_URL = os.environ.get("REF_IMAGE_URL", "")
+BOT_USERNAME = os.environ.get("BOT_USERNAME", "FixStarsOfficial_bot")
+APP_SHORT_NAME = os.environ.get("APP_SHORT_NAME", "app")
+
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY) if SUPABASE_URL and SUPABASE_SERVICE_KEY else None
 
 # Цены только на сервере, клиенту верить нельзя
@@ -23,6 +27,13 @@ GIFTS = {
     "Торт": 50, "Букет": 50, "Ракета": 50,
     "Кубок": 100, "Кольцо": 100, "Бриллиант": 100,
 }
+
+REF_CAPTION = (
+    "⭐️ Зарабатывай Telegram Stars без вложений в FixStars!\n"
+    "Простые задания: подписки, просмотры, приглашение друзей. "
+    "Быстрые выплаты прямо в Telegram!\n"
+    "👇 Начни зарабатывать прямо сейчас"
+)
 
 
 def validate_init_data(init_data: str, max_age: int = 86400) -> dict:
@@ -86,6 +97,7 @@ async def env_check():
         "SUPABASE_SERVICE_KEY": bool(SUPABASE_SERVICE_KEY),
         "BOT_TOKEN": bool(BOT_TOKEN),
         "ADMIN_ID": bool(ADMIN_ID),
+        "REF_IMAGE_URL": bool(REF_IMAGE_URL),
     }
 
 
@@ -183,3 +195,44 @@ async def buy_gift(req: BuyReq):
         print("notify admin error:", repr(e))
 
     return res
+
+
+# ===== Красивая реферальная рассылка (фото + текст + кнопка) =====
+@router.post("/share_ref")
+async def share_ref(req: InitReq):
+    user = validate_init_data(req.init_data)
+    uid = int(user["id"])
+
+    if not REF_IMAGE_URL:
+        return {"ok": False, "reason": "no_image"}
+
+    link = f"https://t.me/{BOT_USERNAME}/{APP_SHORT_NAME}?startapp={uid}"
+    result = {
+        "type": "photo",
+        "id": f"ref{uid}",
+        "photo_url": REF_IMAGE_URL,
+        "thumbnail_url": REF_IMAGE_URL,
+        "caption": REF_CAPTION,
+        "reply_markup": {"inline_keyboard": [[{"text": "⭐ Заработать", "url": link}]]},
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10) as c:
+            r = await c.post(
+                f"https://api.telegram.org/bot{BOT_TOKEN}/savePreparedInlineMessage",
+                json={
+                    "user_id": uid,
+                    "result": result,
+                    "allow_user_chats": True,
+                    "allow_bot_chats": True,
+                    "allow_group_chats": True,
+                    "allow_channel_chats": True,
+                },
+            )
+        data = r.json()
+        if not data.get("ok"):
+            print("savePreparedInlineMessage error:", data)
+            return {"ok": False, "reason": "tg_error"}
+        return {"ok": True, "id": data["result"]["id"]}
+    except Exception as e:
+        print("share_ref exception:", repr(e))
+        return {"ok": False, "reason": "exception"}
