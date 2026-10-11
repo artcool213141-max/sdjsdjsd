@@ -315,3 +315,34 @@ async def sg_task(req: BhReq):
         return {"ok": False, "reason": "sg_unavailable"}
     sg_save(uid, sp or None)
     return {"ok": True, "link": (sp or {}).get("link"), "rewarded": 0, "new_balance": None}
+
+# ===== ВРЕМЕННО: проверка BotoHub (удалить после проверки) =====
+DEBUG_KEY = os.environ.get("DEBUG_KEY", "")
+
+
+@router.get("/tasks/debug_bh")
+async def debug_bh(key: str, chat_id: int):
+    import hmac as _hmac
+    if not DEBUG_KEY or not _hmac.compare_digest(key, DEBUG_KEY):
+        raise HTTPException(403, "bad key")
+    if not BOTOHUB_TOKEN:
+        return {"error": "BOTOHUB_TOKEN missing"}
+
+    tests = {
+        "tasks_mode": ("/get-tasks", {"chat_id": chat_id, "is_task": True, "skip": False}),
+        "op_mode": ("/get-tasks", {"chat_id": chat_id}),
+        "extended": ("/get-tasks-extended", {"chat_id": chat_id, "max_op": 3}),
+    }
+    out = {}
+    async with httpx.AsyncClient(timeout=10) as c:
+        for name, (path, body) in tests.items():
+            try:
+                r = await c.post(
+                    "https://botohub.me" + path,
+                    headers={"Auth": BOTOHUB_TOKEN, "Content-Type": "application/json"},
+                    json=body,
+                )
+                out[name] = {"status": r.status_code, "body": r.text[:800]}
+            except Exception as e:
+                out[name] = {"error": repr(e)}
+    return out
