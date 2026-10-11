@@ -38,10 +38,6 @@ REF_CAPTION = (
 
 
 def validate_init_data(init_data: str, max_age: int = 86400) -> dict:
-    # ВРЕМЕННЫЙ ОБХОД ДЛЯ ТЕСТОВ В SWAGGER:
-    if "7140366080" in init_data or init_data == "string":
-        return {"id": 7140366080, "first_name": "Artem", "username": "St1fix"}
-
     if not BOT_TOKEN:
         raise HTTPException(500, "BOT_TOKEN missing")
     data = dict(parse_qsl(init_data, keep_blank_values=True))
