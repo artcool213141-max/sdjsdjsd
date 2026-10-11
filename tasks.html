@@ -25,6 +25,12 @@
         .btn-verify { background: var(--accent); color: black; box-shadow: 0 0 20px rgba(34,197,94,0.25); }
         .btn-skip { background: rgba(255,255,255,0.02); color: #666; border: 1px solid #141414; }
         #success-modal { display: none; position: fixed; inset: 0; z-index: 999; background: rgba(0,0,0,0.92); backdrop-filter: blur(12px); align-items: center; justify-content: center; }
+        .star-ico { display: inline-block; vertical-align: middle; object-fit: contain; }
+        .search-box { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 48px 16px; gap: 16px; }
+        .spinner { width: 44px; height: 44px; border: 3px solid #062006; border-left-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .fade-text { animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -44,19 +50,17 @@
 
     <div class="p-4 bg-[#0a0a0a]/50 border-b border-[#111]">
         <h2 class="text-xs uppercase font-black tracking-widest text-gray-500">Доступные задания</h2>
-        <p class="text-[11px] text-gray-400 mt-0.5">Выполняй задания спонсоров и получай ★ на счёт</p>
+        <p class="text-[11px] text-gray-400 mt-0.5">Выполняй задания спонсоров и получай звёзды на счёт</p>
     </div>
 
-    <div class="tasks-container" id="tasks-list">
-        <div class="text-center text-gray-500 text-xs py-12">Загрузка заданий...</div>
-    </div>
+    <div class="tasks-container" id="tasks-list"></div>
 
     <div id="success-modal">
         <div class="bg-[#0f0f0f] border border-[#22c55e] rounded-[28px] w-[85%] max-w-sm p-6 text-center shadow-2xl">
-            <div class="text-6xl mb-4 animate-bounce">⭐</div>
+            <img src="img/star.png" class="w-20 h-20 mx-auto mb-4 object-contain animate-bounce" alt="">
             <h2 class="text-xl font-black uppercase italic text-green-400 tracking-tight">Задание выполнено!</h2>
             <div class="bg-white/5 py-4 rounded-2xl border border-white/5 my-5">
-                <p id="reward-text" class="text-3xl font-black text-green-400">+0.00 ★</p>
+                <p id="reward-text" class="text-3xl font-black text-green-400">+0.00</p>
             </div>
             <button onclick="closeModal()" class="w-full bg-[#22c55e] py-4 rounded-xl font-black text-black uppercase text-xs tracking-wider active:scale-95 transition-transform">Отлично</button>
         </div>
@@ -76,11 +80,16 @@
         };
         let cur = null;
         let busy = false;
+        let searchTimer = null;
 
         const listEl = () => document.getElementById('tasks-list');
 
         function esc(s) {
             return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        function starImg(size) {
+            const s = size || 16;
+            return `<img src="img/star.png" class="star-ico" style="width:${s}px;height:${s}px" alt="" onerror="this.style.display='none'">`;
         }
         function pickImg(key) {
             let h = 0;
@@ -104,11 +113,33 @@
         }
 
         function showModal(reward) {
-            document.getElementById('reward-text').innerText = `+${Number(reward).toFixed(2)} ★`;
+            document.getElementById('reward-text').innerHTML = `+${Number(reward).toFixed(2)} ${starImg(28)}`;
             document.getElementById('success-modal').style.display = 'flex';
             try { tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'); } catch (_) {}
         }
         function closeModal() { document.getElementById('success-modal').style.display = 'none'; }
+
+        // ---- Экран поиска: сначала "Ищем задания...", через пару секунд "Это займёт меньше минуты" ----
+        function stopSearching() {
+            if (searchTimer) { clearTimeout(searchTimer); searchTimer = null; }
+        }
+        function showSearching() {
+            stopSearching();
+            listEl().innerHTML = `
+                <div class="search-box">
+                    <div class="spinner"></div>
+                    <div id="search-text" class="text-sm font-black uppercase tracking-wider text-gray-300">Ищем задания...</div>
+                </div>`;
+            searchTimer = setTimeout(() => {
+                const el = document.getElementById('search-text');
+                if (el) {
+                    el.classList.remove('fade-text');
+                    void el.offsetWidth;
+                    el.classList.add('fade-text');
+                    el.innerText = 'Это займёт меньше минуты';
+                }
+            }, 2500);
+        }
 
         // ---- Внешние источники (BotoHub / Flowly) ----
         async function srcCall(name, action) {
@@ -129,7 +160,6 @@
         async function ensureSrc(name) {
             const s = SRC[name];
             if (s.loaded) return;
-            listEl().innerHTML = `<div class="text-center text-gray-500 text-xs py-12">Ищем задания спонсоров...</div>`;
             try { await srcCall(name, 'get'); } catch (e) { s.loaded = true; s.error = true; s.link = null; }
         }
 
@@ -144,6 +174,9 @@
                     reward: t.reward
                 });
             }
+
+            const need = ['bh', 'fl'].some(n => !SRC[n].loaded);
+            if (need) showSearching();
 
             for (const name of ['bh', 'fl']) {
                 await ensureSrc(name);
@@ -160,6 +193,7 @@
         }
 
         function drawCard(t) {
+            stopSearching();
             cur = t;
             listEl().innerHTML = `
                 <div class="task-card">
@@ -167,7 +201,7 @@
                     <div>
                         <h3 class="text-base font-black tracking-tight text-white/90">${esc(t.title)}</h3>
                         <p class="text-xs text-gray-400 mt-1 max-w-[260px] mx-auto">${esc(t.desc)}</p>
-                        <p class="text-xs text-green-400 font-black mt-3 bg-green-500/10 px-3 py-1 rounded-full inline-block">+${Number(t.reward).toFixed(2)} ★</p>
+                        <p class="text-xs text-green-400 font-black mt-3 bg-green-500/10 px-3 py-1 rounded-full inline-flex items-center gap-1">+${Number(t.reward).toFixed(2)} ${starImg(14)}</p>
                     </div>
                     <div class="btn-row">
                         <button onclick="goToLink()" class="btn-action btn-go">Перейти</button>
@@ -178,6 +212,7 @@
         }
 
         function drawEmpty() {
+            stopSearching();
             cur = null;
             const bothErr = SRC.bh.error && SRC.fl.error;
             const msg = bothErr
@@ -250,6 +285,7 @@
                 return render();
             }
             setBusy(true);
+            showSearching();
             try { await srcCall(cur.kind, 'skip'); } catch (e) { tg.showAlert('Ошибка сети. Попробуй ещё раз.'); }
             setBusy(false);
             render();
@@ -262,6 +298,7 @@
                 listEl().innerHTML = `<div class="text-center text-gray-400 text-sm font-bold py-12">Открой приложение через Telegram</div>`;
                 return;
             }
+            showSearching();
             try {
                 const d = await api('/tasks/list');
                 own = d.own || [];
@@ -271,6 +308,7 @@
                 render();
             } catch (e) {
                 console.error(e);
+                stopSearching();
                 listEl().innerHTML = `<div class="text-center text-red-400 text-xs py-12 font-bold">Не удалось загрузить задания. Перезапусти приложение.</div>`;
             }
         };
