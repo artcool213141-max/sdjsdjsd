@@ -29,7 +29,7 @@ GIFTS = {
 }
 
 REF_CAPTION = (
-    "⭐️ Зарабатывай Telegram Stars без вложений в FixStars!\n"
+    "<b>⭐️ Зарабатывай Telegram Stars в FixStars!</b>\n"
     "Простые задания: подписки, просмотры, приглашение друзей. "
     "Быстрые выплаты прямо в Telegram!\n"
     "👇 Начни зарабатывать прямо сейчас"
@@ -213,6 +213,7 @@ async def share_ref(req: InitReq):
         "photo_url": REF_IMAGE_URL,
         "thumbnail_url": REF_IMAGE_URL,
         "caption": REF_CAPTION,
+        "parse_mode": "HTML",
         "reply_markup": {"inline_keyboard": [[{"text": "⭐ Заработать", "url": link}]]},
     }
     try:
