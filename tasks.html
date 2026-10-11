@@ -72,7 +72,7 @@
         let skipped = new Set();
         const SRC = {
             bh: { path: '/tasks/bh', link: null, loaded: false, error: false, reward: 0.3 },
-            sg: { path: '/tasks/sg', link: null, loaded: false, error: false, reward: 0.1 }
+            fl: { path: '/tasks/fl', link: null, loaded: false, error: false, reward: 0.3 }
         };
         let cur = null;
         let busy = false;
@@ -110,7 +110,7 @@
         }
         function closeModal() { document.getElementById('success-modal').style.display = 'none'; }
 
-        // ---- Внешние источники (BotoHub / Subgram) ----
+        // ---- Внешние источники (BotoHub / Flowly) ----
         async function srcCall(name, action) {
             const s = SRC[name];
             const prev = s.link;
@@ -145,7 +145,7 @@
                 });
             }
 
-            for (const name of ['bh', 'sg']) {
+            for (const name of ['bh', 'fl']) {
                 await ensureSrc(name);
                 if (SRC[name].link) {
                     return drawCard({
@@ -179,7 +179,7 @@
 
         function drawEmpty() {
             cur = null;
-            const bothErr = SRC.bh.error && SRC.sg.error;
+            const bothErr = SRC.bh.error && SRC.fl.error;
             const msg = bothErr
                 ? ['⚠️', 'Задания временно недоступны', 'Попробуй открыть раздел чуть позже.']
                 : ['⏳', 'Пока заданий нет', 'Новые задания появляются регулярно. Загляни позже!'];
@@ -266,7 +266,7 @@
                 const d = await api('/tasks/list');
                 own = d.own || [];
                 SRC.bh.reward = Number(d.bh_reward || 0.3);
-                SRC.sg.reward = Number(d.sg_reward || 0.1);
+                SRC.fl.reward = Number(d.fl_reward || 0.3);
                 setBalance(d.balance);
                 render();
             } catch (e) {
