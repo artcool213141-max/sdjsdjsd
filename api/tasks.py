@@ -128,11 +128,10 @@ async def check_own(req: CheckReq):
     })
 
 
-# ===================== BotoHub =====================
 async def bh_request(chat_id: int, skip: bool):
     if not BOTOHUB_TOKEN:
         print("BOTOHUB_TOKEN missing")
-        return None
+        return {"ok": False, "reason": "token_missing"}
     try:
         async with httpx.AsyncClient(timeout=10) as c:
             r = await c.post(
@@ -140,13 +139,25 @@ async def bh_request(chat_id: int, skip: bool):
                 headers={"Auth": BOTOHUB_TOKEN, "Content-Type": "application/json"},
                 json={"chat_id": chat_id, "is_task": True, "skip": skip},
             )
+        
+        # Пытаемся распарсить JSON в любом случае, чтобы увидеть причину от админки/апи
+        try:
+            data = r.json()
+        except Exception:
+            data = {"ok": False, "raw_text": r.text}
+
         if r.status_code != 200:
-            print("botohub status:", r.status_code, r.text[:200])
-            return None
-        return r.json()
+            print("botohub status:", r.status_code, data)
+            # Возвращаем структуру с ошибкой, но сохраняем текст/причину ответа апи
+            if isinstance(data, dict):
+                data["ok"] = False
+                return data
+            return {"ok": False, "reason": f"http_{r.status_code}", "raw": r.text}
+
+        return data
     except Exception as e:
         print("botohub exception:", repr(e))
-        return None
+        return {"ok": False, "reason": "exception", "details": repr(e)}
 
 
 @router.post("/tasks/bh")
@@ -157,8 +168,15 @@ async def bh_task(req: SrcReq):
 
     skip = req.action == "skip"
     data = await bh_request(int(user["id"]), skip)
-    if data is None:
-        return {"ok": False, "reason": "bh_unavailable"}
+    
+    # Если пришел ответ с ошибкой или без списка задач — логгируем, чтобы видеть причину в консоли сервера
+    if not data or data.get("ok") is False:
+        print("BotoHub error/reason response:", data)
+        return {
+            "ok": False, 
+            "reason": data.get("reason") or data.get("message") or "bh_unavailable",
+            "details": data
+        }
 
     state = db().table("bh_state").select("link").eq("user_id", uid).execute().data
     prev_link = state[0]["link"] if state else None
