@@ -197,7 +197,7 @@
                     <button onclick="openRefInfo()" class="info-btn" aria-label="Кого засчитываем">i</button>
                 </div>
                 <div class="balance-chip">
-                    <span id="bal">0</span>
+                    <span id="bal">0.00</span>
                     <img src="img/star.png" alt="S">
                 </div>
             </div>
@@ -290,6 +290,8 @@
 
     const REF_LINK = user ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=${user.id}` : '';
 
+    function fmt(v) { return Number(v || 0).toFixed(2); }
+
     function esc(s) {
         return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
@@ -331,7 +333,7 @@
     }
 
     function render(data) {
-        document.getElementById('bal').innerText = Math.floor(Number(data.balance) || 0);
+        document.getElementById('bal').innerText = fmt(data.balance);
         document.getElementById('st-total').innerText = data.total || 0;
         document.getElementById('st-claimed').innerText = data.claimed_stars || 0;
         document.getElementById('st-pending').innerText = data.pending_stars || 0;
