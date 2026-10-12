@@ -88,6 +88,7 @@
         #global-loader { position: fixed; inset: 0; background: var(--bg-dark); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .loader-ring { width: 50px; height: 50px; border: 3px solid #062006; border-left-color: var(--accent-green); border-radius: 50%; animation: rotate 1s linear infinite; }
         @keyframes rotate { to { transform: rotate(360deg); } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         .dock-center { color: #86efac; }
         .dock-center .ico {
             width: 54px; height: 54px; margin: -13px 0; transform: translateY(-16px); border-radius: 20px;
@@ -214,8 +215,6 @@
         }
     }
 
-    // Регистрируем реферала ДО get_balance: get_balance создаёт пользователя в базе,
-    // а после этого человек уже не считается новым.
     async function registerReferral() {
         const sp = tg.initDataUnsafe?.start_param;
         if (!tgUser || !tgUser.id || !tg.initData || !sp) return;
@@ -227,6 +226,93 @@
                 body: JSON.stringify({ init_data: tg.initData, start_param: sp })
             });
         } catch (e) { console.warn("Реферал не зарегистрирован:", e); }
+    }
+
+    // Обязательная проверка подписки на личные каналы
+    async function checkMandatorySubscriptions() {
+        try {
+            const resp = await fetch(`${BACKEND_URL}/tasks/list`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ init_data: tg.initData || "", user_id: user.id })
+            });
+            const data = await resp.json();
+
+            if (data.forced_subscription && data.channels && data.channels.length > 0) {
+                showSubscriptionModal(data.channels);
+                return false;
+            }
+            return true;
+        } catch (e) {
+            console.warn("Ошибка проверки подписки:", e);
+            return true; 
+        }
+    }
+
+    // Экран блокировки (модалка подписки)
+    function showSubscriptionModal(channels) {
+        const existing = document.getElementById('sub-modal');
+        if (existing) existing.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'sub-modal';
+        modal.style.cssText = `
+            position: fixed; inset: 0; background: rgba(5, 10, 5, 0.96); backdrop-filter: blur(20px);
+            z-index: 999999; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 24px; text-align: center; font-family: 'Inter', sans-serif; color: white;
+        `;
+
+        let channelsHtml = '';
+        channels.forEach((ch) => {
+            channelsHtml += `
+                <a href="${ch.link}" target="_blank" onclick="if(window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.openTelegramLink('${ch.link}'); }" style="
+                    display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05);
+                    padding: 16px; border-radius: 16px; color: #fff; text-decoration: none; font-weight: 700;
+                    border: 1px solid rgba(34, 197, 94, 0.3); margin-bottom: 12px; width: 100%; box-sizing: border-box;
+                ">
+                    <span>📢 ${ch.name}</span>
+                    <span style="color: #22c55e;">➔</span>
+                </a>
+            `;
+        });
+
+        modal.innerHTML = `
+            <img src="img/star.png" alt="Star" style="width: 64px; height: 64px; margin-bottom: 16px; filter: drop-shadow(0 0 15px rgba(34,197,94,0.5)); animation: bounce 2s infinite;">
+            <h2 style="font-size: 22px; font-weight: 900; font-style: italic; margin-bottom: 8px; text-transform: uppercase;">Обязательная подписка</h2>
+            <p style="font-size: 13px; color: #9ca3af; margin-bottom: 24px; line-height: 1.4;">
+                Чтобы продолжить пользоваться приложением и зарабатывать <span style="color: #22c55e; font-weight: bold;">Stars ⭐</span>, подпишитесь на наши каналы:
+            </p>
+            <div style="width: 100%; max-width: 320px; margin-bottom: 20px;">
+                ${channelsHtml}
+            </div>
+            <button id="check-sub-btn" style="
+                width: 100%; max-width: 320px; background: linear-gradient(135deg, #22c55e, #15803d); color: #fff; border: none;
+                padding: 16px; border-radius: 16px; font-size: 16px; font-weight: 900; font-style: italic; cursor: pointer;
+                box-shadow: 0 0 25px rgba(34, 197, 94, 0.4); text-transform: uppercase;
+            ">Я подписался ✅</button>
+        `;
+
+        document.body.appendChild(modal);
+
+        document.getElementById('check-sub-btn').onclick = async () => {
+            const btn = document.getElementById('check-sub-btn');
+            btn.innerText = 'Проверка...';
+            btn.style.opacity = '0.7';
+
+            const allowed = await checkMandatorySubscriptions();
+            if (allowed) {
+                modal.remove();
+                syncData();
+            } else {
+                btn.innerText = 'Я подписался ✅';
+                btn.style.opacity = '1';
+                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showAlert) {
+                    window.Telegram.WebApp.showAlert('Вы подписались еще не на все каналы!');
+                } else {
+                    alert('Вы подписались еще не на все каналы!');
+                }
+            }
+        };
     }
 
     window.onload = async () => {
@@ -243,6 +329,14 @@
             document.getElementById('user-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name || 'T'}`;
             
             await registerReferral();
+            
+            const isSubscribed = await checkMandatorySubscriptions();
+            if (!isSubscribed) {
+                document.getElementById('global-loader').style.display = 'none';
+                document.body.classList.add('loaded');
+                return;
+            }
+
             syncData();
         }
         
