@@ -228,29 +228,31 @@
         } catch (e) { console.warn("Реферал не зарегистрирован:", e); }
     }
 
-    // Обязательная проверка подписки на личные каналы
+    // ===== Обязательная подписка на спонсоров =====
+    // Возвращает: 'ok' — подписан на всё, 'need' — не подписан, 'error' — не удалось проверить
     async function checkMandatorySubscriptions() {
         try {
             const resp = await fetch(`${BACKEND_URL}/tasks/list`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ init_data: tg.initData || "", user_id: user.id })
+                body: JSON.stringify({ init_data: tg.initData || "" })
             });
+            if (!resp.ok) throw new Error("HTTP " + resp.status);
             const data = await resp.json();
 
             if (data.forced_subscription && data.channels && data.channels.length > 0) {
-                showSubscriptionModal(data.channels);
-                return false;
+                return { status: 'need', channels: data.channels };
             }
-            return true;
+            return { status: 'ok' };
         } catch (e) {
             console.warn("Ошибка проверки подписки:", e);
-            return true; 
+            // Не пускаем в приложение, если проверку выполнить не удалось
+            return { status: 'error' };
         }
     }
 
     // Экран блокировки (модалка подписки)
-    function showSubscriptionModal(channels) {
+    function showSubscriptionModal(channels, errorText) {
         const existing = document.getElementById('sub-modal');
         if (existing) existing.remove();
 
@@ -263,9 +265,9 @@
         `;
 
         let channelsHtml = '';
-        channels.forEach((ch) => {
+        (channels || []).forEach((ch) => {
             channelsHtml += `
-                <a href="${ch.link}" target="_blank" onclick="if(window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.openTelegramLink('${ch.link}'); }" style="
+                <a href="${ch.link}" target="_blank" onclick="if(window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.openTelegramLink('${ch.link}'); return false; }" style="
                     display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05);
                     padding: 16px; border-radius: 16px; color: #fff; text-decoration: none; font-weight: 700;
                     border: 1px solid rgba(34, 197, 94, 0.3); margin-bottom: 12px; width: 100%; box-sizing: border-box;
@@ -276,12 +278,14 @@
             `;
         });
 
+        const text = errorText
+            ? `<span style="color: #f87171; font-weight: bold;">${errorText}</span>`
+            : `Чтобы продолжить пользоваться приложением и зарабатывать <span style="color: #22c55e; font-weight: bold;">Stars ⭐</span>, подпишитесь на наших спонсоров:`;
+
         modal.innerHTML = `
             <img src="img/star.png" alt="Star" style="width: 64px; height: 64px; margin-bottom: 16px; filter: drop-shadow(0 0 15px rgba(34,197,94,0.5)); animation: bounce 2s infinite;">
             <h2 style="font-size: 22px; font-weight: 900; font-style: italic; margin-bottom: 8px; text-transform: uppercase;">Обязательная подписка</h2>
-            <p style="font-size: 13px; color: #9ca3af; margin-bottom: 24px; line-height: 1.4;">
-                Чтобы продолжить пользоваться приложением и зарабатывать <span style="color: #22c55e; font-weight: bold;">Stars ⭐</span>, подпишитесь на наши каналы:
-            </p>
+            <p style="font-size: 13px; color: #9ca3af; margin-bottom: 24px; line-height: 1.4;">${text}</p>
             <div style="width: 100%; max-width: 320px; margin-bottom: 20px;">
                 ${channelsHtml}
             </div>
@@ -289,7 +293,7 @@
                 width: 100%; max-width: 320px; background: linear-gradient(135deg, #22c55e, #15803d); color: #fff; border: none;
                 padding: 16px; border-radius: 16px; font-size: 16px; font-weight: 900; font-style: italic; cursor: pointer;
                 box-shadow: 0 0 25px rgba(34, 197, 94, 0.4); text-transform: uppercase;
-            ">Я подписался ✅</button>
+            ">${errorText ? 'Повторить 🔄' : 'Я подписался ✅'}</button>
         `;
 
         document.body.appendChild(modal);
@@ -298,19 +302,18 @@
             const btn = document.getElementById('check-sub-btn');
             btn.innerText = 'Проверка...';
             btn.style.opacity = '0.7';
+            btn.disabled = true;
 
-            const allowed = await checkMandatorySubscriptions();
-            if (allowed) {
+            const result = await checkMandatorySubscriptions();
+            if (result.status === 'ok') {
                 modal.remove();
                 syncData();
+            } else if (result.status === 'need') {
+                showSubscriptionModal(result.channels);
+                const msg = 'Вы подписались ещё не на все каналы!';
+                if (tg.showAlert) tg.showAlert(msg); else alert(msg);
             } else {
-                btn.innerText = 'Я подписался ✅';
-                btn.style.opacity = '1';
-                if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.showAlert) {
-                    window.Telegram.WebApp.showAlert('Вы подписались еще не на все каналы!');
-                } else {
-                    alert('Вы подписались еще не на все каналы!');
-                }
+                showSubscriptionModal([], 'Не удалось проверить подписку. Попробуйте ещё раз.');
             }
         };
     }
@@ -322,6 +325,14 @@
             tg.headerColor = '#050a05';
             tg.backgroundColor = '#050a05';
         } catch (err) {}
+
+        // Открыто не из Telegram — показываем заглушку с QR
+        if (!tg.initData) {
+            document.getElementById('global-loader').style.display = 'none';
+            document.getElementById('pc-only-blocker').style.display = 'flex';
+            document.body.classList.add('loaded');
+            return;
+        }
         
         if (user) {
             document.getElementById('display-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
@@ -330,8 +341,14 @@
             
             await registerReferral();
             
-            const isSubscribed = await checkMandatorySubscriptions();
-            if (!isSubscribed) {
+            // Проверка подписки на спонсоров при каждом заходе
+            const result = await checkMandatorySubscriptions();
+            if (result.status !== 'ok') {
+                if (result.status === 'need') {
+                    showSubscriptionModal(result.channels);
+                } else {
+                    showSubscriptionModal([], 'Не удалось проверить подписку. Попробуйте ещё раз.');
+                }
                 document.getElementById('global-loader').style.display = 'none';
                 document.body.classList.add('loaded');
                 return;
