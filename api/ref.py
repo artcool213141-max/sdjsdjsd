@@ -225,7 +225,8 @@ async def share_ref(req: InitReq):
     if not REF_IMAGE_URL:
         return {"ok": False, "reason": "no_image"}
 
-    link = f"https://t.me/{BOT_USERNAME}/{APP_SHORT_NAME}?startapp={uid}"
+    # Обычная реферальная ссылка на чат с ботом (а не прямая ссылка на мини-апку)
+    link = f"https://t.me/{BOT_USERNAME}?start={uid}"
     result = {
         "type": "photo",
         "id": f"ref{uid}",
