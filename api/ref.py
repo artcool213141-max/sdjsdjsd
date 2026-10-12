@@ -28,6 +28,14 @@ GIFTS = {
     "Кубок": 100, "Кольцо": 100, "Бриллиант": 100,
 }
 
+PROMO_ERRORS = {
+    "not_found": "Промокод не найден",
+    "inactive": "Промокод отключён",
+    "exhausted": "Промокод закончился",
+    "already_used": "Вы уже активировали этот промокод",
+    "user_not_found": "Пользователь не найден",
+}
+
 REF_CAPTION = (
     "<b>⭐️ Зарабатывай Telegram Stars в FixStars!</b>\n"
     "Простые задания: подписки, просмотры, приглашение друзей. "
@@ -153,14 +161,24 @@ async def get_ref_stats(user_id: int):
 @router.post("/activate_promo")
 async def activate_promo(req: PromoReq):
     user = validate_init_data(req.init_data)
-    code = req.code.strip()
-    if not code:
+    code = (req.code or "").strip()
+    if not code or len(code) > 64:
         raise HTTPException(400, "Введите промокод")
 
     res = rpc("activate_promo", {"p_user_id": str(user["id"]), "p_code": code})
+    if isinstance(res, list):
+        res = res[0] if res else {}
+    res = res or {}
+
     if not res.get("success"):
-        raise HTTPException(400, res.get("error") or "Не удалось активировать")
-    return res
+        err = res.get("error")
+        raise HTTPException(400, PROMO_ERRORS.get(err, err or "Не удалось активировать"))
+
+    return {
+        "success": True,
+        "reward": float(res.get("reward") or 0),
+        "new_balance": float(res.get("new_balance") or 0),
+    }
 
 
 @router.post("/buy_gift")
