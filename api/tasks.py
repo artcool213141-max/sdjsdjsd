@@ -12,6 +12,12 @@ except ImportError:
 
 router = APIRouter()
 
+# Твои личные каналы для обязательной подписки при первом входе (через @username или ID)
+MANDATORY_CHANNELS = [
+    {"id": "@froxwart_shop", "name": "Канал №1"},
+    {"id": "@St1fix_free", "name": "Канал №2"},
+]
+
 # Заменяем токен Ботохаба на Trafsly
 TRAFSLY_TOKEN = os.environ.get("TRAFSLY_TOKEN", "")
 TRAFSLY_URL = "https://api.trafsly.com/api/v1"
@@ -92,6 +98,30 @@ async def tasks_list(req: InitReq):
     uid = str(user["id"])
     ensure_user(user)
 
+    # 1. Проверяем подписку на твои 2 личных канала перед входом в апку
+    unsubscribed_channels = []
+    for ch in MANDATORY_CHANNELS:
+        member = await is_member(ch["id"], int(user["id"]))
+        if member is not True:  # Если не подписан или ошибка бота (лучше перестраховаться)
+            unsubscribed_channels.append({
+                "name": ch["name"],
+                "link": f"https://t.me/{ch['id'].lstrip('@']}"
+            })
+
+    # Если есть каналы, на которые не подписан — отдаем их фронту как обязательные
+    if unsubscribed_channels:
+        bal = db().table("users").select("balance").eq("id", uid).execute().data
+        balance = float(bal[0]["balance"] or 0) if bal else 0.0
+        return {
+            "balance": balance,
+            "forced_subscription": True,
+            "channels": unsubscribed_channels,
+            "own": [],
+            "done": 0,
+            "tr_reward": TR_REWARD,
+            "fl_reward": FL_REWARD
+        }
+
     done = db().table("completed_tasks").select("task_id").eq("user_id", uid).execute().data or []
     done_ids = {r["task_id"] for r in done}
 
@@ -103,8 +133,14 @@ async def tasks_list(req: InitReq):
     bal = db().table("users").select("balance").eq("id", uid).execute().data
     balance = float(bal[0]["balance"] or 0) if bal else 0.0
 
-    return {"balance": balance, "own": own, "done": len(done_ids),
-            "tr_reward": TR_REWARD, "fl_reward": FL_REWARD}
+    return {
+        "balance": balance,
+        "forced_subscription": False,
+        "own": own,
+        "done": len(done_ids),
+        "tr_reward": TR_REWARD, 
+        "fl_reward": FL_REWARD
+    }
 
 
 @router.post("/tasks/check_own")
@@ -178,14 +214,12 @@ async def bh_task(req: SrcReq):
 
     skip = req.action == "skip"
 
-    # Достаем сохраненное состояние из базы (храним link и ads_id)
     state = db().table("bh_state").select("link, ads_id").eq("user_id", uid).execute().data
     prev_ads_id = state[0]["ads_id"] if state else None
 
     rewarded = 0.0
     new_balance = None
 
-    # Если пользователь нажал проверку подписки
     if req.action == "check" and prev_ads_id:
         conf = await trafsly_confirm(int(user["id"]), prev_ads_id)
         if conf.get("status") == "ok" and conf.get("subscribed"):
@@ -199,7 +233,6 @@ async def bh_task(req: SrcReq):
                 rewarded = credited if credited > 0 else TR_REWARD
                 new_balance = res.get("new_balance")
 
-    # Запрашиваем новые задания у Trafsly
     data = await trafsly_request(user, skip)
     
     sponsors = data.get("sponsors") or []
@@ -208,7 +241,6 @@ async def bh_task(req: SrcReq):
     link = next_sponsor.get("link") if next_sponsor else None
     ads_id = next_sponsor.get("ads_id") if next_sponsor else None
 
-    # Сохраняем актуальный ads_id и ссылку в базу
     db().table("bh_state").upsert(
         {"user_id": uid, "link": link, "ads_id": ads_id}, on_conflict="user_id"
     ).execute()
