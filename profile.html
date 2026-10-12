@@ -221,7 +221,7 @@
                     <p class="text-[10px] font-black uppercase text-gray-400 mb-2 text-left">Активация промокода</p>
                     <div class="flex gap-2">
                         <input type="text" id="promo-input" placeholder="ВВЕДИТЕ КОД" class="flex-1 bg-black/40 border border-white/10 text-white rounded-xl px-3 uppercase font-bold text-sm focus:outline-none focus:border-green-500">
-                        <button onclick="claimPromo()" class="bg-white text-black font-black px-4 py-2.5 rounded-xl text-xs uppercase active:scale-95 transition-all">ОК</button>
+                        <button id="promo-btn" onclick="claimPromo()" class="bg-white text-black font-black px-4 py-2.5 rounded-xl text-xs uppercase active:scale-95 transition-all">ОК</button>
                     </div>
                 </div>
 
@@ -230,7 +230,7 @@
             <div class="flex flex-col items-center justify-center mb-6 px-2 text-center">
                 <p class="text-[10px] font-black uppercase text-green-500 opacity-60 tracking-widest mb-1">Доступно к выводу</p>
                 <div class="flex items-center gap-3">
-                    <span id="p-balance" class="text-5xl font-black italic tracking-tighter">0</span>
+                    <span id="p-balance" class="text-5xl font-black italic tracking-tighter">0.00</span>
                     <img src="star.png" class="w-8 h-8 filter drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]" alt="S">
                 </div>
             </div>
@@ -324,6 +324,8 @@
     const user = tg.initDataUnsafe?.user;
     const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
 
+    function fmt(v) { return Number(v || 0).toFixed(2); }
+
     async function api(path, body) {
         const res = await fetch(BACKEND_URL + path, {
             method: 'POST',
@@ -346,11 +348,11 @@
     async function fetchBalance() {
         if (!user) return 0;
         try {
-            const url = `${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(user.username || user.first_name || 'Unknown')}`;
+            const url = `${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(user.username || user.first_name || 'Unknown')}&t=${Date.now()}`;
             const res = await fetch(url);
             const data = await res.json();
-            const bal = Math.floor(Number(data.balance) || 0);
-            document.getElementById('p-balance').innerText = bal;
+            const bal = Number(data.balance) || 0;
+            document.getElementById('p-balance').innerText = fmt(bal);
             return bal;
         } catch (e) {
             console.error("Ошибка баланса:", e);
@@ -358,33 +360,32 @@
         }
     }
 
-async function claimPromo() {
-    const input = document.getElementById('promo-input');
-    const code = input.value.trim();
-    if (!code) { tg.showAlert("Введите промокод!"); return; }
-    if (!user || !user.id) { tg.showAlert("Ошибка: пользователь не определен"); return; }
+    let promoBusy = false;
+    async function claimPromo() {
+        if (promoBusy) return;
+        const input = document.getElementById('promo-input');
+        const btn = document.getElementById('promo-btn');
+        const code = input.value.trim();
+        if (!code) { tg.showAlert("Введите промокод!"); return; }
+        if (!user || !user.id || !tg.initData) { tg.showAlert("Ошибка: открой приложение через Telegram"); return; }
 
-    try {
-        const res = await fetch(`${BACKEND_URL}/activate_promo`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: String(user.id), code: code })
-        });
-        
-        const data = await res.json();
-
-        if (res.ok && data.success) {
-            tg.showAlert(`🎉 Промокод активирован!\nНачислено: +${data.reward} ⭐`);
-            document.getElementById('p-balance').innerText = Math.floor(Number(data.new_balance) || 0);
-            input.value = '';
-        } else {
-            // Здесь отобразится ошибка с бэкенда, если промокод уже вводили
-            tg.showAlert(`❌ ${data.detail || "Не удалось активировать"}`);
+        promoBusy = true;
+        btn.disabled = true;
+        try {
+            const { ok, data } = await api('/activate_promo', { code });
+            if (ok && data.success) {
+                tg.showAlert(`🎉 Промокод активирован!\nНачислено: +${fmt(data.reward)} ⭐`);
+                document.getElementById('p-balance').innerText = fmt(data.new_balance);
+                input.value = '';
+            } else {
+                tg.showAlert(`❌ ${data.detail || "Не удалось активировать"}`);
+            }
+        } catch (e) {
+            tg.showAlert("Ошибка соединения с сервером.");
         }
-    } catch (e) {
-        tg.showAlert("Ошибка соединения с сервером.");
+        promoBusy = false;
+        btn.disabled = false;
     }
-}
 
     async function buyGift(name, price) {
         // 1. Проверка условий (друзья и задания)
@@ -412,7 +413,7 @@ async function claimPromo() {
         // 2. Баланс
         const currentBalance = await fetchBalance();
         if (currentBalance < price) {
-            tg.showAlert(`❌ Недостаточно звёзд!\nНужно: ${price}\nУ вас: ${currentBalance}`);
+            tg.showAlert(`❌ Недостаточно звёзд!\nНужно: ${price}\nУ вас: ${fmt(currentBalance)}`);
             return;
         }
 
@@ -423,7 +424,7 @@ async function claimPromo() {
                 const { ok, data } = await api('/buy_gift', { gift_name: name });
                 if (ok && data.success) {
                     tg.showAlert(`✅ Покупка "${name}" успешна!\nАдмин скоро свяжется.`);
-                    document.getElementById('p-balance').innerText = Math.floor(Number(data.new_balance) || 0);
+                    document.getElementById('p-balance').innerText = fmt(data.new_balance);
                 } else if (data.error === 'balance') {
                     tg.showAlert("❌ Недостаточно звёзд!");
                 } else if (data.error === 'conditions') {
