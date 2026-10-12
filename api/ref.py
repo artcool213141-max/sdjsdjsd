@@ -123,16 +123,40 @@ async def ref_ping():
 
 @router.post("/register_referral")
 async def register_referral(req: RefReq):
+    # Пригласившего берём ИЗ БАЗЫ (его записал бот при /start), а не от клиента.
+    # Засчитываем только если бот подтвердил подписку (verified = true).
     user = validate_init_data(req.init_data)
-    if not req.start_param or not req.start_param.isdigit():
-        return {"success": False, "reason": "no_ref"}
+    uid = int(user["id"])
+    if supabase is None:
+        raise HTTPException(500, "supabase env missing")
 
-    return rpc("register_referral", {
-        "p_referred_id": int(user["id"]),
-        "p_referrer_id": int(req.start_param),
+    try:
+        rows = (supabase.table("pending_refs").select("referrer_id,verified")
+                .eq("user_id", uid).execute().data or [])
+    except Exception as e:
+        print("pending_refs select error:", repr(e))
+        return {"success": False, "reason": "db_error"}
+
+    if not rows:
+        return {"success": False, "reason": "no_ref"}
+    row = rows[0]
+    if not row.get("verified"):
+        return {"success": False, "reason": "not_verified"}
+
+    res = rpc("register_referral", {
+        "p_referred_id": uid,
+        "p_referrer_id": int(row["referrer_id"]),
         "p_is_premium": bool(user.get("is_premium", False)),
         "p_username": user.get("username") or user.get("first_name"),
     })
+
+    # Обработано (засчитано или отклонено) — повторно не пробуем
+    try:
+        supabase.table("pending_refs").delete().eq("user_id", uid).execute()
+    except Exception as e:
+        print("pending_refs delete error:", repr(e))
+
+    return res
 
 
 @router.post("/get_referrals")
@@ -225,7 +249,7 @@ async def share_ref(req: InitReq):
     if not REF_IMAGE_URL:
         return {"ok": False, "reason": "no_image"}
 
-    link = f"https://t.me/{BOT_USERNAME}/{APP_SHORT_NAME}?startapp={uid}"
+    link = f"https://t.me/{BOT_USERNAME}?start={uid}"
     result = {
         "type": "photo",
         "id": f"ref{uid}",
