@@ -286,9 +286,9 @@
 
     const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
     const BOT_USERNAME = 'FixStarsOfficial_bot';
-    const APP_SHORT_NAME = 'app';   // short name твоего Mini App из BotFather (/myapps)
 
-    const REF_LINK = user ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=${user.id}` : '';
+    // Обычная реферальная ссылка на чат с ботом (бот получит /start <id>)
+    const REF_LINK = user ? `https://t.me/${BOT_USERNAME}?start=${user.id}` : '';
 
     function esc(s) {
         return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
