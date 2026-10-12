@@ -3,14 +3,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 
-   try:
-       from ref import router as ref_router
-       from tasks import router as tasks_router
-       from bot import router as bot_router
-   except ImportError:
-       from api.ref import router as ref_router
-       from api.tasks import router as tasks_router
-       from api.bot import router as bot_router
+try:
+    from ref import router as ref_router
+    from tasks import router as tasks_router
+    from bot import router as bot_router
+except ImportError:
+    from api.ref import router as ref_router
+    from api.tasks import router as tasks_router
+    from api.bot import router as bot_router
 
 app = FastAPI()
 
