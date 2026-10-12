@@ -73,14 +73,12 @@ def save_pending(user_id: int, payload: str):
     if referrer == user_id:
         return
     try:
-        already = supabase.table("users").select("id").eq("id", user_id).execute().data
-        if already:
-            return  # уже заходил в приложение раньше — не реферал
         supabase.table("pending_refs").upsert(
             {"user_id": user_id, "referrer_id": referrer},
             on_conflict="user_id",
             ignore_duplicates=True,
         ).execute()
+        print(f"save_pending ok: user={user_id} referrer={referrer}")
     except Exception as e:
         print("save_pending error:", repr(e))
 
@@ -94,6 +92,7 @@ def mark_verified(user_id: int):
             "verified": True,
             "verified_at": datetime.now(timezone.utc).isoformat(),
         }).eq("user_id", user_id).execute()
+        print(f"mark_verified ok: user={user_id}")
     except Exception as e:
         print("mark_verified error:", repr(e))
 
