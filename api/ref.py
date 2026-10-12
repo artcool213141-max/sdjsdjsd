@@ -138,9 +138,11 @@ async def register_referral(req: RefReq):
         return {"success": False, "reason": "db_error"}
 
     if not rows:
+        print(f"register_referral: user={uid} NO pending row (бот не записал приглашение)")
         return {"success": False, "reason": "no_ref"}
     row = rows[0]
     if not row.get("verified"):
+        print(f"register_referral: user={uid} NOT verified (не нажал «Я подписался»)")
         return {"success": False, "reason": "not_verified"}
 
     res = rpc("register_referral", {
@@ -149,6 +151,8 @@ async def register_referral(req: RefReq):
         "p_is_premium": bool(user.get("is_premium", False)),
         "p_username": user.get("username") or user.get("first_name"),
     })
+
+    print(f"register_referral: user={uid} referrer={row['referrer_id']} rpc_result={res}")
 
     # Обработано (засчитано или отклонено) — повторно не пробуем
     try:
