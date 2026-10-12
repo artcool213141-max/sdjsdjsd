@@ -130,7 +130,7 @@
                 </div>
                 <div class="balance-container-v2" onclick="tg.showAlert('Пополнение доступно в разделе STARS')">
                     <div class="balance-item-v2 text-green-400">
-                        <span id="bal-stars" class="font-black text-xl">0</span>
+                        <span id="bal-stars" class="font-black text-xl">0.00</span>
                         <img src="img/star.png" alt="STAR">
                     </div>
                 </div>
@@ -204,11 +204,11 @@
             if (!res.ok) throw new Error("Ошибка сервера");
             
             const data = await res.json();
-            const starsVal = data.balance !== undefined ? data.balance : 0; 
+            const starsVal = Number(data.balance) || 0;
             
             const starsElem = document.getElementById('bal-stars');
             if (starsElem) {
-                starsElem.innerText = Math.floor(starsVal);
+                starsElem.innerText = starsVal.toFixed(2);
             }
         } catch (e) { 
             console.warn("Не удалось обновить баланс:", e); 
