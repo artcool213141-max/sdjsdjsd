@@ -231,6 +231,16 @@
     // DEV: поставь false, чтобы отключить обход подписки (10 тапов по звезде)
     const DEV_SKIP_ENABLED = true;
 
+    // Проверка подписки только при запуске бота, а не при переходах между страницами.
+    // Флаг живёт в sessionStorage: пока открыто окно мини-аппа, он сохраняется,
+    // а при новом запуске через кнопку в боте очищается.
+    function isSubPassed() {
+        try { return sessionStorage.getItem('sub_passed') === '1'; } catch (e) { return false; }
+    }
+    function markSubPassed() {
+        try { sessionStorage.setItem('sub_passed', '1'); } catch (e) {}
+    }
+
     // ===== Обязательная подписка на спонсоров =====
     // Возвращает: 'ok' — подписан на всё, 'need' — не подписан, 'error' — не удалось проверить
     async function checkMandatorySubscriptions() {
@@ -310,6 +320,7 @@
                 clearTimeout(starTimer);
                 starTimer = setTimeout(() => { starTaps = 0; }, 3000); // сброс, если пауза > 3 сек
                 if (starTaps >= 10) {
+                    markSubPassed();
                     modal.remove();
                     syncData();
                 }
@@ -324,6 +335,7 @@
 
             const result = await checkMandatorySubscriptions();
             if (result.status === 'ok') {
+                markSubPassed();
                 modal.remove();
                 syncData();
             } else if (result.status === 'need') {
@@ -359,8 +371,9 @@
             
             await registerReferral();
             
-            // Проверка подписки на спонсоров при каждом заходе
-            const result = await checkMandatorySubscriptions();
+            // Проверка подписки только при запуске бота (повторно при переходах между страницами не спрашиваем)
+            const result = isSubPassed() ? { status: 'ok' } : await checkMandatorySubscriptions();
+            if (result.status === 'ok') markSubPassed();
             if (result.status !== 'ok') {
                 if (result.status === 'need') {
                     showSubscriptionModal(result.channels);
