@@ -158,6 +158,7 @@
             background: linear-gradient(160deg, #0b1f14 0%, #050a05 100%);
             border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 28px;
             padding: 24px 20px 20px; box-shadow: 0 0 40px var(--glow-green);
+            max-height: 90vh; overflow-y: auto;
             transform: translateY(20px) scale(0.96); transition: transform 0.25s;
         }
         .modal-overlay.open .modal-card { transform: translateY(0) scale(1); }
@@ -258,7 +259,22 @@
             <div class="text-center mb-5">
                 <div class="text-3xl mb-1">🤝</div>
                 <h3 class="text-lg font-black italic uppercase tracking-tight">Кого мы засчитываем</h3>
-                <p class="text-[11px] text-gray-400 font-semibold mt-1">Нажми «Забрать» рядом с другом, и звёзды упадут на баланс</p>
+                <p class="text-[11px] text-gray-400 font-semibold mt-1">Друг засчитывается, только когда прошёл все 3 шага. Потом нажми «Забрать» рядом с ним</p>
+            </div>
+
+            <div class="rule-row">
+                <div class="rule-reward">1</div>
+                <div class="rule-text">Друг перешёл по твоей ссылке и нажал <b>«Старт»</b> в боте</div>
+            </div>
+
+            <div class="rule-row">
+                <div class="rule-reward">2</div>
+                <div class="rule-text">Подписался на <b>2 канала спонсоров</b> и нажал <b>«Я подписался»</b></div>
+            </div>
+
+            <div class="rule-row">
+                <div class="rule-reward">3</div>
+                <div class="rule-text">Открыл <b>приложение</b> по кнопке из бота</div>
             </div>
 
             <div class="rule-row">
@@ -273,7 +289,7 @@
 
             <div class="rule-row" style="background: rgba(239,68,68,0.07);">
                 <div class="rule-reward" style="color:#f87171;">✕</div>
-                <div class="rule-text"><b>Не считаются:</b> ты сам, те, кто уже заходил в приложение раньше, и повторные заходы</div>
+                <div class="rule-text"><b>Не считаются:</b> ты сам, те, кто уже заходил в приложение раньше, кто не подписался на каналы или открыл приложение напрямую, минуя бота, и повторные заходы</div>
             </div>
 
             <button onclick="closeRefInfo()" class="btn-main mt-2">Понятно</button>
@@ -288,7 +304,8 @@
     const BOT_USERNAME = 'FixStarsOfficial_bot';
     const APP_SHORT_NAME = 'app';   // short name твоего Mini App из BotFather (/myapps)
 
-    const REF_LINK = user ? `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=${user.id}` : '';
+    // Ссылка ведёт в бота: друг должен нажать «Старт» и подписаться на каналы
+    const REF_LINK = user ? `https://t.me/${BOT_USERNAME}?start=${user.id}` : '';
 
     function fmt(v) { return Number(v || 0).toFixed(2); }
 
