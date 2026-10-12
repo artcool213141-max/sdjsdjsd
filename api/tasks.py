@@ -220,14 +220,14 @@ async def bh_task(req: SrcReq):
     rewarded = 0.0
     new_balance = None
 
-    if req.action == "check" and prev_ads_id:
-        conf = await trafsly_confirm(int(user["id"]), prev_ads_id)
+if req.action == "check" and prev_ads_id:
+        conf = await trafsly_confirm(uid_int, prev_ads_id)
         if conf.get("status") == "ok" and conf.get("subscribed"):
             credited = float(conf.get("credited", 0.0))
             res = rpc("complete_task", {
                 "p_user_id": uid,
                 "p_task_id": f"tr:{prev_ads_id}",
-                "p_reward": credited if credited > 0 else TR_REWARD,
+                "p_reward": credited if credited > 0 else TR_REWARD,  # <--- Вот здесь
             })
             if res.get("success"):
                 rewarded = credited if credited > 0 else TR_REWARD
