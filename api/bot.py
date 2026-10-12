@@ -2,7 +2,6 @@ import asyncio
 import os
 import re
 import time
-from datetime import datetime, timezone
 from typing import Optional
 from urllib.parse import quote
 
@@ -64,39 +63,6 @@ def webapp_link(payload: str) -> str:
     return f"{WEBAPP_URL}{sep}ref={quote(payload)}"
 
 
-# ===================== Рефералы: запоминаем пригласившего и подтверждаем подписку =====================
-def save_pending(user_id: int, payload: str):
-    """Бот запоминает, кто пригласил. Только для НОВЫХ пользователей и только первого пригласившего."""
-    if supabase is None or not payload.isdigit():
-        return
-    referrer = int(payload)
-    if referrer == user_id:
-        return
-    try:
-        supabase.table("pending_refs").upsert(
-            {"user_id": user_id, "referrer_id": referrer},
-            on_conflict="user_id",
-            ignore_duplicates=True,
-        ).execute()
-        print(f"save_pending ok: user={user_id} referrer={referrer}")
-    except Exception as e:
-        print("save_pending error:", repr(e))
-
-
-def mark_verified(user_id: int):
-    """Подписка на все каналы подтверждена — теперь реферал можно засчитать при входе в апку."""
-    if supabase is None:
-        return
-    try:
-        supabase.table("pending_refs").update({
-            "verified": True,
-            "verified_at": datetime.now(timezone.utc).isoformat(),
-        }).eq("user_id", user_id).execute()
-        print(f"mark_verified ok: user={user_id}")
-    except Exception as e:
-        print("mark_verified error:", repr(e))
-
-
 async def missing_channels(user_id: int):
     missing = []
     for ch in MANDATORY_CHANNELS:
@@ -134,9 +100,6 @@ OPEN_TEXT = (
 
 
 async def handle_start(chat_id: int, user_id: int, payload: str):
-    # 1. Нажал «Старт» по реферальной ссылке — запоминаем, кто пригласил
-    save_pending(user_id, payload)
-
     missing = await missing_channels(user_id)
     if missing:
         await tg_call("sendMessage", {
@@ -146,8 +109,6 @@ async def handle_start(chat_id: int, user_id: int, payload: str):
             "reply_markup": sub_keyboard(missing, payload),
         })
     else:
-        # Уже подписан на всё — подтверждаем сразу
-        mark_verified(user_id)
         await tg_call("sendMessage", {
             "chat_id": chat_id,
             "text": OPEN_TEXT,
@@ -169,10 +130,6 @@ async def handle_check(cq: dict):
             "show_alert": True,
         })
         return
-
-    # 2. Подписан на все каналы и нажал «Я подписался» — реферал подтверждён
-    save_pending(user_id, payload)
-    mark_verified(user_id)
 
     await tg_call("answerCallbackQuery", {"callback_query_id": cq["id"]})
     if msg.get("chat") and msg.get("message_id"):
