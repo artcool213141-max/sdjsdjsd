@@ -18,11 +18,12 @@ MANDATORY_CHANNELS = [
     {"id": "@St1fix_free", "name": "Канал №2"},
 ]
 
-# Заменяем токен Ботохаба на Trafsly
+# Trafsly
 TRAFSLY_TOKEN = os.environ.get("TRAFSLY_TOKEN", "")
 TRAFSLY_URL = "https://api.trafsly.com/api/v1"
 TR_REWARD = float(os.environ.get("TR_REWARD", "0.3"))
 
+# Flowly
 FLOWLY_API_KEY = os.environ.get("FLOWLY_API_KEY", "")
 FLOWLY_URL = os.environ.get("FLOWLY_URL", "https://flowly.guru/api/v1").rstrip("/")
 FL_REWARD = float(os.environ.get("FL_REWARD", "0.3"))
@@ -98,14 +99,14 @@ async def tasks_list(req: InitReq):
     uid = str(user["id"])
     ensure_user(user)
 
-    # 1. Проверяем подписку на твои 2 личных канала перед входом в апку
+    # 1. Проверяем подписку на личные каналы перед входом в апку
     unsubscribed_channels = []
     for ch in MANDATORY_CHANNELS:
         member = await is_member(ch["id"], int(user["id"]))
-        if member is not True:  # Если не подписан или ошибка бота (лучше перестраховаться)
+        if member is not True:  # не подписан или ошибка бота (лучше перестраховаться)
             unsubscribed_channels.append({
                 "name": ch["name"],
-                "link": f"https://t.me/{ch['id'].lstrip('@']}"
+                "link": f"https://t.me/{ch['id'].lstrip('@')}"
             })
 
     # Если есть каналы, на которые не подписан — отдаем их фронту как обязательные
@@ -119,7 +120,7 @@ async def tasks_list(req: InitReq):
             "own": [],
             "done": 0,
             "tr_reward": TR_REWARD,
-            "fl_reward": FL_REWARD
+            "fl_reward": FL_REWARD,
         }
 
     done = db().table("completed_tasks").select("task_id").eq("user_id", uid).execute().data or []
@@ -138,8 +139,8 @@ async def tasks_list(req: InitReq):
         "forced_subscription": False,
         "own": own,
         "done": len(done_ids),
-        "tr_reward": TR_REWARD, 
-        "fl_reward": FL_REWARD
+        "tr_reward": TR_REWARD,
+        "fl_reward": FL_REWARD,
     }
 
 
@@ -167,7 +168,7 @@ async def check_own(req: CheckReq):
 
 
 # ===================== Trafsly Integration =====================
-async def trafsly_request(user: dict, skip: bool):
+async def trafsly_request(user: dict, skip: bool = False):
     if not TRAFSLY_TOKEN:
         print("TRAFSLY_TOKEN missing")
         return {"status": "error", "message": "token_missing"}
@@ -210,6 +211,7 @@ async def trafsly_confirm(user_id: int, ads_id):
 async def bh_task(req: SrcReq):
     user = validate_init_data(req.init_data)
     uid = str(user["id"])
+    uid_int = int(user["id"])
     ensure_user(user)
 
     skip = req.action == "skip"
@@ -220,24 +222,24 @@ async def bh_task(req: SrcReq):
     rewarded = 0.0
     new_balance = None
 
-if req.action == "check" and prev_ads_id:
+    if req.action == "check" and prev_ads_id:
         conf = await trafsly_confirm(uid_int, prev_ads_id)
         if conf.get("status") == "ok" and conf.get("subscribed"):
-            credited = float(conf.get("credited", 0.0))
+            # Награда всегда берётся из TR_REWARD
             res = rpc("complete_task", {
                 "p_user_id": uid,
                 "p_task_id": f"tr:{prev_ads_id}",
-                "p_reward": credited if credited > 0 else TR_REWARD,  # <--- Вот здесь
+                "p_reward": TR_REWARD,
             })
             if res.get("success"):
-                rewarded = credited if credited > 0 else TR_REWARD
+                rewarded = TR_REWARD
                 new_balance = res.get("new_balance")
 
     data = await trafsly_request(user, skip)
-    
+
     sponsors = data.get("sponsors") or []
     next_sponsor = sponsors[0] if sponsors else None
-    
+
     link = next_sponsor.get("link") if next_sponsor else None
     ads_id = next_sponsor.get("ads_id") if next_sponsor else None
 
@@ -307,7 +309,8 @@ async def fl_pick(user: dict, uid: str, skipped: str, prefer_id: Optional[str] =
     })
     if data is None:
         return None
-    if data.get("status") != "not_ok":
+    # Принимаем оба статуса: пустые/уже выполненные офферы всё равно отфильтруются ниже
+    if data.get("status") not in ("ok", "not_ok"):
         return {}
 
     done = fl_done_ids(uid)
