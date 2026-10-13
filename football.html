@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>FixStars - Футбол</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        :root { --accent: #22c55e; }
+
+        * { -webkit-tap-highlight-color: transparent; user-select: none; }
+
+        body {
+            background: #050505; color: white; font-family: 'Inter', sans-serif;
+            margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column;
+        }
+
+        .header-panel {
+            padding: 12px 20px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a;
+            padding-top: calc(12px + var(--tg-safe-area-inset-top, 0px));
+        }
+
+        /* ПОЛЕ */
+        .field {
+            flex-grow: 1; position: relative; overflow: hidden;
+            background: radial-gradient(ellipse at 50% 100%, rgba(34,197,94,0.12), transparent 65%);
+        }
+
+        .goal {
+            position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
+            width: 250px; height: 130px;
+            border: 4px solid #cbd5e1; border-bottom: none; border-radius: 6px 6px 0 0;
+            background:
+                repeating-linear-gradient(0deg, rgba(203,213,225,0.18) 0 1px, transparent 1px 10px),
+                repeating-linear-gradient(90deg, rgba(203,213,225,0.18) 0 1px, transparent 1px 10px),
+                rgba(255,255,255,0.03);
+            box-shadow: 0 0 25px rgba(203,213,225,0.08);
+        }
+
+        .keeper {
+            position: absolute; bottom: 4px; left: 50%; font-size: 42px;
+            transform: translateX(-50%); transition: transform 0.45s ease-out;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+        }
+
+        .ground-line {
+            position: absolute; top: 158px; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, #22c55e55, transparent);
+        }
+
+        .ball {
+            position: absolute; bottom: 28px; left: 50%; margin-left: -28px;
+            font-size: 56px; line-height: 1; z-index: 5;
+            filter: drop-shadow(0 8px 8px rgba(0,0,0,0.6));
+        }
+        .ball.fly { transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.3, 1); }
+        .ball.back { transition: transform 0.5s ease-in; }
+
+        .result-flash {
+            position: absolute; top: 175px; left: 0; right: 0; text-align: center;
+            font-size: 26px; font-weight: 900; font-style: italic; text-transform: uppercase;
+            opacity: 0; transition: opacity 0.25s; letter-spacing: -0.02em;
+        }
+        .result-flash.show { opacity: 1; }
+
+        /* ПАНЕЛЬ СТАВКИ */
+        .bet-panel {
+            padding: 16px 20px; background: #0a0a0a; border-top: 1px solid #181818;
+            padding-bottom: calc(20px + var(--tg-safe-area-inset-bottom, 0px));
+        }
+
+        .bet-input {
+            width: 100%; background: #111; border: 1px solid #222; border-radius: 16px;
+            padding: 14px 16px; font-size: 20px; font-weight: 900; color: white;
+            outline: none; text-align: center; transition: 0.2s;
+        }
+        .bet-input:focus { border-color: var(--accent); }
+
+        .chip {
+            flex: 1; background: #111; border: 1px solid #222; border-radius: 12px;
+            padding: 9px 0; font-size: 11px; font-weight: 900; color: #9ca3af;
+            transition: 0.15s;
+        }
+        .chip:active { transform: scale(0.94); border-color: var(--accent); color: white; }
+
+        .btn-main {
+            background: var(--accent); color: white; font-weight: 900; border-radius: 18px;
+            transition: 0.2s; box-shadow: 0 0 25px rgba(34, 197, 94, 0.3);
+        }
+        .btn-main:active { transform: scale(0.97); }
+        .btn-main:disabled { opacity: 0.25; filter: grayscale(1); box-shadow: none; }
+
+        /* МОДАЛКА */
+        #result-modal {
+            display: none; position: fixed; inset: 0; z-index: 999;
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(10px);
+            align-items: center; justify-content: center;
+        }
+        .modal-box { background: #0f0f0f; border-radius: 24px; width: 85%; padding: 25px; text-align: center; }
+
+        ::-webkit-scrollbar { display: none; }
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    </style>
+</head>
+<body>
+
+    <header class="header-panel flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <button onclick="goBack()" class="flex items-center justify-center w-8 h-8 rounded-xl bg-[#111] border border-[#222] active:scale-90 transition-transform">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            <div class="font-black italic text-lg tracking-tighter">FIX<span class="text-[#22c55e]">STARS</span></div>
+        </div>
+        <div class="flex items-center gap-2 bg-[#111] px-4 py-1.5 rounded-full border border-[#222]">
+            <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
+            <span id="val-stars" class="font-black text-sm">0.00</span>
+        </div>
+    </header>
+
+    <div class="field" id="field">
+        <div class="goal" id="goal">
+            <div class="keeper" id="keeper">🧤</div>
+        </div>
+        <div class="ground-line"></div>
+        <div class="result-flash" id="flash"></div>
+        <div class="ball" id="ball">⚽</div>
+    </div>
+
+    <div class="bet-panel">
+        <div class="flex justify-between items-center mb-3 px-1">
+            <span class="text-[10px] uppercase font-black tracking-widest text-gray-500">Шанс гола <span class="text-green-400">15%</span></span>
+            <span class="text-[10px] uppercase font-black tracking-widest text-gray-500">Выигрыш <span class="text-green-400">x2</span></span>
+        </div>
+
+        <input id="bet-input" type="number" inputmode="decimal" step="0.01" min="0.1" placeholder="Ставка ★" class="bet-input" oninput="updatePotential()">
+
+        <div class="flex gap-2 mt-3">
+            <button class="chip" onclick="setBet(0.1)">0.1</button>
+            <button class="chip" onclick="setBet(0.5)">0.5</button>
+            <button class="chip" onclick="setBet(1)">1</button>
+            <button class="chip" onclick="setBet(5)">5</button>
+            <button class="chip" onclick="setBetMax()">MAX</button>
+        </div>
+
+        <button id="kick-btn" onclick="kick()" class="w-full py-4 btn-main uppercase tracking-widest text-sm mt-4" disabled>Загрузка...</button>
+    </div>
+
+    <div id="result-modal">
+        <div class="modal-box" id="modal-box">
+            <h2 id="modal-title" class="text-lg font-black italic uppercase tracking-tight"></h2>
+            <div class="bg-white/5 py-4 rounded-xl border border-white/5 my-5 flex flex-col items-center justify-center">
+                <img src="img/star.png" class="w-12 h-12 mb-2" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
+                <p id="modal-amount" class="text-2xl font-black"></p>
+            </div>
+            <button onclick="closeModal()" class="w-full bg-[#22c55e] py-4 rounded-xl font-black uppercase text-xs tracking-wider text-black">Играть ещё</button>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = "https://xbklrdpguqsuvqndcujb.supabase.co";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhia2xyZHBndXFzdXZxbmRjdWpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzQ0NzUsImV4cCI6MjEwNzIxMDQ3NX0.IeK3NGOTu_J1jDOd_XjHQUOySnkbFh4uThGCPeu-Wu4";
+        const SB = supabase.createClient(SB_URL, SB_KEY);
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // ===== НАСТРОЙКИ ИГРЫ =====
+        const WIN_CHANCE = 0.15;   // 15% на гол
+        const MULTIPLIER = 2;      // х2 от ставки
+        const MIN_BET = 0.1;
+        // ==========================
+
+        let user = null;
+        let busy = false;
+
+        const $ = (id) => document.getElementById(id);
+        const haptic = (t) => { if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(t || 'light'); };
+
+        function goBack() {
+            haptic();
+            window.location.href = 'games.html';
+        }
+
+        function getBalance() { return parseFloat(user?.balance || 0); }
+        function getBet() { return parseFloat(parseFloat($('bet-input').value).toFixed(2)); }
+
+        function setBet(v) {
+            if (busy) return;
+            haptic();
+            $('bet-input').value = v;
+            updatePotential();
+        }
+        function setBetMax() {
+            if (busy) return;
+            haptic();
+            $('bet-input').value = Math.floor(getBalance() * 100) / 100;
+            updatePotential();
+        }
+
+        function updatePotential() {
+            const btn = $('kick-btn');
+            if (busy || !user) return;
+            const bet = getBet();
+            if (!bet || bet < MIN_BET) {
+                btn.disabled = true;
+                btn.innerText = `Минимальная ставка ${MIN_BET} ★`;
+            } else if (bet > getBalance()) {
+                btn.disabled = true;
+                btn.innerText = "Недостаточно звёзд";
+            } else {
+                btn.disabled = false;
+                btn.innerText = `Бить · выигрыш ${(bet * MULTIPLIER).toFixed(2)} ★`;
+            }
+        }
+
+        async function loadUser() {
+            const userId = tg.initDataUnsafe?.user?.id || 8015661230;
+            try {
+                const { data, error } = await SB.from('users').select('*').eq('id', userId).maybeSingle();
+                if (error) throw error;
+                if (!data) throw new Error("Пользователь не найден");
+                user = data;
+                $('val-stars').innerText = getBalance().toFixed(2);
+                updatePotential();
+            } catch (e) {
+                console.error("Ошибка загрузки:", e);
+                $('kick-btn').innerText = "ОШИБКА СЕТИ";
+            }
+        }
+
+        // Смещение мяча к точке внутри поля
+        function ballOffset(targetX, targetY) {
+            const ball = $('ball').getBoundingClientRect();
+            const field = $('field').getBoundingClientRect();
+            const bx = ball.left + ball.width / 2;
+            const by = ball.top + ball.height / 2;
+            return { dx: field.left + targetX - bx, dy: field.top + targetY - by };
+        }
+
+        async function kick() {
+            if (busy || !user) return;
+            const bet = getBet();
+            if (!bet || bet < MIN_BET || bet > getBalance()) return;
+
+            busy = true;
+            const btn = $('kick-btn');
+            btn.disabled = true;
+            btn.innerText = "УДАР...";
+            haptic('medium');
+
+            // Результат решаем сразу и сохраняем баланс до анимации
+            const isWin = Math.random() < WIN_CHANCE;
+            const payout = isWin ? parseFloat((bet * MULTIPLIER).toFixed(2)) : 0;
+            const newBalance = parseFloat((getBalance() - bet + payout).toFixed(2));
+
+            try {
+                const { error } = await SB.from('users').update({ balance: newBalance }).eq('id', user.id);
+                if (error) throw error;
+            } catch (e) {
+                console.error("Ошибка сохранения:", e);
+                btn.innerText = "ОШИБКА СЕТИ";
+                busy = false;
+                setTimeout(updatePotential, 1500);
+                return;
+            }
+
+            user.balance = newBalance;
+            $('val-stars').innerText = newBalance.toFixed(2);
+
+            await playAnimation(isWin);
+
+            showResult(isWin, bet, payout);
+        }
+
+        function playAnimation(isWin) {
+            return new Promise((resolve) => {
+                const ball = $('ball');
+                const keeper = $('keeper');
+                const goal = $('goal').getBoundingClientRect();
+                const field = $('field').getBoundingClientRect();
+
+                const side = Math.random() < 0.5 ? -1 : 1;
+                const goalCx = goal.left - field.left + goal.width / 2;
+                const goalTop = goal.top - field.top;
+
+                ball.classList.add('fly');
+
+                if (isWin) {
+                    // Вратарь прыгает в одну сторону, мяч летит в другую
+                    keeper.style.transform = `translateX(calc(-50% + ${-side * 80}px)) rotate(${-side * 25}deg)`;
+                    const o = ballOffset(goalCx + side * 80, goalTop + 55);
+                    ball.style.transform = `translate(${o.dx}px, ${o.dy}px) scale(0.5) rotate(540deg)`;
+                    setTimeout(() => { haptic('heavy'); flash('ГОЛ!', '#22c55e'); }, 700);
+                    setTimeout(resolve, 1500);
+                } else if (Math.random() < 0.6) {
+                    // Вратарь ловит
+                    keeper.style.transform = `translateX(calc(-50% + ${side * 70}px)) rotate(${side * 20}deg)`;
+                    const o = ballOffset(goalCx + side * 70, goalTop + 70);
+                    ball.style.transform = `translate(${o.dx}px, ${o.dy}px) scale(0.5) rotate(360deg)`;
+                    setTimeout(() => {
+                        ball.classList.remove('fly');
+                        ball.classList.add('back');
+                        const b = ballOffset(goalCx + side * 110, goalTop + 150);
+                        ball.style.transform = `translate(${b.dx}px, ${b.dy}px) scale(0.7) rotate(200deg)`;
+                        flash('СЕЙВ!', '#ef4444');
+                    }, 800);
+                    setTimeout(resolve, 1500);
+                } else {
+                    // Мимо ворот
+                    const o = ballOffset(goalCx + side * 170, goalTop - 10);
+                    ball.style.transform = `translate(${o.dx}px, ${o.dy}px) scale(0.5) rotate(540deg)`;
+                    setTimeout(() => flash('МИМО!', '#ef4444'), 700);
+                    setTimeout(resolve, 1400);
+                }
+            });
+        }
+
+        function flash(text, color) {
+            const f = $('flash');
+            f.innerText = text;
+            f.style.color = color;
+            f.classList.add('show');
+        }
+
+        function showResult(isWin, bet, payout) {
+            const box = $('modal-box');
+            const title = $('modal-title');
+            const amount = $('modal-amount');
+
+            if (isWin) {
+                box.style.border = '1px solid #22c55e';
+                title.className = 'text-lg font-black italic uppercase tracking-tight text-green-400';
+                title.innerText = 'Гооол! Победа';
+                amount.className = 'text-2xl font-black text-green-400';
+                amount.innerText = `+${(payout - bet).toFixed(2)} ★`;
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            } else {
+                box.style.border = '1px solid #3f3f46';
+                title.className = 'text-lg font-black italic uppercase tracking-tight text-gray-400';
+                title.innerText = 'Не повезло';
+                amount.className = 'text-2xl font-black text-red-400';
+                amount.innerText = `-${bet.toFixed(2)} ★`;
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+            }
+            $('result-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            haptic();
+            $('result-modal').style.display = 'none';
+
+            // Сброс сцены
+            const ball = $('ball');
+            ball.classList.remove('fly', 'back');
+            ball.style.transform = '';
+            $('keeper').style.transform = 'translateX(-50%)';
+            $('flash').classList.remove('show');
+
+            busy = false;
+            updatePotential();
+        }
+
+        loadUser();
+    </script>
+</body>
+</html>
