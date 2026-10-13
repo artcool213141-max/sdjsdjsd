@@ -254,7 +254,8 @@
             // Результат решаем сразу и сохраняем баланс до анимации
             const isWin = Math.random() < WIN_CHANCE;
             const payout = isWin ? parseFloat((bet * MULTIPLIER).toFixed(2)) : 0;
-            const newBalance = parseFloat((getBalance() - bet + payout).toFixed(2));
+            // Победа: на баланс приходит ставка х2 (ставка не списывается). Проигрыш: ставка списывается.
+            const newBalance = parseFloat((isWin ? getBalance() + payout : getBalance() - bet).toFixed(2));
 
             try {
                 const { error } = await SB.from('users').update({ balance: newBalance }).eq('id', user.id);
@@ -329,7 +330,7 @@
                 title.className = 'text-lg font-black italic uppercase tracking-tight text-green-400';
                 title.innerText = 'Гооол! Победа';
                 amount.className = 'text-2xl font-black text-green-400';
-                amount.innerText = `+${(payout - bet).toFixed(2)} ★`;
+                amount.innerText = `+${payout.toFixed(2)} ★`;
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             } else {
                 box.style.border = '1px solid #3f3f46';
