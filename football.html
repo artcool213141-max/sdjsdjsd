@@ -136,13 +136,13 @@
             <span class="text-[10px] uppercase font-black tracking-widest text-gray-500">Выигрыш <span class="text-green-400">x2</span></span>
         </div>
 
-        <input id="bet-input" type="number" inputmode="decimal" step="0.01" min="0.1" placeholder="Ставка ★" class="bet-input" oninput="updatePotential()">
+        <input id="bet-input" type="number" inputmode="decimal" step="0.01" min="1" placeholder="Ставка ★" class="bet-input" oninput="updatePotential()">
 
         <div class="flex gap-2 mt-3">
-            <button class="chip" onclick="setBet(0.1)">0.1</button>
-            <button class="chip" onclick="setBet(0.5)">0.5</button>
             <button class="chip" onclick="setBet(1)">1</button>
+            <button class="chip" onclick="setBet(2)">2</button>
             <button class="chip" onclick="setBet(5)">5</button>
+            <button class="chip" onclick="setBet(10)">10</button>
             <button class="chip" onclick="setBetMax()">MAX</button>
         </div>
 
@@ -170,7 +170,7 @@
         // ===== НАСТРОЙКИ ИГРЫ =====
         const WIN_CHANCE = 0.10;   // 10% на гол
         const MULTIPLIER = 2;      // х2 от ставки
-        const MIN_BET = 0.1;
+        const MIN_BET = 1;
         // ==========================
 
         let user = null;
