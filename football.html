@@ -132,8 +132,7 @@
     </div>
 
     <div class="bet-panel">
-        <div class="flex justify-between items-center mb-3 px-1">
-            <span class="text-[10px] uppercase font-black tracking-widest text-gray-500">Шанс гола <span class="text-green-400">15%</span></span>
+        <div class="flex justify-center items-center mb-3 px-1">
             <span class="text-[10px] uppercase font-black tracking-widest text-gray-500">Выигрыш <span class="text-green-400">x2</span></span>
         </div>
 
@@ -169,7 +168,7 @@
         tg.expand();
 
         // ===== НАСТРОЙКИ ИГРЫ =====
-        const WIN_CHANCE = 0.15;   // 15% на гол
+        const WIN_CHANCE = 0.10;   // 10% на гол
         const MULTIPLIER = 2;      // х2 от ставки
         const MIN_BET = 0.1;
         // ==========================
@@ -296,8 +295,8 @@
                     ball.style.transform = `translate(${o.dx}px, ${o.dy}px) scale(0.5) rotate(540deg)`;
                     setTimeout(() => { haptic('heavy'); flash('ГОЛ!', '#22c55e'); }, 700);
                     setTimeout(resolve, 1500);
-                } else if (Math.random() < 0.6) {
-                    // Вратарь ловит
+                } else {
+                    // Вратарь всегда ловит
                     keeper.style.transform = `translateX(calc(-50% + ${side * 70}px)) rotate(${side * 20}deg)`;
                     const o = ballOffset(goalCx + side * 70, goalTop + 70);
                     ball.style.transform = `translate(${o.dx}px, ${o.dy}px) scale(0.5) rotate(360deg)`;
@@ -309,12 +308,6 @@
                         flash('СЕЙВ!', '#ef4444');
                     }, 800);
                     setTimeout(resolve, 1500);
-                } else {
-                    // Мимо ворот
-                    const o = ballOffset(goalCx + side * 170, goalTop - 10);
-                    ball.style.transform = `translate(${o.dx}px, ${o.dy}px) scale(0.5) rotate(540deg)`;
-                    setTimeout(() => flash('МИМО!', '#ef4444'), 700);
-                    setTimeout(resolve, 1400);
                 }
             });
         }
