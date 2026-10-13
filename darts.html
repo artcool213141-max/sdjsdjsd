@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>FixStars - Дартс</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        :root { --accent: #22c55e; }
+
+        * { -webkit-tap-highlight-color: transparent; user-select: none; }
+
+        body {
+            background: #050505; color: white; font-family: 'Inter', sans-serif;
+            margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column;
+        }
+
+        .header-panel {
+            padding: 12px 20px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a;
+            padding-top: calc(12px + var(--tg-safe-area-inset-top, 0px));
+        }
+
+        /* ПОЛЕ */
+        .field {
+            flex-grow: 1; position: relative; overflow: hidden;
+            background: radial-gradient(ellipse at 50% 20%, rgba(239,68,68,0.10), transparent 65%);
+        }
+
+        .board {
+            position: absolute; top: 24px; left: 50%; margin-left: -105px;
+            width: 210px; height: 210px; z-index: 2;
+            filter: drop-shadow(0 0 22px rgba(239,68,68,0.18));
+        }
+        .board.wobble { animation: wobble 0.5s ease-out; }
+        .board.bull { animation: bullpulse 0.7s ease-out; }
+
+        @keyframes wobble {
+            0%, 100% { transform: rotate(0); }
+            25% { transform: rotate(2.5deg); }
+            55% { transform: rotate(-2deg); }
+            80% { transform: rotate(1deg); }
+        }
+        @keyframes bullpulse {
+            0% { transform: scale(1); }
+            30% { transform: scale(1.07); filter: drop-shadow(0 0 30px rgba(34,197,94,0.7)); }
+            100% { transform: scale(1); }
+        }
+
+        .dart {
+            position: absolute; bottom: 24px; left: 50%; margin-left: -15px;
+            width: 30px; height: 96px; z-index: 5;
+            transform-origin: 50% 0%;
+            filter: drop-shadow(0 8px 8px rgba(0,0,0,0.6));
+        }
+        .dart.fly { transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.3, 1); }
+
+        .result-flash {
+            position: absolute; top: 246px; left: 0; right: 0; text-align: center;
+            font-size: 26px; font-weight: 900; font-style: italic; text-transform: uppercase;
+            opacity: 0; transition: opacity 0.25s; letter-spacing: -0.02em; z-index: 6;
+        }
+        .result-flash.show { opacity: 1; }
+
+        /* ПАНЕЛЬ СТАВКИ */
+        .bet-panel {
+            padding: 16px 20px; background: #0a0a0a; border-top: 1px solid #181818;
+            padding-bottom: calc(20px + var(--tg-safe-area-inset-bottom, 0px));
+        }
+
+        .bet-input {
+            width: 100%; background: #111; border: 1px solid #222; border-radius: 16px;
+            padding: 14px 16px; font-size: 20px; font-weight: 900; color: white;
+            outline: none; text-align: center; transition: 0.2s;
+        }
+        .bet-input:focus { border-color: var(--accent); }
+
+        .chip {
+            flex: 1; background: #111; border: 1px solid #222; border-radius: 12px;
+            padding: 9px 0; font-size: 11px; font-weight: 900; color: #9ca3af;
+            transition: 0.15s;
+        }
+        .chip:active { transform: scale(0.94); border-color: var(--accent); color: white; }
+
+        .btn-main {
+            background: var(--accent); color: white; font-weight: 900; border-radius: 18px;
+            transition: 0.2s; box-shadow: 0 0 25px rgba(34, 197, 94, 0.3);
+        }
+        .btn-main:active { transform: scale(0.97); }
+        .btn-main:disabled { opacity: 0.25; filter: grayscale(1); box-shadow: none; }
+
+        /* МОДАЛКА */
+        #result-modal {
+            display: none; position: fixed; inset: 0; z-index: 999;
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(10px);
+            align-items: center; justify-content: center;
+        }
+        .modal-box { background: #0f0f0f; border-radius: 24px; width: 85%; padding: 25px; text-align: center; }
+
+        ::-webkit-scrollbar { display: none; }
+        input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    </style>
+</head>
+<body>
+
+    <header class="header-panel flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <button onclick="goBack()" class="flex items-center justify-center w-8 h-8 rounded-xl bg-[#111] border border-[#222] active:scale-90 transition-transform">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            <div class="font-black italic text-lg tracking-tighter">FIX<span class="text-[#22c55e]">STARS</span></div>
+        </div>
+        <div class="flex items-center gap-2 bg-[#111] px-4 py-1.5 rounded-full border border-[#222]">
+            <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
+            <span id="val-stars" class="font-black text-sm">0.00</span>
+        </div>
+    </header>
+
+    <div class="field" id="field">
+        <!-- Мишень -->
+        <svg class="board" id="board" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="99" fill="#0f0f0f" stroke="#2a2a2a" stroke-width="2"/>
+            <circle cx="100" cy="100" r="88" fill="#ef4444"/>
+            <circle cx="100" cy="100" r="70" fill="#e5e7eb"/>
+            <circle cx="100" cy="100" r="52" fill="#ef4444"/>
+            <circle cx="100" cy="100" r="34" fill="#e5e7eb"/>
+            <circle cx="100" cy="100" r="18" fill="#22c55e"/>
+            <circle cx="100" cy="100" r="7" fill="#ef4444"/>
+            <g stroke="#0f0f0f" stroke-width="0.8" opacity="0.55">
+                <line x1="100" y1="12" x2="100" y2="188"/>
+                <line x1="12" y1="100" x2="188" y2="100"/>
+                <line x1="38" y1="38" x2="162" y2="162"/>
+                <line x1="162" y1="38" x2="38" y2="162"/>
+            </g>
+        </svg>
+
+        <div class="result-flash" id="flash"></div>
+
+        <!-- Дротик (остриё сверху) -->
+        <svg class="dart" id="dart" viewBox="0 0 30 96" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="15,0 18.5,26 11.5,26" fill="#cbd5e1"/>
+            <rect x="10.5" y="26" width="9" height="30" rx="2" fill="#475569"/>
+            <rect x="10.5" y="34" width="9" height="3" fill="#22c55e"/>
+            <rect x="10.5" y="42" width="9" height="3" fill="#22c55e"/>
+            <rect x="13" y="56" width="4" height="14" fill="#94a3b8"/>
+            <polygon points="15,60 29,96 15,88 1,96" fill="#22c55e"/>
+            <polygon points="15,60 21,96 15,88 9,96" fill="#16a34a"/>
+        </svg>
+    </div>
+
+    <div class="bet-panel">
+        <div class="flex justify-center items-center mb-3 px-1">
+            <span class="text-[10px] uppercase font-black tracking-widest text-gray-500">Выигрыш <span class="text-green-400">x2</span></span>
+        </div>
+
+        <input id="bet-input" type="number" inputmode="decimal" step="0.01" min="1" placeholder="Ставка ★" class="bet-input" oninput="updatePotential()">
+
+        <div class="flex gap-2 mt-3">
+            <button class="chip" onclick="setBet(1)">1</button>
+            <button class="chip" onclick="setBet(2)">2</button>
+            <button class="chip" onclick="setBet(5)">5</button>
+            <button class="chip" onclick="setBet(10)">10</button>
+            <button class="chip" onclick="setBetMax()">MAX</button>
+        </div>
+
+        <button id="throw-btn" onclick="throwDart()" class="w-full py-4 btn-main uppercase tracking-widest text-sm mt-4" disabled>Загрузка...</button>
+    </div>
+
+    <div id="result-modal">
+        <div class="modal-box" id="modal-box">
+            <h2 id="modal-title" class="text-lg font-black italic uppercase tracking-tight"></h2>
+            <div class="bg-white/5 py-4 rounded-xl border border-white/5 my-5 flex flex-col items-center justify-center">
+                <img src="img/star.png" class="w-12 h-12 mb-2" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
+                <p id="modal-amount" class="text-2xl font-black"></p>
+            </div>
+            <button onclick="closeModal()" class="w-full bg-[#22c55e] py-4 rounded-xl font-black uppercase text-xs tracking-wider text-black">Играть ещё</button>
+        </div>
+    </div>
+
+    <script>
+        const SB_URL = "https://xbklrdpguqsuvqndcujb.supabase.co";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhia2xyZHBndXFzdXZxbmRjdWpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzQ0NzUsImV4cCI6MjEwNzIxMDQ3NX0.IeK3NGOTu_J1jDOd_XjHQUOySnkbFh4uThGCPeu-Wu4";
+        const SB = supabase.createClient(SB_URL, SB_KEY);
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // ===== НАСТРОЙКИ ИГРЫ =====
+        const WIN_CHANCE = 0.10;   // 10% на яблочко
+        const MULTIPLIER = 2;      // х2 от ставки
+        const MIN_BET = 1;
+        // ==========================
+
+        let user = null;
+        let busy = false;
+
+        const $ = (id) => document.getElementById(id);
+        const haptic = (t) => { if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(t || 'light'); };
+
+        function goBack() {
+            haptic();
+            window.location.href = 'games.html';
+        }
+
+        function getBalance() { return parseFloat(user?.balance || 0); }
+        function getBet() { return parseFloat(parseFloat($('bet-input').value).toFixed(2)); }
+
+        function setBet(v) {
+            if (busy) return;
+            haptic();
+            $('bet-input').value = v;
+            updatePotential();
+        }
+        function setBetMax() {
+            if (busy) return;
+            haptic();
+            $('bet-input').value = Math.floor(getBalance() * 100) / 100;
+            updatePotential();
+        }
+
+        function updatePotential() {
+            const btn = $('throw-btn');
+            if (busy || !user) return;
+            const bet = getBet();
+            if (!bet || bet < MIN_BET) {
+                btn.disabled = true;
+                btn.innerText = `Минимальная ставка ${MIN_BET} ★`;
+            } else if (bet > getBalance()) {
+                btn.disabled = true;
+                btn.innerText = "Недостаточно звёзд";
+            } else {
+                btn.disabled = false;
+                btn.innerText = `Бросить · выигрыш ${(bet * MULTIPLIER).toFixed(2)} ★`;
+            }
+        }
+
+        async function loadUser() {
+            const userId = tg.initDataUnsafe?.user?.id || 8015661230;
+            try {
+                const { data, error } = await SB.from('users').select('*').eq('id', userId).maybeSingle();
+                if (error) throw error;
+                if (!data) throw new Error("Пользователь не найден");
+                user = data;
+                $('val-stars').innerText = getBalance().toFixed(2);
+                updatePotential();
+            } catch (e) {
+                console.error("Ошибка загрузки:", e);
+                $('throw-btn').innerText = "ОШИБКА СЕТИ";
+            }
+        }
+
+        // Смещение дротика: остриё (верх по центру) -> точка внутри поля
+        function dartOffset(targetX, targetY) {
+            const dart = $('dart').getBoundingClientRect();
+            const field = $('field').getBoundingClientRect();
+            const tipX = dart.left + dart.width / 2;
+            const tipY = dart.top;
+            return { dx: field.left + targetX - tipX, dy: field.top + targetY - tipY };
+        }
+
+        async function throwDart() {
+            if (busy || !user) return;
+            const bet = getBet();
+            if (!bet || bet < MIN_BET || bet > getBalance()) return;
+
+            busy = true;
+            const btn = $('throw-btn');
+            btn.disabled = true;
+            btn.innerText = "БРОСОК...";
+            haptic('medium');
+
+            // Результат решаем сразу и сохраняем баланс до анимации
+            const isWin = Math.random() < WIN_CHANCE;
+            const payout = isWin ? parseFloat((bet * MULTIPLIER).toFixed(2)) : 0;
+            const newBalance = parseFloat((getBalance() - bet + payout).toFixed(2));
+
+            try {
+                const { error } = await SB.from('users').update({ balance: newBalance }).eq('id', user.id);
+                if (error) throw error;
+            } catch (e) {
+                console.error("Ошибка сохранения:", e);
+                btn.innerText = "ОШИБКА СЕТИ";
+                busy = false;
+                setTimeout(updatePotential, 1500);
+                return;
+            }
+
+            user.balance = newBalance;
+            $('val-stars').innerText = newBalance.toFixed(2);
+
+            await playAnimation(isWin);
+
+            showResult(isWin, bet, payout);
+        }
+
+        function playAnimation(isWin) {
+            return new Promise((resolve) => {
+                const dart = $('dart');
+                const board = $('board');
+                const b = board.getBoundingClientRect();
+                const field = $('field').getBoundingClientRect();
+
+                const cx = b.left - field.left + b.width / 2;
+                const cy = b.top - field.top + b.height / 2;
+                const R = b.width / 2;
+
+                let r, angle;
+                if (isWin) {
+                    // В яблочко (небольшой разброс внутри центра)
+                    r = Math.random() * 0.06 * R;
+                } else {
+                    // Всегда на доске, но не в яблочке
+                    r = (0.38 + Math.random() * 0.5) * R;
+                }
+                angle = Math.random() * Math.PI * 2;
+                const tx = cx + Math.cos(angle) * r;
+                const ty = cy + Math.sin(angle) * r;
+
+                const o = dartOffset(tx, ty);
+                dart.classList.add('fly');
+                dart.style.transform = `translate(${o.dx}px, ${o.dy}px) scale(0.6)`;
+
+                setTimeout(() => {
+                    if (isWin) {
+                        board.classList.add('bull');
+                        haptic('heavy');
+                        flash('В ЯБЛОЧКО!', '#22c55e');
+                    } else {
+                        board.classList.add('wobble');
+                        haptic('light');
+                        flash('ПОЧТИ!', '#ef4444');
+                    }
+                }, 700);
+
+                setTimeout(resolve, 1500);
+            });
+        }
+
+        function flash(text, color) {
+            const f = $('flash');
+            f.innerText = text;
+            f.style.color = color;
+            f.classList.add('show');
+        }
+
+        function showResult(isWin, bet, payout) {
+            const box = $('modal-box');
+            const title = $('modal-title');
+            const amount = $('modal-amount');
+
+            if (isWin) {
+                box.style.border = '1px solid #22c55e';
+                title.className = 'text-lg font-black italic uppercase tracking-tight text-green-400';
+                title.innerText = 'Яблочко! Победа';
+                amount.className = 'text-2xl font-black text-green-400';
+                amount.innerText = `+${(payout - bet).toFixed(2)} ★`;
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            } else {
+                box.style.border = '1px solid #3f3f46';
+                title.className = 'text-lg font-black italic uppercase tracking-tight text-gray-400';
+                title.innerText = 'Не повезло';
+                amount.className = 'text-2xl font-black text-red-400';
+                amount.innerText = `-${bet.toFixed(2)} ★`;
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+            }
+            $('result-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            haptic();
+            $('result-modal').style.display = 'none';
+
+            // Сброс сцены
+            const dart = $('dart');
+            dart.classList.remove('fly');
+            dart.style.transform = '';
+            $('board').classList.remove('wobble', 'bull');
+            $('flash').classList.remove('show');
+
+            busy = false;
+            updatePotential();
+        }
+
+        loadUser();
+    </script>
+</body>
+</html>
