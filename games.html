@@ -80,20 +80,20 @@
         </div>
     </header>
 
-    <main class="games-container">
+<main class="games-container">
         <h1 class="text-xs uppercase font-black tracking-widest text-gray-500 mb-4 px-1">Мини игры</h1>
 
         <div class="games-grid">
-            <div class="game-card">
-                <button class="game-btn" onclick="openGame('basket')">🏀</button>
+            <div class="game-card" onclick="window.location.href='basket.html?v=' + Date.now()">
+                <button class="game-btn">🏀</button>
                 <span class="game-name">Баскет</span>
             </div>
-            <div class="game-card">
-                <button class="game-btn" onclick="openGame('football')">⚽</button>
+            <div class="game-card" onclick="window.location.href='football.html?v=' + Date.now()">
+                <button class="game-btn">⚽</button>
                 <span class="game-name">Футбол</span>
             </div>
-            <div class="game-card">
-                <button class="game-btn" onclick="openGame('darts')">🎯</button>
+            <div class="game-card" onclick="window.location.href='darts.html?v=' + Date.now()">
+                <button class="game-btn">🎯</button>
                 <span class="game-name">Дартс</span>
             </div>
         </div>
