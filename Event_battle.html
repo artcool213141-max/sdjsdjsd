@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Онлайн-Битва</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="event.css">
+</head>
+<body>
+    <div class="page">
+        <div class="top" id="top"></div>
+        <div id="view"><div class="status">Загрузка...</div></div>
+    </div>
+    <nav id="nav" class="nav"></nav>
+
+    <script src="event.js"></script>
+    <script>
+        const SPELLS = { candle: 'Свеча', ghost: 'Призрак', curse: 'Проклятие' };
+        const ROUND = 12;
+
+        let P = null;                // профиль (для баланса и настроек)
+        let sbc = null, chan = null; // Supabase Realtime
+        let battleId = null, S = null, picked = null, busy = false, stateBusy = false;
+        let endAt = 0, searchStarted = 0, searching = false, searchBusy = false;
+        let pollT = null, tickT = null, searchT = null;
+
+        try { sbc = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch (_) {}
+
+        function clearTimers() {
+            clearInterval(pollT); clearInterval(tickT); clearInterval(searchT);
+            pollT = tickT = searchT = null;
+        }
+        function unsub() { if (chan && sbc) { try { sbc.removeChannel(chan); } catch (_) {} } chan = null; }
+        function leaveBattle() {
+            clearTimers(); unsub();
+            battleId = null; S = null; picked = null; searching = false;
+            try { localStorage.removeItem('ev_battle'); } catch (_) {}
+        }
+
+        // ---------- 1. Старт ----------
+        function showIdle() {
+            clearTimers();
+            $('view').dataset.mode = 'idle';
+            $('view').innerHTML = `
+                <div class="card center">
+                    ${ico('battle', 56)}
+                    <h3>Дуэль душ</h3>
+                    <p class="muted small">Раунд — ${ROUND} секунд. Выбери заклинание втайне: победитель забирает ${P.cfg.steal_percent}% душ проигравшего. Не успел выбрать — проиграл.</p>
+                    <p class="muted" style="font-weight:800">${ico('candle', 18)} бьёт ${ico('ghost', 18)} бьёт ${ico('curse', 18)} бьёт ${ico('candle', 18)}</p>
+                    <p class="muted small">Тыквенный Щит соперника блокирует ${P.cfg.shield_block}% кражи. Для боя нужно минимум ${P.cfg.min_souls_battle} душ.</p>
+                    <button class="btn blood" onclick="startSearch()">${ico('battle', 16)} Искать соперника</button>
+                </div>`;
+        }
+
+        // ---------- 2. Поиск соперника ----------
+        function startSearch() {
+            haptic('medium');
+            S = null; picked = null; searching = true;
+            searchStarted = Date.now();
+            $('view').dataset.mode = 'search';
+            $('view').innerHTML = `
+                <div class="card center">
+                    <div class="spinner"></div>
+                    <h3>Ищем соперника...</h3>
+                    <p class="muted small">Ждём другого жнеца онлайн</p>
+                    <button class="btn ghost" onclick="cancelSearch()">Отмена</button>
+                </div>`;
+            searchStep();
+            searchT = setInterval(searchStep, 2000);
+        }
+
+        async function searchStep() {
+            if (!searching || searchBusy) return;
+            if (Date.now() - searchStarted > 60000) {
+                await cancelSearch();
+                toast('Соперник не найден, попробуй позже');
+                return;
+            }
+            searchBusy = true;
+            try {
+                const d = await api('/event/battle/search');
+                if (!searching) return;
+                if (d.status === 'matched') {
+                    searching = false; clearInterval(searchT);
+                    enterBattle(d.battle_id);
+                } else if (d.status === 'error') {
+                    searching = false; clearInterval(searchT);
+                    toast(d.reason === 'not_enough_souls' ? 'Нужно минимум ' + d.need + ' душ' : 'Ошибка поиска');
+                    showIdle();
+                }
+            } catch (e) { /* следующая попытка через 2 сек */ }
+            finally { searchBusy = false; }
+        }
+
+        async function cancelSearch() {
+            searching = false;
+            clearInterval(searchT);
+            try { await api('/event/battle/cancel'); } catch (_) {}
+            showIdle();
+        }
+
+        // ---------- 3. Бой ----------
+        function enterBattle(id) {
+            clearTimers(); unsub();
+            battleId = id; S = null; picked = null;
+            try { localStorage.setItem('ev_battle', id); } catch (_) {}
+            subscribe();
+            refreshState();
+            pollT = setInterval(refreshState, 1500);   // страховка, если Realtime отвалился
+            tickT = setInterval(tickTimer, 250);
+        }
+
+        // Realtime используем как «звонок»: пришло изменение → перечитываем состояние через бэкенд
+        function subscribe() {
+            if (!sbc || !battleId) return;
+            chan = sbc.channel('battle-' + battleId)
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'pvp_battles', filter: 'id=eq.' + battleId },
+                    () => refreshState())
+                .subscribe();
+        }
+
+        async function refreshState() {
+            if (!battleId || stateBusy) return;
+            stateBusy = true;
+            try {
+                const d = await api('/event/battle/state', { battle_id: battleId });
+                if (!d.ok) { leaveBattle(); showIdle(); return; }
+                S = d;
+                if (d.status === 'finished') { showResult(); return; }
+                endAt = Date.now() + Math.max(0, d.seconds_left - 1) * 1000;
+                renderFight();
+            } catch (e) { /* повторим по таймеру */ }
+            finally { stateBusy = false; }
+        }
+
+        function renderFight() {
+            const v = $('view');
+            if (v.dataset.mode !== 'fight') {
+                v.dataset.mode = 'fight';
+                v.innerHTML = `
+                    <div class="card">
+                        <div class="vs">
+                            <div><div class="ava">${ico('pumpkin', 30)}</div><span>Ты</span></div>
+                            <div>${ico('battle', 34)}</div>
+                            <div><div class="ava">${ico('skull', 30)}</div><span id="opp-name"></span></div>
+                        </div>
+                        <div class="timer" id="timer">${ROUND}</div>
+                        <div class="bar"><i id="bar"></i></div>
+                        <p id="fight-msg" class="muted center small" style="font-weight:800"></p>
+                        <div class="spells">
+                            ${Object.keys(SPELLS).map(k =>
+                                `<button class="spell" data-k="${k}" onclick="pick('${k}')">${ico(k, 40)}<span>${SPELLS[k]}</span></button>`
+                            ).join('')}
+                        </div>
+                    </div>`;
+            }
+            $('opp-name').textContent = S.opponent_name || 'Жнец';
+            const done = S.you_picked;
+            document.querySelectorAll('.spell').forEach(b => {
+                b.disabled = done || busy;
+                b.classList.toggle('sel', b.dataset.k === picked);
+            });
+            $('fight-msg').textContent = done
+                ? (S.opp_picked ? 'Считаем результат...' : 'Ждём ход соперника...')
+                : (S.opp_picked ? 'Соперник уже выбрал!' : 'Выбери заклинание');
+            tickTimer();
+        }
+
+        function tickTimer() {
+            const t = $('timer');
+            if (!t) return;
+            const left = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+            t.textContent = left;
+            $('bar').style.width = Math.min(100, left / ROUND * 100) + '%';
+        }
+
+        async function pick(k) {
+            if (!S || S.you_picked || busy) return;
+            busy = true; picked = k;
+            haptic('medium');
+            renderFight();
+            try {
+                const d = await api('/event/battle/move', { battle_id: battleId, spell: k });
+                if (d.ok) S.you_picked = true;
+                else if (d.reason === 'timeout') toast('Время вышло');
+            } catch (e) { toast('Ошибка сети, попробуй ещё раз'); picked = null; }
+            busy = false;
+            renderFight();
+            refreshState();
+        }
+
+        // ---------- 4. Результат ----------
+        function spellIco(k, size) { return k ? ico(k, size) : '<span class="muted">—</span>'; }
+
+        function showResult() {
+            clearTimers(); unsub();
+            try { localStorage.removeItem('ev_battle'); } catch (_) {}
+            $('view').dataset.mode = 'result';
+            setSouls(S.balance);
+
+            let cls, title, note;
+            if (S.result === 'draw') {
+                cls = 'res-draw'; title = 'Ничья'; note = 'Души остались при своих владельцах';
+            } else if (S.you_won) {
+                cls = 'res-win'; title = 'Победа!';
+                note = '+' + S.stolen + ' душ украдено' + (S.blocked > 0 ? ' · щит соперника заблокировал ' + S.blocked : '');
+            } else {
+                cls = 'res-lose'; title = 'Поражение';
+                note = '−' + S.stolen + ' душ' + (S.blocked > 0 ? ' · щит спас ' + S.blocked : '');
+            }
+            try { tg.HapticFeedback && tg.HapticFeedback.notificationOccurred(S.you_won ? 'success' : 'error'); } catch (_) {}
+
+            $('view').innerHTML = `
+                <div class="card center">
+                    <div class="res-title ${cls}">${title}</div>
+                    <div class="duel">
+                        <div>${spellIco(S.you_spell, 46)}<div class="small muted">Ты</div></div>
+                        ${ico('battle', 28)}
+                        <div>${spellIco(S.opp_spell, 46)}<div class="small muted">${esc(S.opponent_name || 'Жнец')}</div></div>
+                    </div>
+                    <p class="muted" style="font-weight:800">${esc(note)}</p>
+                    <p class="muted small">Баланс: ${S.balance} ${ico('soul', 13)}</p>
+                    <button class="btn blood" onclick="startSearch()">${ico('battle', 16)} Ещё бой</button>
+                    <button class="btn ghost" onclick="location.href='event.html'">В хаб</button>
+                </div>`;
+            battleId = null;
+        }
+
+        // ---------- Загрузка страницы ----------
+        initEvent('battle', async () => {
+            renderTop('event.html', ico('battle', 22) + ' Битва', true);
+            try {
+                P = await api('/event/profile');
+                setSouls(P.souls);
+            } catch (e) { return showError(e); }
+
+            // вернулись на страницу посреди боя — продолжаем
+            let saved = null;
+            try { saved = localStorage.getItem('ev_battle'); } catch (_) {}
+            if (saved) {
+                try {
+                    const d = await api('/event/battle/state', { battle_id: saved });
+                    if (d.ok && d.status === 'active') { enterBattle(saved); return; }
+                } catch (_) {}
+                try { localStorage.removeItem('ev_battle'); } catch (_) {}
+            }
+            showIdle();
+        });
+
+        window.addEventListener('pagehide', () => {
+            if (searching) { try { navigator.sendBeacon && api('/event/battle/cancel'); } catch (_) {} }
+        });
+    </script>
+</body>
+</html>
