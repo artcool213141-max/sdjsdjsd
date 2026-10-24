@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Алтарь</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="event.css">
+</head>
+<body>
+    <div class="page">
+        <div class="top" id="top"></div>
+        <div id="view"><div class="status">Загрузка...</div></div>
+    </div>
+    <nav id="nav" class="nav"></nav>
+
+    <script src="event.js"></script>
+    <script>
+        let P = null, shieldEnd = 0;
+
+        const cell = (label, val) => `<div class="cell"><b>${esc(val)}</b><span>${label}</span></div>`;
+
+        function draw() {
+            setSouls(P.souls);
+            $('view').innerHTML = `
+                <div class="card center">
+                    <div class="muted small">Баланс</div>
+                    <div class="big">${ico('soul', 38)}<span>${P.souls}</span></div>
+                </div>
+                <div class="card">
+                    <div class="grid3">
+                        ${cell('Собрано', P.collected)}
+                        ${cell('Украдено', P.stolen)}
+                        ${cell('Потеряно', P.lost)}
+                        ${cell('Победы', P.wins)}
+                        ${cell('Поражения', P.losses)}
+                        ${cell('Ничьи', P.draws)}
+                    </div>
+                </div>
+                <div class="card center">
+                    ${ico('shield', 52)}
+                    <h3>Тыквенный Щит</h3>
+                    <p class="muted small">Блокирует ${P.cfg.shield_block}% кражи душ в боях. Один щит действует ${P.cfg.shield_hours} ч., максимум в запасе — ${P.cfg.shield_max_hours} ч.</p>
+                    <div id="shield" class="muted" style="font-weight:800"></div>
+                    <button id="buy" class="btn" onclick="buy()">Купить за ${P.cfg.shield_cost} ${ico('soul', 14)}</button>
+                </div>`;
+            tick();
+        }
+
+        function tick() {
+            const el = $('shield');
+            if (!el) return;
+            const s = Math.ceil((shieldEnd - Date.now()) / 1000);
+            el.innerHTML = s > 0 ? 'Щит активен: ' + fmtTime(s) : 'Щит не активен';
+        }
+
+        async function buy() {
+            const b = $('buy');
+            b.disabled = true;
+            haptic('medium');
+            try {
+                const d = await api('/event/shield');
+                if (d.ok) {
+                    P.souls = d.balance;
+                    shieldEnd = Date.now() + d.shield_left * 1000;
+                    setSouls(d.balance);
+                    toast('Щит активирован');
+                    draw();
+                    return;
+                }
+                toast(d.reason === 'not_enough' ? 'Не хватает душ' : 'Щит уже на максимуме');
+            } catch (e) { toast('Ошибка сети'); }
+            b.disabled = false;
+        }
+
+        initEvent('altar', async () => {
+            renderTop('event.html', ico('altar', 22) + ' Алтарь', true);
+            try {
+                P = await api('/event/profile');
+                shieldEnd = Date.now() + P.shield_left * 1000;
+                draw();
+                setInterval(tick, 1000);
+            } catch (e) { showError(e); }
+        });
+    </script>
+</body>
+</html>
