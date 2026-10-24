@@ -416,8 +416,8 @@
             try {
                 const d = await api('/tasks/list');
                 own = d.own || [];
-                SRC.bh.reward = Number(d.bh_reward || 0.3);
-                SRC.fl.reward = Number(d.fl_reward || 0.3);
+                SRC.bh.reward = 0.5;
+                SRC.fl.reward = 0.5;
                 setBalance(d.balance);
                 render();
             } catch (e) {
