@@ -70,12 +70,12 @@
         @keyframes shake { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-6deg); } 40% { transform: rotate(5deg); } 60% { transform: rotate(-4deg); } 80% { transform: rotate(3deg); } }
 
         /* кнопка ивента: чёрная, в крови */
-        .event-card { background: #000; border: 1px solid #1c0000; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6); padding-top: 30px; }
-        .event-card:active { background: #0a0000; border-color: #5a0000; }
+        .event-card { background: #000 !important; border: 1px solid #000; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7); padding-top: 30px; }
+        .event-card:active { background: #000 !important; border-color: #3a0000; }
         .event-card > *:not(.blood) { position: relative; z-index: 1; }
-        .event-card .card-title { color: #d11a1a; }
-        .event-card .card-desc { color: #bdbdbd; }
-        .event-skull { font-size: 38px; width: 50px; text-align: center; }
+        .event-card .card-title { color: #fff; text-shadow: 0 0 10px rgba(255, 0, 0, 0.6); }
+        .event-card .card-desc { color: #e6e6e6; opacity: 1; }
+        .event-card img { filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.55)); }
         .blood { position: absolute; top: 0; left: 0; width: 100%; height: 60px; pointer-events: none; z-index: 0; }
         .blood svg { width: 100%; height: 100%; display: block; }
 
@@ -223,7 +223,7 @@
             <div class="mt-8">
                 <div onclick="openEvent()" class="game-card event-card">
                     <div class="blood" id="blood-card"></div>
-                    <div class="event-skull">💀</div>
+                    <img src="img/ivent.png" alt="Event">
                     <div>
                         <div class="card-title">Ивент</div>
                         <div class="card-desc">Скоро... кровавый хэллоуин</div>
@@ -236,7 +236,7 @@
                 </div>
 
                 <div onclick="window.location.href='tasks.html?v=' + Date.now()" class="game-card">
-                    <img src="img/pepe.png" alt="Cases">
+                    <img src="img/task.png" alt="Cases">
                     <div>
                         <div class="card-title">Задания</div>
                         <div class="card-desc">Выполняй простые задания и зарабатывай Stars</div>
@@ -249,7 +249,7 @@
                 </div>
 
                 <div onclick="window.location.href='wheel.html'" class="game-card">
-                    <img src="img/chassiki.png" alt="Wheel">
+                    <img src="img/bonus.png" alt="Wheel">
                     <div>
                         <div class="card-title">Ежедневный бонус</div>
                         <div class="card-desc">Испытай свою удачу</div>
@@ -258,7 +258,7 @@
                 </div>
 
                 <div onclick="window.location.href='games.html?v=' + Date.now()" class="game-card">
-                    <img src="img/helmet.png" alt="Games">
+                    <img src="img/game.png" alt="Games">
                     <div>
                         <div class="card-title">Мини игры</div>
                         <div class="card-desc">Играй в мини игры и удваивай свой выигрыш</div>
@@ -305,6 +305,7 @@
         </div>
     </div>
 
+<script src="music.js"></script>
 <script>
     const tg = window.Telegram.WebApp;
     const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
