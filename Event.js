@@ -3,8 +3,8 @@ const tg = window.Telegram.WebApp;
 const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
 
 // Публичные ключи Supabase (anon-ключ можно светить, service_role — НИКОГДА)
-const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://xbklrdpguqsuvqndcujb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhia2xyZHBndXFzdXZxbmRjdWpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzQ0NzUsImV4cCI6MjEwNzIxMDQ3NX0.IeK3NGOTu_J1jDOd_XjHQUOySnkbFh4uThGCPeu-Wu4';
 
 // ---------------------------------------------------------------------
 // ВСЕ иконки ивента в одном месте. Сейчас — эмодзи-заглушки.
