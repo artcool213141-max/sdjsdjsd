@@ -10,14 +10,15 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
 
         :root {
-            --bg-dark: #050a05;
-            --accent-green: #22c55e;
-            --deep-green: #14532d;
-            --glow-green: rgba(34, 197, 94, 0.2);
+            --accent: #ffb347;
+            --text-soft: #ffd9a0;
+            --panel: rgba(30, 12, 3, 0.55);
+            --line: rgba(255, 179, 71, 0.3);
         }
 
         body {
-            background-color: var(--bg-dark);
+            background: linear-gradient(180deg, #3a1a08 0%, #6b2f0c 55%, #a04a12 100%);
+            background-attachment: fixed;
             color: white;
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -28,28 +29,59 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        /* Искры на фоне */
+        #sparks { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+        .spark {
+            position: absolute; bottom: -10px; border-radius: 50%;
+            background: #ffb347; opacity: 0;
+            animation: rise linear infinite;
+        }
+        @keyframes rise {
+            0%   { transform: translateY(0) translateX(0); opacity: 0; }
+            15%  { opacity: 0.9; }
+            100% { transform: translateY(-105vh) translateX(var(--drift, 20px)); opacity: 0; }
+        }
+
+        /* Паутина и паук */
+        .web {
+            position: fixed; top: 0; right: 0; width: 150px; height: 150px;
+            pointer-events: none; z-index: 1;
+        }
+        .spider-wrap {
+            position: fixed; top: 0; right: 22px; z-index: 1; pointer-events: none;
+            display: flex; flex-direction: column; align-items: center;
+            animation: hang 4s ease-in-out infinite;
+            transform-origin: top center;
+        }
+        .spider-thread { width: 1px; height: 70px; background: #000; }
+        @keyframes hang {
+            0%, 100% { transform: rotate(-3deg); }
+            50%      { transform: rotate(3deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .spark, .spider-wrap { animation: none; }
+        }
+
         .main-wrapper {
-            background: radial-gradient(circle at 50% 10%, #064e3b 0%, #050a05 60%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             position: relative;
-            z-index: 1;
+            z-index: 2;
         }
 
         .scrollable-content {
             flex: 1;
             overflow-y: auto;
-            padding: 24px 20px 120px 20px;
+            padding: calc(20px + var(--tg-safe-area-inset-top, 0px)) 20px 120px 20px;
         }
 
         .profile-card {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(34, 197, 94, 0.2);
+            background: var(--panel);
+            border: 1px solid var(--line);
             border-radius: 30px;
             padding: 30px 20px;
             text-align: center;
-            backdrop-filter: blur(10px);
             margin-bottom: 20px;
         }
 
@@ -57,100 +89,50 @@
             width: 100px;
             height: 100px;
             border-radius: 35px;
-            border: 3px solid var(--accent-green);
+            border: 3px solid var(--accent);
             margin: 0 auto 15px;
-            box-shadow: 0 0 20px var(--glow-green);
             object-fit: cover;
         }
 
-        .ref-box, .promo-box {
-            background: rgba(255, 255, 255, 0.03);
+        .promo-box {
+            background: rgba(0, 0, 0, 0.3);
             border-radius: 20px;
             padding: 15px;
             margin-top: 15px;
         }
 
-        .ref-link-input {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px dashed var(--accent-green);
-            color: var(--accent-green);
-            padding: 10px;
-            border-radius: 12px;
-            font-size: 12px;
-            word-break: break-all;
-            margin-bottom: 15px;
+        .promo-input {
+            flex: 1; min-width: 0;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 179, 71, 0.25);
+            color: white; border-radius: 12px; padding: 0 12px;
+            text-transform: uppercase; font-weight: 700; font-size: 14px;
         }
+        .promo-input::placeholder { color: #8a6a4e; }
+        .promo-input:focus { outline: none; border-color: var(--accent); }
 
-        /* Кнопка "кого засчитываем" */
-        .info-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: 1px solid rgba(34, 197, 94, 0.5);
-            background: rgba(34, 197, 94, 0.1);
-            color: var(--accent-green);
-            font-weight: 900;
-            font-size: 13px;
-            font-style: italic;
-            font-family: Georgia, serif;
-            box-shadow: 0 0 10px var(--glow-green);
-            transition: all 0.2s;
+        /* Оранжевая кнопка с бликом */
+        .btn-orange {
+            position: relative; overflow: hidden;
+            background: linear-gradient(180deg, #ffa53a 0%, #f07a0a 55%, #d86200 100%);
+            border: 1px solid #ffc878;
+            color: #2a1000;
+            font-weight: 900; text-transform: uppercase; font-size: 12px;
+            padding: 10px 18px; border-radius: 12px;
+            box-shadow: 0 3px 0 #8f3f00;
+            transition: transform 0.15s, box-shadow 0.15s;
         }
-        .info-btn:active { transform: scale(0.88); background: rgba(34, 197, 94, 0.25); }
-
-        /* Модалка */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(6px);
-            z-index: 2000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-            opacity: 0;
+        .btn-orange::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 48%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
             pointer-events: none;
-            transition: opacity 0.25s;
         }
-        .modal-overlay.open { opacity: 1; pointer-events: auto; }
-
-        .modal-card {
-            width: 100%;
-            max-width: 360px;
-            background: linear-gradient(160deg, #0b1f14 0%, #050a05 100%);
-            border: 1px solid rgba(34, 197, 94, 0.3);
-            border-radius: 28px;
-            padding: 24px 20px 20px;
-            box-shadow: 0 0 40px var(--glow-green);
-            transform: translateY(20px) scale(0.96);
-            transition: transform 0.25s;
+        .btn-orange:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f3f00; }
+        .btn-orange:disabled {
+            background: #2a1a10; border-color: #3d2a1c; color: #7a5a40;
+            box-shadow: none; transform: none;
         }
-        .modal-overlay.open .modal-card { transform: translateY(0) scale(1); }
-
-        .rule-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: rgba(255, 255, 255, 0.04);
-            border-radius: 16px;
-            padding: 12px 14px;
-            margin-bottom: 10px;
-            text-align: left;
-        }
-        .rule-reward {
-            min-width: 52px;
-            text-align: center;
-            font-weight: 900;
-            font-size: 15px;
-            color: var(--accent-green);
-        }
-        .rule-reward.premium { color: #facc15; }
-        .rule-text { font-size: 12px; line-height: 1.35; color: #d1d5db; font-weight: 600; }
-        .rule-text b { color: white; }
+        .btn-orange:disabled::before { display: none; }
 
         .gifts-grid {
             display: grid;
@@ -160,24 +142,22 @@
         }
 
         .gift-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-            border: 1px solid rgba(34, 197, 94, 0.15);
+            background: var(--panel);
+            border: 1px solid rgba(255, 179, 71, 0.2);
             border-radius: 24px;
             padding: 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            transition: all 0.2s;
+            transition: transform 0.15s, background 0.15s;
         }
-
-        .gift-card:active { transform: scale(0.95); background: rgba(34, 197, 94, 0.1); }
+        .gift-card:active { transform: scale(0.95); background: rgba(255, 179, 71, 0.15); }
 
         .gift-img {
             width: 60px;
             height: 60px;
             margin-bottom: 8px;
-            filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.3));
         }
 
         .gift-name { font-weight: 800; text-transform: uppercase; font-size: 13px; margin-bottom: 4px; }
@@ -186,116 +166,136 @@
             display: flex;
             align-items: center;
             gap: 4px;
-            color: var(--accent-green);
+            color: var(--accent);
             font-weight: 900;
             font-size: 14px;
         }
-
         .price-tag img { width: 14px; height: 14px; }
 
-        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(5, 10, 5, 0.96); border-top: 1px solid rgba(34, 197, 94, 0.2); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; backdrop-filter: blur(25px); height: 95px; }
-        .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #4b5563; flex: 1; }
-        .dock-btn.active { color: var(--accent-green); filter: drop-shadow(0 0 8px var(--accent-green)); }
-        .dock-center { color: #86efac; }
+        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(26, 11, 3, 0.96); border-top: 1px solid var(--line); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; height: 95px; }
+        .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #8a6a4e; flex: 1; }
+        .dock-btn.active { color: var(--accent); }
+        .dock-center { color: var(--text-soft); }
         .dock-center .ico {
             width: 54px; height: 54px; margin: -13px 0; transform: translateY(-16px); border-radius: 20px;
             display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(145deg, #16a34a, #14532d); color: #eafff1;
-            border: 1px solid rgba(34, 197, 94, 0.6);
-            box-shadow: 0 0 22px rgba(34, 197, 94, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            background: linear-gradient(180deg, #ffa53a 0%, #d86200 100%); color: #2a1000;
+            border: 1px solid #ffc878;
+            box-shadow: 0 3px 0 #8f3f00, inset 0 1px 0 rgba(255, 255, 255, 0.4);
         }
-        .dock-center.active .ico { background: linear-gradient(145deg, #22c55e, #15803d); box-shadow: 0 0 30px rgba(34, 197, 94, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
     </style>
 </head>
 <body>
+
+    <div id="sparks"></div>
+
+    <!-- Паутина в правом верхнем углу -->
+    <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round">
+        <path d="M150 0 L0 0 M150 0 L150 150 M150 0 L20 100 M150 0 L60 140 M150 0 L105 150 M150 0 L5 45"/>
+        <path d="M150 28 Q122 30 118 0"/>
+        <path d="M150 58 Q104 62 92 0"/>
+        <path d="M150 92 Q86 96 62 0"/>
+        <path d="M150 128 Q70 132 34 0"/>
+    </svg>
+
+    <!-- Паук на нитке -->
+    <div class="spider-wrap">
+        <div class="spider-thread"></div>
+        <svg width="26" height="24" viewBox="0 0 26 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round">
+            <path d="M8 10 L1 5 M8 12 L0 12 M8 14 L1 19 M9 16 L4 23"/>
+            <path d="M18 10 L25 5 M18 12 L26 12 M18 14 L25 19 M17 16 L22 23"/>
+            <ellipse cx="13" cy="14" rx="6" ry="7" fill="#000"/>
+            <circle cx="13" cy="7" r="3.5" fill="#000"/>
+        </svg>
+    </div>
 
     <div class="main-wrapper">
         <div class="scrollable-content">
 
             <div class="profile-card">
-                <img id="p-avatar" src="" class="avatar-main shadow-2xl">
+                <img id="p-avatar" src="" class="avatar-main">
                 <h2 id="p-name" class="text-2xl font-black italic uppercase tracking-tight">Загрузка...</h2>
-                <p id="p-id" class="text-green-500 font-bold opacity-50 text-sm">ID: 00000000</p>
+                <p id="p-id" class="font-bold text-sm" style="color:#d9b98c">ID: 00000000</p>
 
                 <div class="promo-box">
-                    <p class="text-[10px] font-black uppercase text-gray-400 mb-2 text-left">Активация промокода</p>
+                    <p class="text-[10px] font-black uppercase mb-2 text-left" style="color:#d9b98c">Активация промокода</p>
                     <div class="flex gap-2">
-                        <input type="text" id="promo-input" placeholder="ВВЕДИТЕ КОД" class="flex-1 bg-black/40 border border-white/10 text-white rounded-xl px-3 uppercase font-bold text-sm focus:outline-none focus:border-green-500">
-                        <button id="promo-btn" onclick="claimPromo()" class="bg-white text-black font-black px-4 py-2.5 rounded-xl text-xs uppercase active:scale-95 transition-all">ОК</button>
+                        <input type="text" id="promo-input" placeholder="ВВЕДИТЕ КОД" class="promo-input">
+                        <button id="promo-btn" onclick="claimPromo()" class="btn-orange">ОК</button>
                     </div>
                 </div>
 
             </div>
 
             <div class="flex flex-col items-center justify-center mb-6 px-2 text-center">
-                <p class="text-[10px] font-black uppercase text-green-500 opacity-60 tracking-widest mb-1">Доступно к выводу</p>
+                <p class="text-[10px] font-black uppercase tracking-widest mb-1" style="color:var(--text-soft)">Доступно к выводу</p>
                 <div class="flex items-center gap-3">
                     <span id="p-balance" class="text-5xl font-black italic tracking-tighter">0.00</span>
-                    <img src="star.png" class="w-8 h-8 filter drop-shadow-[0_0_8px_rgba(34,197,94,0.5)]" alt="S">
+                    <img src="img/star.png" class="w-8 h-8" alt="S">
                 </div>
             </div>
 
-            <div class="h-[1px] w-full bg-white/5 mb-8"></div>
+            <div class="h-[1px] w-full mb-8" style="background:rgba(255,179,71,0.2)"></div>
 
             <div class="gifts-grid">
                 <div class="gift-card" onclick="buyGift('Сердечко', 15)">
                     <img src="img/cccccerce.png" class="gift-img" alt="G">
                     <div class="gift-name">Сердечко</div>
-                    <div class="price-tag">15 <img src="star.png"></div>
+                    <div class="price-tag">15 <img src="img/star.png"></div>
                 </div>
 
                 <div class="gift-card" onclick="buyGift('Мишка', 15)">
                     <img src="img/mixail.png" class="gift-img" alt="G">
                     <div class="gift-name">Мишка</div>
-                    <div class="price-tag">15 <img src="star.png"></div>
+                    <div class="price-tag">15 <img src="img/star.png"></div>
                 </div>
 
                 <div class="gift-card" onclick="buyGift('Роза', 25)">
                     <img src="img/rozka.png" class="gift-img" alt="G">
                     <div class="gift-name">Роза</div>
-                    <div class="price-tag">25 <img src="star.png"></div>
+                    <div class="price-tag">25 <img src="img/star.png"></div>
                 </div>
 
                 <div class="gift-card" onclick="buyGift('Подарок', 25)">
                     <img src="img/pidarynok.png" class="gift-img" alt="G">
                     <div class="gift-name">Подарок</div>
-                    <div class="price-tag">25 <img src="star.png"></div>
+                    <div class="price-tag">25 <img src="img/star.png"></div>
                 </div>
 
                 <div class="gift-card" onclick="buyGift('Торт', 50)">
                     <img src="img/totik.png" class="gift-img" alt="G">
                     <div class="gift-name">Торт</div>
-                    <div class="price-tag">50 <img src="star.png"></div>
+                    <div class="price-tag">50 <img src="img/star.png"></div>
                 </div>
 
                 <div class="gift-card" onclick="buyGift('Букет', 50)">
                     <img src="img/buket.png" class="gift-img" alt="G">
                     <div class="gift-name">Букет</div>
-                    <div class="price-tag">50 <img src="star.png"></div>
+                    <div class="price-tag">50 <img src="img/star.png"></div>
                 </div>
 
                 <div class="gift-card" onclick="buyGift('Ракета', 50)">
                     <img src="img/raketa.png" class="gift-img" alt="G">
                     <div class="gift-name">Ракета</div>
-                    <div class="price-tag">50 <img src="star.png"></div>
+                    <div class="price-tag">50 <img src="img/star.png"></div>
                 </div>
 
                 <div class="gift-card" onclick="buyGift('Кубок', 100)">
                     <img src="img/kypok.png" class="gift-img" alt="G">
                     <div class="gift-name">Кубок</div>
-                    <div class="price-tag">100 <img src="star.png"></div>
+                    <div class="price-tag">100 <img src="img/star.png"></div>
                 </div>
 
                 <div class="gift-card" onclick="buyGift('Кольцо', 100)">
                     <img src="img/kolechko.png" class="gift-img" alt="G">
                     <div class="gift-name">Кольцо</div>
-                    <div class="price-tag">100 <img src="star.png"></div>
+                    <div class="price-tag">100 <img src="img/star.png"></div>
                 </div>
 
                 <div class="gift-card" onclick="buyGift('Бриллиант', 100)">
                     <img src="img/alik.png" class="gift-img" alt="G">
                     <div class="gift-name">Бриллиант</div>
-                    <div class="price-tag">100 <img src="star.png"></div>
+                    <div class="price-tag">100 <img src="img/star.png"></div>
                 </div>
             </div>
 
@@ -319,10 +319,24 @@
         </div>
     </div>
 
+    <script src="music.js"></script>
 <script>
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
     const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
+
+    // Звуки промокода: earn.mp3 — зачислен, skip.mp3 — неверный
+    const earnSound = new Audio('earn.mp3');
+    const failSound = new Audio('skip.mp3');
+    earnSound.preload = 'auto';
+    failSound.preload = 'auto';
+    function playSound(a) {
+        try {
+            a.currentTime = 0;
+            const p = a.play();
+            if (p && p.catch) p.catch(() => {});
+        } catch (_) {}
+    }
 
     function fmt(v) { return Number(v || 0).toFixed(2); }
 
@@ -341,7 +355,7 @@
         if (!user) return;
         document.getElementById('p-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
         document.getElementById('p-id').innerText = `ID: ${user.id}`;
-        document.getElementById('p-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=14532d&color=fff&name=${user.first_name}`;
+        document.getElementById('p-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=8f3f00&color=fff&name=${user.first_name}`;
         fetchBalance();
     }
 
@@ -374,10 +388,12 @@
         try {
             const { ok, data } = await api('/activate_promo', { code });
             if (ok && data.success) {
+                playSound(earnSound);
                 tg.showAlert(`🎉 Промокод активирован!\nНачислено: +${fmt(data.reward)} ⭐`);
                 document.getElementById('p-balance').innerText = fmt(data.new_balance);
                 input.value = '';
             } else {
+                playSound(failSound);
                 tg.showAlert(`❌ ${data.detail || "Не удалось активировать"}`);
             }
         } catch (e) {
@@ -437,6 +453,22 @@
             }
         });
     }
+
+    // Поднимающиеся искры (только оформление)
+    (function makeSparks() {
+        const box = document.getElementById('sparks');
+        for (let i = 0; i < 22; i++) {
+            const s = document.createElement('div');
+            const size = 2 + Math.random() * 3;
+            s.className = 'spark';
+            s.style.width = s.style.height = size + 'px';
+            s.style.left = Math.random() * 100 + '%';
+            s.style.animationDuration = (6 + Math.random() * 8) + 's';
+            s.style.animationDelay = (-Math.random() * 12) + 's';
+            s.style.setProperty('--drift', (Math.random() * 60 - 30) + 'px');
+            box.appendChild(s);
+        }
+    })();
 
     window.onload = () => {
         try { tg.expand(); tg.ready(); } catch (_) {}
