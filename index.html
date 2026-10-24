@@ -72,18 +72,15 @@
         /* кнопка ивента: чёрная, в крови */
         .event-card { background: #000 !important; border: 1px solid #000; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7); }
         .event-card:active { background: #000 !important; border-color: #3a0000; }
-        .event-card > *:not(.blood) { position: relative; z-index: 1; }
-        .event-card .card-title { color: #fff; text-shadow: 0 0 10px rgba(255, 0, 0, 0.6); }
+                .event-card .card-title { color: #fff; text-shadow: 0 0 10px rgba(255, 0, 0, 0.6); }
         .event-card .card-desc { color: #e6e6e6; opacity: 1; }
         .event-card img { filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.55)); }
-        .blood { position: absolute; top: 0; left: 0; width: 100%; height: 60px; pointer-events: none; z-index: 0; }
-        .blood svg { width: 100%; height: 100%; display: block; }
 
         /* модалка coming soon */
         #event-modal { position: fixed; inset: 0; z-index: 100000; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(0,0,0,0.88); backdrop-filter: blur(8px); opacity: 0; transition: opacity 0.3s; }
         #event-modal.show { display: flex; }
         #event-modal.vis { opacity: 1; }
-        .ev-box { position: relative; overflow: hidden; width: 100%; max-width: 330px; text-align: center; padding: 48px 24px 28px; border-radius: 28px; background: radial-gradient(circle at 50% 0%, #2a0000 0%, #000 70%); border: 1px solid rgba(190, 0, 0, 0.7); box-shadow: 0 0 40px rgba(180, 0, 0, 0.45); transform: scale(0.9); transition: transform 0.3s; }
+        .ev-box { position: relative; overflow: hidden; width: 100%; max-width: 330px; text-align: center; padding: 32px 24px 28px; border-radius: 28px; background: radial-gradient(circle at 50% 0%, #2a0000 0%, #000 70%); border: 1px solid rgba(190, 0, 0, 0.7); box-shadow: 0 0 40px rgba(180, 0, 0, 0.45); transform: scale(0.9); transition: transform 0.3s; }
         #event-modal.vis .ev-box { transform: scale(1); }
         .ev-title { font-family: 'Creepster', cursive; font-size: 58px; line-height: 0.95; letter-spacing: 3px; color: #ff1a1a; text-shadow: 0 0 18px rgba(255, 0, 0, 0.8), 0 3px 0 #4a0000; animation: flicker 3s infinite; margin: 8px 0 14px; }
         @keyframes flicker { 0%,100% { opacity: 1; } 46% { opacity: 1; } 48% { opacity: 0.4; } 50% { opacity: 1; } 53% { opacity: 0.6; } 55% { opacity: 1; } }
@@ -174,16 +171,6 @@
     <canvas id="stars-canvas"></canvas>
 
     <!-- Хэллоуин-декор -->
-
-    <!-- градиент для крови (один на все svg) -->
-    <svg width="0" height="0" style="position:absolute">
-        <defs>
-            <linearGradient id="blood-g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="60">
-                <stop offset="0" stop-color="#5e0000"/>
-                <stop offset="1" stop-color="#b30000"/>
-            </linearGradient>
-        </defs>
-    </svg>
 
     <div class="main-wrapper">
         <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#000" stroke-width="1">
@@ -293,7 +280,6 @@
     <!-- модалка ивента -->
     <div id="event-modal" onclick="closeEvent()">
         <div class="ev-box" onclick="event.stopPropagation()">
-            <div class="blood" id="blood-modal"></div>
             <img src="img/cher.png" class="mx-auto" style="width: 72px; height: 72px; object-fit: contain;" alt="">
             <div class="ev-title">Coming<br>Soon</div>
             <div class="ev-sub">Кровавый ивент уже в пути</div>
@@ -540,34 +526,6 @@
             if (p && p.catch) p.catch(e => console.warn('звук не играет', e));
         } catch (e) {}
     }
-
-    // кровь с потёками, каждый раз немного разная
-    function buildBlood(el) {
-        if (!el) return;
-        const n = 7;
-        let drips = '';
-        for (let i = 0; i < n; i++) {
-            const x = 22 + i * (316 / (n - 1)) + (Math.random() * 16 - 8);
-            const w = 4 + Math.random() * 3.5;
-            const len = 14 + Math.random() * 26;
-            const dur = (5 + Math.random() * 4).toFixed(1);
-            const begin = (Math.random() * 3).toFixed(1);
-            const r = (w / 2 + 1.2).toFixed(1);
-            drips += `
-                <line x1="${x}" y1="6" x2="${x}" y2="${len}" stroke="url(#blood-g)" stroke-width="${w}" stroke-linecap="round">
-                    <animate attributeName="y2" values="${len};${len + 7};${len}" dur="${dur}s" begin="${begin}s" repeatCount="indefinite"/>
-                </line>
-                <circle cx="${x}" cy="${len}" r="${r}" fill="url(#blood-g)">
-                    <animate attributeName="cy" values="${len};${len + 7};${len}" dur="${dur}s" begin="${begin}s" repeatCount="indefinite"/>
-                </circle>
-                <line x1="${x - w * 0.2}" y1="8" x2="${x - w * 0.2}" y2="${len - 3}" stroke="rgba(255,130,130,0.3)" stroke-width="1" stroke-linecap="round"/>`;
-        }
-        el.innerHTML = `<svg viewBox="0 0 360 60" preserveAspectRatio="xMidYMin slice">
-            <path d="M0 0H360V9Q340 14 320 9T280 10T240 8T200 11T160 9T120 10T80 8T40 11T0 9Z" fill="#6e0000"/>
-            ${drips}
-        </svg>`;
-    }
-    buildBlood(document.getElementById('blood-modal'));
 
     // ивент
     function openEvent() {
