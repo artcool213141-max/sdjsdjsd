@@ -191,7 +191,7 @@
                         <div id="display-id" class="text-[10px] font-bold opacity-80" style="color:#ffb347">ID: 00000000</div>
                     </div>
                 </div>
-                <div class="balance-container-v2" onclick="tg.showAlert('Пополнение доступно в разделе STARS')">
+                <div class="balance-container-v2" onclick="openBalance()">
                     <div class="balance-item-v2">
                         <span id="bal-stars" class="font-black text-xl">0.00</span>
                         <img src="img/star.png" alt="STAR">
@@ -544,6 +544,20 @@
         const url = 'https://t.me/St1fix_free';
         if (tg.openTelegramLink) tg.openTelegramLink(url);
         else window.open(url, '_blank');
+    }
+
+    // тап по балансу: на время беты ивент открывается только тем, кого пускает сервер (ADMIN_IDS).
+    // Остальные видят прежнее сообщение.
+    async function openBalance() {
+        try {
+            const res = await fetch(`${BACKEND_URL}/event/profile`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ init_data: tg.initData })
+            });
+            if (res.ok) { location.href = 'event.html'; return; }
+        } catch (e) {}
+        tg.showAlert('Пополнение доступно в разделе STARS');
     }
 
     // тап по тыкве
