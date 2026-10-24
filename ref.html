@@ -346,7 +346,6 @@
         </div>
     </div>
 
-    <script src="music.js"></script>
 <script>
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
@@ -505,18 +504,9 @@
         if (!REF_LINK) return;
 
         const fallback = () => {
-                       const text = [
-                '🎃 Страшно прибыльный Хэллоуин в FixStars! 👻',
-                'Тёмные силы принесли сокровища, а мы подготовили жутко выгодные задания! Переходи на тёмную сторону и забирай свои Telegram Stars без вложений.',
-                '',
-                '🎃 Что тебя ждёт:',
-                '',
-                '🦇 Простые квесты: подписки, просмотры и репосты',
-                '🕸 Приглашай друзей — забирай их «души» (и звёздные бонусы!)',
-                '⚡️ Быстрые и честные выплаты прямо в Telegram',
-                '',
-                '🕯 Не бойся — начать зарабатывать можно прямо сейчас! 👇 Жми кнопку ниже и забирай свою добычу:'
-            ].join('\n');
+            const text = '⭐️ Зарабатывай Telegram Stars без вложений в FixStars!\nПростые задания: подписки, просмотры, приглашение друзей. Быстрые выплаты прямо в Telegram!\n👇 Начни зарабатывать прямо сейчас';
+            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(REF_LINK)}&text=${encodeURIComponent(text)}`);
+        };
 
         let why = '';
         try {
@@ -569,11 +559,14 @@
         }
     })();
 
-    window.onload = () => {
+    function initPage() {
         try { tg.expand(); tg.ready(); } catch (_) {}
         document.getElementById('ref-link').innerText = REF_LINK || 'Открой приложение через Telegram';
         loadReferrals();
-    };
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPage);
+    else initPage();
 </script>
+<script src="music.js"></script>
 </body>
 </html>
