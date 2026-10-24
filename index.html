@@ -58,11 +58,11 @@
         /* паутина в углу */
         .web { position: absolute; top: 0; right: 0; width: 105px; height: 105px; z-index: 0; pointer-events: none; opacity: 0.8; }
 
-        /* паук на ниточке */
-        .spider-wrap { position: fixed; top: 0; left: 22px; z-index: 2; pointer-events: none; animation: spiderDrop 5s ease-in-out infinite; }
-        .spider-wrap .thread { width: 2px; height: 70px; background: #000; margin: 0 auto; }
-        .spider-wrap .sp { font-size: 28px; line-height: 1; margin-left: -13px; margin-top: -3px; filter: brightness(0); }
-        @keyframes spiderDrop { 0%,100% { transform: translateY(-30px); } 50% { transform: translateY(8px); } }
+        /* паук ползёт вниз с аватарки и обратно */
+        .avatar-spider { position: absolute; left: 12px; top: calc(100% - 6px); z-index: 3; pointer-events: none; display: flex; flex-direction: column; align-items: center; width: 0; }
+        .avatar-spider .thread { width: 2px; background: #000; height: 8px; animation: crawl 5s ease-in-out infinite; }
+        .avatar-spider .sp { font-size: 26px; line-height: 1; margin-top: -4px; filter: brightness(0); flex-shrink: 0; }
+        @keyframes crawl { 0%, 100% { height: 8px; } 50% { height: 46px; } }
 
         /* тыква по тапу трясётся */
         #tikva { cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -70,7 +70,7 @@
         @keyframes shake { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-6deg); } 40% { transform: rotate(5deg); } 60% { transform: rotate(-4deg); } 80% { transform: rotate(3deg); } }
 
         /* кнопка ивента: чёрная, в крови */
-        .event-card { background: #000 !important; border: 1px solid #000; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7); padding-top: 30px; }
+        .event-card { background: #000 !important; border: 1px solid #000; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7); }
         .event-card:active { background: #000 !important; border-color: #3a0000; }
         .event-card > *:not(.blood) { position: relative; z-index: 1; }
         .event-card .card-title { color: #fff; text-shadow: 0 0 10px rgba(255, 0, 0, 0.6); }
@@ -174,7 +174,6 @@
     <canvas id="stars-canvas"></canvas>
 
     <!-- Хэллоуин-декор -->
-    <div class="spider-wrap"><div class="thread"></div><div class="sp">🕷️</div></div>
 
     <!-- градиент для крови (один на все svg) -->
     <svg width="0" height="0" style="position:absolute">
@@ -198,6 +197,7 @@
                     <div class="relative">
                         <img id="user-avatar" src="" class="w-14 h-14 rounded-2xl object-cover bg-gray-900" style="border:2px solid rgba(255,170,80,0.7)">
                         <div class="absolute -bottom-1 -right-1 w-4 h-4 border-2 border-black rounded-full" style="background:#ffb347"></div>
+                        <div class="avatar-spider"><div class="thread"></div><div class="sp">🕷️</div></div>
                     </div>
                     <div>
                         <div id="display-name" class="text-[14px] font-black text-white tracking-wide uppercase italic">ЗАГРУЗКА...</div>
@@ -222,7 +222,6 @@
             <!-- МЕНЮ -->
             <div class="mt-8">
                 <div onclick="openEvent()" class="game-card event-card">
-                    <div class="blood" id="blood-card"></div>
                     <img src="img/ivent.png" alt="Event">
                     <div>
                         <div class="card-title">Ивент</div>
@@ -295,7 +294,7 @@
     <div id="event-modal" onclick="closeEvent()">
         <div class="ev-box" onclick="event.stopPropagation()">
             <div class="blood" id="blood-modal"></div>
-            <div style="font-size: 44px;">💀</div>
+            <img src="img/cher.png" class="mx-auto" style="width: 72px; height: 72px; object-fit: contain;" alt="">
             <div class="ev-title">Coming<br>Soon</div>
             <div class="ev-sub">Кровавый ивент уже в пути</div>
             <div class="ev-line"></div>
@@ -568,7 +567,6 @@
             ${drips}
         </svg>`;
     }
-    buildBlood(document.getElementById('blood-card'));
     buildBlood(document.getElementById('blood-modal'));
 
     // ивент
