@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Кровавая Жатва</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="event.css">
+</head>
+<body>
+    <div class="page">
+        <div class="top" id="top"></div>
+        <div id="view"><div class="status">Загрузка...</div></div>
+    </div>
+    <nav id="nav" class="nav"></nav>
+
+    <script src="event.js"></script>
+    <script>
+        let P = null, harvestEnd = 0, shieldEnd = 0;
+
+        function tile(href, key, title, desc) {
+            return `<a class="tile" href="${href}">${ico(key, 36)}<b>${title}</b><small>${desc}</small></a>`;
+        }
+
+        function draw() {
+            setSouls(P.souls);
+            $('view').innerHTML = `
+                <div class="card hero">
+                    <div class="big">${ico('soul', 44)}<span id="big">${P.souls}</span></div>
+                    <div class="muted">Кровавых Душ</div>
+                    <div id="shield" class="small muted"></div>
+                    <button id="hv" class="btn" onclick="harvest()"></button>
+                    <div class="small muted">+${P.cfg.harvest_min}–${P.cfg.harvest_max} душ раз в час</div>
+                </div>
+                <div class="grid2">
+                    ${tile('event_altar.html', 'altar', 'Алтарь', 'Статистика и щит')}
+                    ${tile('event_battle.html', 'battle', 'Онлайн-Битва', 'PvP за души')}
+                    ${tile('event_cauldron.html', 'cauldron', 'Кровавый Котёл', 'Души → звёзды')}
+                    ${tile('event_rating.html', 'rating', 'Рейтинг Жнецов', 'Топ игроков')}
+                </div>`;
+            tick();
+        }
+
+        function tick() {
+            const hv = $('hv');
+            if (!hv) return;
+            const w = Math.ceil((harvestEnd - Date.now()) / 1000);
+            if (w > 0) { hv.disabled = true; hv.innerHTML = 'Жатва через ' + fmtTime(w); }
+            else { hv.disabled = false; hv.innerHTML = ico('pumpkin', 18) + ' Собрать жатву'; }
+            const s = Math.ceil((shieldEnd - Date.now()) / 1000);
+            $('shield').innerHTML = s > 0 ? ico('shield', 14) + ' Щит активен: ' + fmtTime(s) : 'Щит не активен';
+        }
+
+        async function harvest() {
+            const hv = $('hv');
+            if (!hv || hv.disabled) return;
+            hv.disabled = true;
+            haptic('medium');
+            try {
+                const d = await api('/event/harvest');
+                if (d.ok) {
+                    P.souls = d.balance;
+                    harvestEnd = Date.now() + P.cfg.harvest_cooldown * 1000;
+                    $('big').textContent = d.balance;
+                    setSouls(d.balance);
+                    toast('+' + d.gain + ' душ');
+                } else if (d.reason === 'cooldown') {
+                    harvestEnd = Date.now() + d.wait_seconds * 1000;
+                }
+            } catch (e) { toast('Ошибка сети'); }
+            tick();
+        }
+
+        initEvent('pumpkin', async () => {
+            renderTop('index.html', ico('pumpkin', 22) + ' Кровавая Жатва', true);
+            try {
+                P = await api('/event/profile');
+                harvestEnd = Date.now() + P.harvest_wait * 1000;
+                shieldEnd = Date.now() + P.shield_left * 1000;
+                draw();
+                setInterval(tick, 1000);
+            } catch (e) { showError(e); }
+        });
+    </script>
+</body>
+</html>
