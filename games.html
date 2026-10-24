@@ -9,22 +9,77 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        :root { --accent: #22c55e; }
+        :root { --accent: #ffb347; }
 
         * { -webkit-tap-highlight-color: transparent; user-select: none; }
 
         body {
-            background: #050505; color: white; font-family: 'Inter', sans-serif;
+            background: linear-gradient(180deg, #3a1a08 0%, #6b2f0c 55%, #a04a12 100%);
+            background-attachment: fixed;
+            color: white; font-family: 'Inter', sans-serif;
             margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column;
         }
 
+        /* Искры на фоне */
+        #sparks { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+        .spark {
+            position: absolute; bottom: -10px; border-radius: 50%;
+            background: #ffb347; opacity: 0;
+            animation: rise linear infinite;
+        }
+        @keyframes rise {
+            0%   { transform: translateY(0) translateX(0); opacity: 0; }
+            15%  { opacity: 0.9; }
+            100% { transform: translateY(-105vh) translateX(var(--drift, 20px)); opacity: 0; }
+        }
+
+        /* Паутина и паук */
+        .web {
+            position: fixed; top: 0; right: 0; width: 150px; height: 150px;
+            pointer-events: none; z-index: 1;
+        }
+        .spider-wrap {
+            position: fixed; top: 0; right: 22px; z-index: 3; pointer-events: none;
+            display: flex; flex-direction: column; align-items: center;
+            animation: hang 4s ease-in-out infinite;
+            transform-origin: top center;
+        }
+        .spider-thread { width: 1px; height: 78px; background: #000; }
+        @keyframes hang {
+            0%, 100% { transform: rotate(-3deg); }
+            50%      { transform: rotate(3deg); }
+        }
+
         .header-panel {
-            padding: 12px 20px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a;
+            position: relative; z-index: 2;
+            padding: 12px 20px; background: rgba(30, 12, 3, 0.55);
+            border-bottom: 1px solid rgba(255, 179, 71, 0.25);
             padding-top: calc(12px + var(--tg-safe-area-inset-top, 0px));
         }
 
+        .back-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border-radius: 12px;
+            background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 179, 71, 0.35);
+            transition: transform 0.15s;
+        }
+        .back-btn:active { transform: scale(0.9); }
+
+        .balance-pill {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(0, 0, 0, 0.4); padding: 6px 16px;
+            border-radius: 999px; border: 1px solid rgba(255, 179, 71, 0.35);
+            margin-right: 56px;
+        }
+
         .games-container {
+            position: relative; z-index: 2;
             flex-grow: 1; overflow-y: auto; padding: 20px 16px;
+        }
+
+        .games-title {
+            font-size: 12px; font-weight: 900; text-transform: uppercase;
+            letter-spacing: 0.15em; color: #ffd9a0; margin: 0 0 16px 4px;
         }
 
         .games-grid {
@@ -34,54 +89,87 @@
         .game-card { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 
         .game-btn {
+            position: relative; overflow: hidden;
             width: 100%; aspect-ratio: 1 / 1; border-radius: 22px;
-            background: linear-gradient(160deg, #141414, #0a0a0a);
-            border: 1px solid #222;
+            background: linear-gradient(180deg, #ffa53a 0%, #f07a0a 55%, #d86200 100%);
+            border: 1px solid #ffc878;
             display: flex; align-items: center; justify-content: center;
-            font-size: 44px; transition: 0.2s;
-            box-shadow: 0 0 0 rgba(34, 197, 94, 0);
+            font-size: 44px; transition: transform 0.15s;
+            box-shadow: 0 4px 0 #8f3f00;
+        }
+        /* Блик на кнопке */
+        .game-btn::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 48%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
+            border-radius: 22px 22px 60% 60%;
+            pointer-events: none;
         }
         .game-btn:active {
-            transform: scale(0.94);
-            border-color: var(--accent);
-            box-shadow: 0 0 20px rgba(34, 197, 94, 0.25);
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #8f3f00;
         }
 
         .game-name {
             font-size: 10px; font-weight: 900; text-transform: uppercase;
-            letter-spacing: 0.1em; color: #6b7280;
+            letter-spacing: 0.1em; color: #ffd9a0;
         }
 
         #toast {
             position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%) translateY(20px);
-            background: #111; border: 1px solid #222; color: #9ca3af;
+            background: #1a0b03; border: 1px solid rgba(255, 179, 71, 0.35); color: #ffd9a0;
             font-size: 11px; font-weight: 700; padding: 10px 18px; border-radius: 14px;
-            opacity: 0; pointer-events: none; transition: 0.25s;
+            opacity: 0; pointer-events: none; transition: 0.25s; z-index: 10;
         }
         #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
         ::-webkit-scrollbar { display: none; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .spark, .spider-wrap { animation: none; }
+        }
     </style>
 </head>
 <body>
 
+    <div id="sparks"></div>
+
+    <!-- Паутина в правом верхнем углу -->
+    <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round">
+        <path d="M150 0 L0 0 M150 0 L150 150 M150 0 L20 100 M150 0 L60 140 M150 0 L105 150 M150 0 L5 45"/>
+        <path d="M150 28 Q122 30 118 0"/>
+        <path d="M150 58 Q104 62 92 0"/>
+        <path d="M150 92 Q86 96 62 0"/>
+        <path d="M150 128 Q70 132 34 0"/>
+    </svg>
+
+    <!-- Паук на нитке -->
+    <div class="spider-wrap">
+        <div class="spider-thread"></div>
+        <svg width="26" height="24" viewBox="0 0 26 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round">
+            <path d="M8 10 L1 5 M8 12 L0 12 M8 14 L1 19 M9 16 L4 23"/>
+            <path d="M18 10 L25 5 M18 12 L26 12 M18 14 L25 19 M17 16 L22 23"/>
+            <ellipse cx="13" cy="14" rx="6" ry="7" fill="#000"/>
+            <circle cx="13" cy="7" r="3.5" fill="#000"/>
+        </svg>
+    </div>
+
     <header class="header-panel flex justify-between items-center">
         <div class="flex items-center gap-3">
-            <button onclick="goHome()" class="flex items-center justify-center w-8 h-8 rounded-xl bg-[#111] border border-[#222] active:scale-90 transition-transform">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <button onclick="goHome()" class="back-btn">
+                <svg class="w-4 h-4 text-orange-200" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                 </svg>
             </button>
-            <div class="font-black italic text-lg tracking-tighter">FIX<span class="text-[#22c55e]">STARS</span></div>
+            <div class="font-black italic text-lg tracking-tighter">Fix<span style="color:#ffb347">Stars</span></div>
         </div>
-        <div class="flex items-center gap-2 bg-[#111] px-4 py-1.5 rounded-full border border-[#222]">
+        <div class="balance-pill">
             <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
             <span id="val-stars" class="font-black text-sm">0.00</span>
         </div>
     </header>
 
-<main class="games-container">
-        <h1 class="text-xs uppercase font-black tracking-widest text-gray-500 mb-4 px-1">Мини игры</h1>
+    <main class="games-container">
+        <h1 class="games-title">Мини игры</h1>
 
         <div class="games-grid">
             <div class="game-card" onclick="window.location.href='basket.html?v=' + Date.now()">
@@ -96,10 +184,12 @@
                 <button class="game-btn">🎯</button>
                 <span class="game-name">Дартс</span>
             </div>
+        </div>
     </main>
 
     <div id="toast">Скоро будет доступно</div>
 
+    <script src="music.js"></script>
     <script>
         const SB_URL = "https://xbklrdpguqsuvqndcujb.supabase.co";
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhia2xyZHBndXFzdXZxbmRjdWpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzQ0NzUsImV4cCI6MjEwNzIxMDQ3NX0.IeK3NGOTu_J1jDOd_XjHQUOySnkbFh4uThGCPeu-Wu4";
@@ -154,6 +244,22 @@
         }
 
         loadBalance();
+
+        // Поднимающиеся искры (только оформление)
+        (function makeSparks() {
+            const box = document.getElementById('sparks');
+            for (let i = 0; i < 22; i++) {
+                const s = document.createElement('div');
+                const size = 2 + Math.random() * 3;
+                s.className = 'spark';
+                s.style.width = s.style.height = size + 'px';
+                s.style.left = Math.random() * 100 + '%';
+                s.style.animationDuration = (6 + Math.random() * 8) + 's';
+                s.style.animationDelay = (-Math.random() * 12) + 's';
+                s.style.setProperty('--drift', (Math.random() * 60 - 30) + 'px');
+                box.appendChild(s);
+            }
+        })();
     </script>
 </body>
 </html>
