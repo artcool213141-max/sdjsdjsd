@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Creepster&display=swap');
 
         :root {
             --accent: #ffb347;
@@ -172,6 +172,48 @@
         }
         .price-tag img { width: 14px; height: 14px; }
 
+        /* Модалки промокода */
+        .pm-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75);
+            z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 24px;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s;
+        }
+        .pm-overlay.open { opacity: 1; pointer-events: auto; }
+        .pm-card {
+            width: 100%; max-width: 320px; border-radius: 28px;
+            padding: 28px 22px 22px; text-align: center;
+            transform: translateY(16px); transition: transform 0.2s;
+        }
+        .pm-overlay.open .pm-card { transform: translateY(0); }
+        .pm-card.ok {
+            background: linear-gradient(180deg, #ffa53a 0%, #e8700a 100%);
+            border: 1px solid #ffd08a; color: #2a1000;
+        }
+        .pm-card.fail {
+            background: #000; border: 2px solid #c0392b; color: white;
+        }
+        .pm-title { font-family: 'Creepster', cursive; font-size: 30px; letter-spacing: 0.04em; line-height: 1.1; }
+        .pm-text { font-size: 14px; font-weight: 600; margin-top: 8px; line-height: 1.4; }
+        .pm-card.fail .pm-text { color: #d6c3b0; }
+        .pm-amount {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 44px; font-weight: 900; font-style: italic; margin-top: 14px;
+        }
+        .pm-amount img { width: 32px; height: 32px; }
+        .pm-skull { width: 84px; height: 84px; margin: 0 auto 10px; object-fit: contain; }
+        .pm-btn {
+            width: 100%; margin-top: 20px; padding: 13px; border-radius: 16px;
+            font-weight: 900; font-size: 14px; text-transform: uppercase; font-style: italic;
+            transition: transform 0.15s;
+        }
+        .pm-btn:active { transform: scale(0.96); }
+        .pm-card.ok .pm-btn { background: #2a1000; color: #ffd9a0; }
+        .pm-card.fail .pm-btn {
+            position: relative; overflow: hidden;
+            background: linear-gradient(180deg, #ffa53a 0%, #f07a0a 55%, #d86200 100%);
+            border: 1px solid #ffc878; color: #2a1000; box-shadow: 0 3px 0 #8f3f00;
+        }
+
         .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(26, 11, 3, 0.96); border-top: 1px solid var(--line); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; height: 95px; }
         .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #8a6a4e; flex: 1; }
         .dock-btn.active { color: var(--accent); }
@@ -319,6 +361,20 @@
         </div>
     </div>
 
+    <!-- Модалка результата промокода -->
+    <div id="pm-overlay" class="pm-overlay" onclick="if(event.target.id==='pm-overlay') closePromoModal()">
+        <div id="pm-card" class="pm-card ok">
+            <img id="pm-skull" src="img/cher.png" class="pm-skull" alt="" style="display:none">
+            <div id="pm-title" class="pm-title"></div>
+            <div id="pm-text" class="pm-text"></div>
+            <div id="pm-amount" class="pm-amount" style="display:none">
+                <span id="pm-amount-val"></span>
+                <img src="img/star.png" alt="">
+            </div>
+            <button id="pm-btn" onclick="closePromoModal()" class="pm-btn">Отлично</button>
+        </div>
+    </div>
+
     <script src="music.js"></script>
 <script>
     const tg = window.Telegram.WebApp;
@@ -339,6 +395,23 @@
     }
 
     function fmt(v) { return Number(v || 0).toFixed(2); }
+
+    // Модалка результата промокода: kind = 'ok' | 'fail'
+    function showPromoModal(kind, title, text, amount) {
+        const ok = kind === 'ok';
+        document.getElementById('pm-card').className = 'pm-card ' + kind;
+        document.getElementById('pm-skull').style.display = ok ? 'none' : 'block';
+        document.getElementById('pm-title').innerText = title;
+        document.getElementById('pm-text').innerText = text || '';
+        const am = document.getElementById('pm-amount');
+        am.style.display = ok && amount !== undefined ? 'flex' : 'none';
+        if (ok && amount !== undefined) document.getElementById('pm-amount-val').innerText = '+' + fmt(amount);
+        document.getElementById('pm-btn').innerText = ok ? 'Отлично' : 'Понятно';
+        document.getElementById('pm-overlay').classList.add('open');
+    }
+    function closePromoModal() {
+        document.getElementById('pm-overlay').classList.remove('open');
+    }
 
     async function api(path, body) {
         const res = await fetch(BACKEND_URL + path, {
@@ -380,7 +453,7 @@
         const input = document.getElementById('promo-input');
         const btn = document.getElementById('promo-btn');
         const code = input.value.trim();
-        if (!code) { tg.showAlert("Введите промокод!"); return; }
+        if (!code) { showPromoModal('fail', 'Введите код', 'Поле пустое. Впишите промокод и нажмите ОК.'); return; }
         if (!user || !user.id || !tg.initData) { tg.showAlert("Ошибка: открой приложение через Telegram"); return; }
 
         promoBusy = true;
@@ -389,15 +462,15 @@
             const { ok, data } = await api('/activate_promo', { code });
             if (ok && data.success) {
                 playSound(earnSound);
-                tg.showAlert(`🎉 Промокод активирован!\nНачислено: +${fmt(data.reward)} ⭐`);
+                showPromoModal('ok', 'Промокод активирован', 'Звёзды уже на балансе', data.reward);
                 document.getElementById('p-balance').innerText = fmt(data.new_balance);
                 input.value = '';
             } else {
                 playSound(failSound);
-                tg.showAlert(`❌ ${data.detail || "Не удалось активировать"}`);
+                showPromoModal('fail', 'Не получилось', data.detail || "Не удалось активировать");
             }
         } catch (e) {
-            tg.showAlert("Ошибка соединения с сервером.");
+            showPromoModal('fail', 'Нет связи', "Ошибка соединения с сервером.");
         }
         promoBusy = false;
         btn.disabled = false;
