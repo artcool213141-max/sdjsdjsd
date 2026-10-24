@@ -172,6 +172,17 @@
         }
         .price-tag img { width: 14px; height: 14px; }
 
+        /* Кнопка настроек (только для админа) */
+        .admin-btn {
+            display: none; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; padding: 13px; margin-bottom: 20px; border-radius: 18px;
+            background: rgba(0, 0, 0, 0.45); border: 1px solid var(--line);
+            color: var(--text-soft); font-weight: 900; font-size: 13px;
+            text-transform: uppercase; font-style: italic;
+            transition: transform 0.15s;
+        }
+        .admin-btn:active { transform: scale(0.97); }
+
         /* Модалки промокода */
         .pm-overlay {
             position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75);
@@ -268,6 +279,11 @@
                 </div>
 
             </div>
+
+            <button id="admin-btn" class="admin-btn" onclick="location.href='admin.html'">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
+                Настройки
+            </button>
 
             <div class="flex flex-col items-center justify-center mb-6 px-2 text-center">
                 <p class="text-[10px] font-black uppercase tracking-widest mb-1" style="color:var(--text-soft)">Доступно к выводу</p>
@@ -375,11 +391,11 @@
         </div>
     </div>
 
-    <script src="music.js"></script>
 <script>
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
     const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
+    const ADMIN_TG_ID = '7140366080';
 
     // Звуки промокода: earn.mp3 — зачислен, skip.mp3 — неверный
     const earnSound = new Audio('earn.mp3');
@@ -428,6 +444,8 @@
         if (!user) return;
         document.getElementById('p-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
         document.getElementById('p-id').innerText = `ID: ${user.id}`;
+        // Кнопка только для админа. Это лишь скрытие кнопки, настоящая проверка на сервере
+        if (String(user.id) === ADMIN_TG_ID) document.getElementById('admin-btn').style.display = 'flex';
         document.getElementById('p-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=8f3f00&color=fff&name=${user.first_name}`;
         fetchBalance();
     }
@@ -543,10 +561,13 @@
         }
     })();
 
-    window.onload = () => {
+    function initPage() {
         try { tg.expand(); tg.ready(); } catch (_) {}
         initProfile();
-    };
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPage);
+    else initPage();
 </script>
+<script src="music.js"></script>
 </body>
 </html>
