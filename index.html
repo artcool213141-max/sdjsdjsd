@@ -212,7 +212,7 @@
                     <img src="img/ivent.png" alt="Event">
                     <div>
                         <div class="card-title">Ивент</div>
-                        <div class="card-desc">Скоро... кровавый хэллоуин</div>
+                        <div class="card-desc">Кровавая жатва · Хэллоуин</div>
                     </div>
                     <div class="ml-auto opacity-50">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -528,8 +528,26 @@
     }
 
     // ивент
-    function openEvent() {
+    // Пускает ли сервер игрока в ивент (пока EVENT_BETA включена — только ADMIN_IDS)
+    async function canOpenEvent() {
+        try {
+            const res = await fetch(`${BACKEND_URL}/event/profile`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ init_data: tg.initData })
+            });
+            return res.ok;
+        } catch (e) { return false; }
+    }
+
+    // кнопка «Ивент»: открывается всем, кого пускает сервер; остальным — заглушка Coming Soon
+    async function openEvent() {
         playSnd(sndEvent);
+        try { tg.HapticFeedback.impactOccurred('medium'); } catch (e) {}
+        if (await canOpenEvent()) { location.href = 'event.html?v=' + Date.now(); return; }
+        showEventSoon();
+    }
+    function showEventSoon() {
         const m = document.getElementById('event-modal');
         m.classList.add('show');
         setTimeout(() => m.classList.add('vis'), 10);
@@ -546,17 +564,9 @@
         else window.open(url, '_blank');
     }
 
-    // тап по балансу: на время беты ивент открывается только тем, кого пускает сервер (ADMIN_IDS).
-    // Остальные видят прежнее сообщение.
+    // тап по балансу тоже ведёт в ивент, если сервер пускает; иначе прежнее сообщение
     async function openBalance() {
-        try {
-            const res = await fetch(`${BACKEND_URL}/event/profile`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ init_data: tg.initData })
-            });
-            if (res.ok) { location.href = 'event.html'; return; }
-        } catch (e) {}
+        if (await canOpenEvent()) { location.href = 'event.html?v=' + Date.now(); return; }
         tg.showAlert('Пополнение доступно в разделе STARS');
     }
 
