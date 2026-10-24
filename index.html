@@ -69,58 +69,15 @@
         #tikva.shake { animation: shake 0.5s ease; }
         @keyframes shake { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-6deg); } 40% { transform: rotate(5deg); } 60% { transform: rotate(-4deg); } 80% { transform: rotate(3deg); } }
 
-        /* призрак */
-        .ghost { position: fixed; left: 0; z-index: 5; width: 64px; height: 80px; opacity: 0; display: none; cursor: pointer; }
-        .ghost.fly { display: block; animation: ghostFly 11s linear forwards; }
-        .ghost.fly.rev { animation-name: ghostFlyRev; }
-        .ghost .flip { width: 100%; height: 100%; }
-        .ghost.rev .flip { transform: scaleX(-1); }
-        .ghost svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 14px rgba(255,255,255,0.55)); animation: ghostBob 2.2s ease-in-out infinite; }
-        .ghost.boo { animation: ghostBoo 0.6s ease-out forwards !important; }
-        @keyframes ghostFly {
-            0% { transform: translateX(-100px); opacity: 0; }
-            8% { opacity: 0.85; }
-            92% { opacity: 0.85; }
-            100% { transform: translateX(calc(100vw + 40px)); opacity: 0; }
-        }
-        @keyframes ghostFlyRev {
-            0% { transform: translateX(calc(100vw + 40px)); opacity: 0; }
-            8% { opacity: 0.85; }
-            92% { opacity: 0.85; }
-            100% { transform: translateX(-100px); opacity: 0; }
-        }
-        @keyframes ghostBob { 0%,100% { transform: translateY(-8px) rotate(-3deg); } 50% { transform: translateY(8px) rotate(3deg); } }
-        @keyframes ghostBoo { 0% { opacity: 0.9; filter: brightness(1); } 100% { opacity: 0; filter: brightness(3); scale: 2.2; } }
-
-        /* глаза в темноте */
-        .eyes {
-            position: fixed; z-index: 4; width: 90px; height: 60px; pointer-events: none; opacity: 0; transition: opacity 0.9s;
-            display: flex; align-items: center; justify-content: center; gap: 16px;
-            background: radial-gradient(ellipse at center, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.75) 40%, transparent 72%);
-        }
-        .eyes.on { opacity: 1; }
-        .eyes i {
-            display: block; width: 14px; height: 8px; border-radius: 50%;
-            background: radial-gradient(circle, #fff6a0 0%, #ff3b00 70%);
-            box-shadow: 0 0 10px 3px rgba(255, 50, 0, 0.8);
-            animation: blink 3.2s infinite;
-        }
-        .eyes i:first-child { rotate: 14deg; }
-        .eyes i:last-child { rotate: -14deg; }
-        @keyframes blink { 0%,42%,50%,100% { transform: scaleY(1); } 46% { transform: scaleY(0.08); } }
-
-        /* кнопка ивента, чёрная с кровью */
-        .event-card { background: #050505; border: 1px solid rgba(170, 0, 0, 0.7); box-shadow: 0 0 18px rgba(150, 0, 0, 0.4); padding-top: 26px; }
-        .event-card:active { background: #120000; border-color: #ff2a2a; }
+        /* кнопка ивента: чёрная, в крови */
+        .event-card { background: #000; border: 1px solid #1c0000; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6); padding-top: 30px; }
+        .event-card:active { background: #0a0000; border-color: #5a0000; }
         .event-card > *:not(.blood) { position: relative; z-index: 1; }
-        .event-card .card-title { color: #ff3030; text-shadow: 0 0 12px rgba(255, 0, 0, 0.5); }
-        .event-card .card-desc { color: #c9c9c9; }
-        .event-skull { font-size: 38px; width: 50px; text-align: center; filter: drop-shadow(0 0 10px rgba(255,0,0,0.6)); }
-        .blood { position: absolute; top: 0; left: 0; right: 0; height: 0; pointer-events: none; z-index: 0; }
-        .blood::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 8px; background: #8b0000; }
-        .blood i { position: absolute; top: 0; width: 7px; height: var(--h); background: linear-gradient(#8b0000, #e00000); border-radius: 0 0 6px 6px; transform-origin: top; animation: drip 4.5s ease-in-out infinite; animation-delay: var(--d); }
-        .blood i::after { content: ''; position: absolute; bottom: -4px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #e00000; }
-        @keyframes drip { 0%,100% { transform: scaleY(0.7); } 50% { transform: scaleY(1); } }
+        .event-card .card-title { color: #d11a1a; }
+        .event-card .card-desc { color: #bdbdbd; }
+        .event-skull { font-size: 38px; width: 50px; text-align: center; }
+        .blood { position: absolute; top: 0; left: 0; width: 100%; height: 60px; pointer-events: none; z-index: 0; }
+        .blood svg { width: 100%; height: 100%; display: block; }
 
         /* модалка coming soon */
         #event-modal { position: fixed; inset: 0; z-index: 100000; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(0,0,0,0.88); backdrop-filter: blur(8px); opacity: 0; transition: opacity 0.3s; }
@@ -133,8 +90,13 @@
         .ev-sub { font-size: 15px; font-weight: 900; font-style: italic; text-transform: uppercase; color: #fff; letter-spacing: 0.5px; }
         .ev-line { height: 2px; width: 60px; background: #c00000; margin: 14px auto; box-shadow: 0 0 10px #f00; }
         .ev-small { font-size: 12px; color: #9a9a9a; line-height: 1.5; margin-bottom: 22px; }
-        .ev-btn { width: 100%; padding: 14px; border-radius: 16px; border: 1px solid #a00000; background: #140000; color: #ff4040; font-size: 14px; font-weight: 900; font-style: italic; text-transform: uppercase; cursor: pointer; }
-        .ev-btn:active { background: #2a0000; }
+        .ev-go { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 15px; margin-bottom: 8px; border: none; border-radius: 16px; background: linear-gradient(135deg, #ffa13a, #e2570a 60%, #c2410c); color: #fff; font-size: 15px; font-weight: 900; font-style: italic; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 24px rgba(255, 122, 26, 0.55), inset 0 -3px 0 rgba(120, 30, 0, 0.45); }
+        .ev-go::after { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent); transform: skewX(-20deg); animation: shine 3s infinite; }
+        .ev-go span.em { font-size: 18px; display: inline-block; animation: wob 2s ease-in-out infinite; }
+        .ev-go:active { transform: scale(0.97); }
+        @keyframes shine { 0% { left: -60%; } 60%, 100% { left: 130%; } }
+        @keyframes wob { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
+        .ev-close { background: none; border: none; color: #777; font-size: 12px; padding: 8px; cursor: pointer; }
 
         .scrollable-content {
             position: relative;
@@ -214,18 +176,15 @@
     <!-- Хэллоуин-декор -->
     <div class="spider-wrap"><div class="thread"></div><div class="sp">🕷️</div></div>
 
-    <div class="ghost" id="ghost">
-        <div class="flip">
-            <svg viewBox="0 0 64 80">
-                <path d="M32 4C16 4 6 16 6 32v40l8-7 9 8 9-8 9 8 9-8 8 7V32C58 16 48 4 32 4z" fill="#fff" fill-opacity="0.88"/>
-                <ellipse cx="23" cy="32" rx="4.5" ry="6" fill="#111"/>
-                <ellipse cx="41" cy="32" rx="4.5" ry="6" fill="#111"/>
-                <ellipse cx="32" cy="48" rx="5" ry="7" fill="#111"/>
-            </svg>
-        </div>
-    </div>
-
-    <div class="eyes" id="eyes"><i></i><i></i></div>
+    <!-- градиент для крови (один на все svg) -->
+    <svg width="0" height="0" style="position:absolute">
+        <defs>
+            <linearGradient id="blood-g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="60">
+                <stop offset="0" stop-color="#5e0000"/>
+                <stop offset="1" stop-color="#b30000"/>
+            </linearGradient>
+        </defs>
+    </svg>
 
     <div class="main-wrapper">
         <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#000" stroke-width="1">
@@ -263,14 +222,7 @@
             <!-- МЕНЮ -->
             <div class="mt-8">
                 <div onclick="openEvent()" class="game-card event-card">
-                    <div class="blood">
-                        <i style="left: 6%; --h: 22px; --d: 0s"></i>
-                        <i style="left: 19%; --h: 14px; --d: 1.2s"></i>
-                        <i style="left: 38%; --h: 28px; --d: 0.6s"></i>
-                        <i style="left: 57%; --h: 16px; --d: 2s"></i>
-                        <i style="left: 74%; --h: 25px; --d: 0.3s"></i>
-                        <i style="left: 90%; --h: 13px; --d: 1.6s"></i>
-                    </div>
+                    <div class="blood" id="blood-card"></div>
                     <div class="event-skull">💀</div>
                     <div>
                         <div class="card-title">Ивент</div>
@@ -342,19 +294,14 @@
     <!-- модалка ивента -->
     <div id="event-modal" onclick="closeEvent()">
         <div class="ev-box" onclick="event.stopPropagation()">
-            <div class="blood">
-                <i style="left: 8%; --h: 26px; --d: 0s"></i>
-                <i style="left: 24%; --h: 16px; --d: 1s"></i>
-                <i style="left: 46%; --h: 32px; --d: 0.5s"></i>
-                <i style="left: 66%; --h: 18px; --d: 1.8s"></i>
-                <i style="left: 85%; --h: 28px; --d: 0.8s"></i>
-            </div>
+            <div class="blood" id="blood-modal"></div>
             <div style="font-size: 44px;">💀</div>
             <div class="ev-title">Coming<br>Soon</div>
             <div class="ev-sub">Кровавый ивент уже в пути</div>
             <div class="ev-line"></div>
-            <div class="ev-small">Скоро здесь появится кое-что жуткое.<br>Не пропусти, следи за обновлениями.</div>
-            <button class="ev-btn" onclick="closeEvent()">Закрыть</button>
+            <div class="ev-small">Следите за обновлениями<br>в нашем Telegram-канале</div>
+            <button class="ev-go" onclick="goChannel()"><span class="em">🎃</span>Перейти в канал<span class="em">🎃</span></button>
+            <button class="ev-close" onclick="closeEvent()">Закрыть</button>
         </div>
     </div>
 
@@ -581,8 +528,51 @@
             document.getElementById('tikva').innerHTML = '<div style="font-size:90px;line-height:150px;text-align:center">🎃</div>';
         });
 
+    // звуки (лежат рядом с index.html)
+    const sndWitch = new Audio('vedma.mp3');
+    const sndEvent = new Audio('ivent.mp3');
+    sndWitch.preload = 'auto';
+    sndEvent.preload = 'auto';
+    function playSnd(a) {
+        try {
+            a.currentTime = 0;
+            const p = a.play();
+            if (p && p.catch) p.catch(e => console.warn('звук не играет', e));
+        } catch (e) {}
+    }
+
+    // кровь с потёками, каждый раз немного разная
+    function buildBlood(el) {
+        if (!el) return;
+        const n = 7;
+        let drips = '';
+        for (let i = 0; i < n; i++) {
+            const x = 22 + i * (316 / (n - 1)) + (Math.random() * 16 - 8);
+            const w = 4 + Math.random() * 3.5;
+            const len = 14 + Math.random() * 26;
+            const dur = (5 + Math.random() * 4).toFixed(1);
+            const begin = (Math.random() * 3).toFixed(1);
+            const r = (w / 2 + 1.2).toFixed(1);
+            drips += `
+                <line x1="${x}" y1="6" x2="${x}" y2="${len}" stroke="url(#blood-g)" stroke-width="${w}" stroke-linecap="round">
+                    <animate attributeName="y2" values="${len};${len + 7};${len}" dur="${dur}s" begin="${begin}s" repeatCount="indefinite"/>
+                </line>
+                <circle cx="${x}" cy="${len}" r="${r}" fill="url(#blood-g)">
+                    <animate attributeName="cy" values="${len};${len + 7};${len}" dur="${dur}s" begin="${begin}s" repeatCount="indefinite"/>
+                </circle>
+                <line x1="${x - w * 0.2}" y1="8" x2="${x - w * 0.2}" y2="${len - 3}" stroke="rgba(255,130,130,0.3)" stroke-width="1" stroke-linecap="round"/>`;
+        }
+        el.innerHTML = `<svg viewBox="0 0 360 60" preserveAspectRatio="xMidYMin slice">
+            <path d="M0 0H360V9Q340 14 320 9T280 10T240 8T200 11T160 9T120 10T80 8T40 11T0 9Z" fill="#6e0000"/>
+            ${drips}
+        </svg>`;
+    }
+    buildBlood(document.getElementById('blood-card'));
+    buildBlood(document.getElementById('blood-modal'));
+
     // ивент
     function openEvent() {
+        playSnd(sndEvent);
         const m = document.getElementById('event-modal');
         m.classList.add('show');
         setTimeout(() => m.classList.add('vis'), 10);
@@ -593,103 +583,21 @@
         m.classList.remove('vis');
         setTimeout(() => m.classList.remove('show'), 300);
     }
-
-    // скрип двери при тапе на тыкву (генерим звук сами, без файлов)
-    let actx = null;
-    function creak() {
-        try {
-            actx = actx || new (window.AudioContext || window.webkitAudioContext)();
-            if (actx.state === 'suspended') actx.resume();
-            const t = actx.currentTime, dur = 1.0, steps = 16;
-
-            const osc = actx.createOscillator();
-            osc.type = 'sawtooth';
-            for (let i = 0; i < steps; i++) {
-                // частота ползёт вверх и немного дрожит
-                const base = 85 + (i / steps) * 130;
-                osc.frequency.setValueAtTime(base + Math.random() * 35, t + i * dur / steps);
-            }
-
-            const filter = actx.createBiquadFilter();
-            filter.type = 'bandpass';
-            filter.Q.value = 7;
-            filter.frequency.setValueAtTime(500, t);
-            filter.frequency.linearRampToValueAtTime(1500, t + dur);
-
-            // дрожание громкости, чтоб звучало как трение
-            const amp = actx.createGain();
-            amp.gain.value = 0.4;
-            const lfo = actx.createOscillator();
-            lfo.frequency.value = 34;
-            const lfoGain = actx.createGain();
-            lfoGain.gain.value = 0.35;
-            lfo.connect(lfoGain);
-            lfoGain.connect(amp.gain);
-
-            const master = actx.createGain();
-            master.gain.setValueAtTime(0, t);
-            master.gain.linearRampToValueAtTime(0.28, t + 0.06);
-            master.gain.linearRampToValueAtTime(0, t + dur);
-
-            osc.connect(filter);
-            filter.connect(amp);
-            amp.connect(master);
-            master.connect(actx.destination);
-
-            osc.start(t); lfo.start(t);
-            osc.stop(t + dur); lfo.stop(t + dur);
-        } catch (e) { console.warn('звук не вышел', e); }
+    function goChannel() {
+        const url = 'https://t.me/St1fix_free';
+        if (tg.openTelegramLink) tg.openTelegramLink(url);
+        else window.open(url, '_blank');
     }
 
+    // тап по тыкве
     const tikvaEl = document.getElementById('tikva');
     tikvaEl.addEventListener('click', () => {
-        creak();
+        playSnd(sndWitch);
         try { tg.HapticFeedback.impactOccurred('medium'); } catch (e) {}
         tikvaEl.classList.remove('shake');
-        void tikvaEl.offsetWidth; // перезапуск анимации
+        void tikvaEl.offsetWidth; // чтобы анимация перезапустилась
         tikvaEl.classList.add('shake');
     });
-
-    // призрак летает раз в 15-25 сек, по тапу исчезает
-    const ghost = document.getElementById('ghost');
-    let ghostRev = false;
-    function sendGhost() {
-        ghostRev = !ghostRev;
-        ghost.className = 'ghost';
-        void ghost.offsetWidth;
-        ghost.style.top = (22 + Math.random() * 35) + 'vh';
-        ghost.className = 'ghost fly' + (ghostRev ? ' rev' : '');
-    }
-    ghost.addEventListener('animationend', (e) => {
-        if (e.animationName === 'ghostBoo' || e.animationName.indexOf('ghostFly') === 0) {
-            ghost.className = 'ghost';
-            setTimeout(sendGhost, 15000 + Math.random() * 10000);
-        }
-    });
-    ghost.addEventListener('click', () => {
-        ghost.classList.add('boo');
-        try { tg.HapticFeedback.impactOccurred('light'); } catch (e) {}
-    });
-    setTimeout(sendGhost, 4000);
-
-    // глаза в темноте мигают в разных местах
-    const eyes = document.getElementById('eyes');
-    const eyeSpots = [
-        { left: '2%', top: '24%' },
-        { right: '2%', top: '33%' },
-        { left: '3%', top: '62%' },
-        { right: '3%', top: '70%' }
-    ];
-    function showEyes() {
-        const p = eyeSpots[Math.floor(Math.random() * eyeSpots.length)];
-        eyes.style.left = p.left || 'auto';
-        eyes.style.right = p.right || 'auto';
-        eyes.style.top = p.top;
-        eyes.classList.add('on');
-        setTimeout(() => eyes.classList.remove('on'), 3200);
-        setTimeout(showEyes, 7000 + Math.random() * 5000);
-    }
-    setTimeout(showEyes, 2500);
 
     // искры
     const canvas = document.getElementById('stars-canvas');
