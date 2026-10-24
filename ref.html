@@ -10,14 +10,16 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
 
         :root {
-            --bg-dark: #050a05;
-            --accent-green: #22c55e;
-            --deep-green: #14532d;
-            --glow-green: rgba(34, 197, 94, 0.2);
+            --accent: #ffb347;
+            --orange: #f07a0a;
+            --text-soft: #ffd9a0;
+            --panel: rgba(30, 12, 3, 0.55);
+            --line: rgba(255, 179, 71, 0.3);
         }
 
         body {
-            background-color: var(--bg-dark);
+            background: linear-gradient(180deg, #3a1a08 0%, #6b2f0c 55%, #a04a12 100%);
+            background-attachment: fixed;
             color: white;
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -28,38 +30,72 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        /* Искры на фоне */
+        #sparks { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+        .spark {
+            position: absolute; bottom: -10px; border-radius: 50%;
+            background: #ffb347; opacity: 0;
+            animation: rise linear infinite;
+        }
+        @keyframes rise {
+            0%   { transform: translateY(0) translateX(0); opacity: 0; }
+            15%  { opacity: 0.9; }
+            100% { transform: translateY(-105vh) translateX(var(--drift, 20px)); opacity: 0; }
+        }
+
+        /* Паутина и паук */
+        .web {
+            position: fixed; top: 0; right: 0; width: 150px; height: 150px;
+            pointer-events: none; z-index: 1;
+        }
+        .spider-wrap {
+            position: fixed; top: 0; right: 22px; z-index: 1; pointer-events: none;
+            display: flex; flex-direction: column; align-items: center;
+            animation: hang 4s ease-in-out infinite;
+            transform-origin: top center;
+        }
+        .spider-thread { width: 1px; height: 96px; background: #000; }
+        @keyframes hang {
+            0%, 100% { transform: rotate(-3deg); }
+            50%      { transform: rotate(3deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .spark, .spider-wrap { animation: none; }
+        }
+
         .main-wrapper {
-            background: radial-gradient(circle at 50% 8%, #064e3b 0%, #050a05 62%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             position: relative;
-            z-index: 1;
+            z-index: 2;
         }
 
-        .scrollable-content { flex: 1; padding: 24px 20px 130px 20px; }
+        .scrollable-content {
+            flex: 1;
+            padding: calc(20px + var(--tg-safe-area-inset-top, 0px)) 20px 130px 20px;
+        }
 
         .balance-chip {
             display: flex; align-items: center; gap: 6px;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid rgba(34,197,94,0.3);
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid var(--line);
             padding: 8px 14px; border-radius: 16px;
-            font-weight: 900; font-size: 16px; color: #4ade80;
+            font-weight: 900; font-size: 16px; color: var(--accent);
         }
-        .balance-chip img { width: 18px; height: 18px; filter: drop-shadow(0 0 5px var(--accent-green)); }
+        .balance-chip img { width: 18px; height: 18px; }
 
         .card {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(34, 197, 94, 0.2);
+            background: var(--panel);
+            border: 1px solid var(--line);
             border-radius: 28px;
             padding: 20px;
-            backdrop-filter: blur(10px);
         }
 
         .link-box {
             background: rgba(0, 0, 0, 0.3);
-            border: 1px dashed var(--accent-green);
-            color: var(--accent-green);
+            border: 1px dashed var(--accent);
+            color: var(--text-soft);
             padding: 10px 12px;
             border-radius: 12px;
             font-size: 12px;
@@ -69,142 +105,173 @@
 
         .stat {
             flex: 1; text-align: center;
-            background: rgba(255,255,255,0.04);
+            background: rgba(0, 0, 0, 0.3);
             border-radius: 18px; padding: 12px 6px;
         }
         .stat .num { font-size: 22px; font-weight: 900; line-height: 1.1; }
-        .stat .lbl { font-size: 9px; font-weight: 800; text-transform: uppercase; color: var(--accent-green); margin-top: 4px; }
+        .stat .lbl { font-size: 9px; font-weight: 800; text-transform: uppercase; color: var(--accent); margin-top: 4px; }
 
         .info-btn {
             display: flex; align-items: center; justify-content: center;
             width: 26px; height: 26px; border-radius: 50%;
-            border: 1px solid rgba(34, 197, 94, 0.5);
-            background: rgba(34, 197, 94, 0.1);
-            color: var(--accent-green);
+            border: 1px solid var(--line);
+            background: rgba(0, 0, 0, 0.35);
+            color: var(--accent);
             font-weight: 900; font-size: 14px; font-style: italic; font-family: Georgia, serif;
-            box-shadow: 0 0 10px var(--glow-green);
-            transition: all 0.2s;
+            transition: transform 0.15s;
         }
-        .info-btn:active { transform: scale(0.88); background: rgba(34, 197, 94, 0.25); }
+        .info-btn:active { transform: scale(0.88); }
 
         .friend-row {
             display: flex; align-items: center; gap: 12px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%);
-            border: 1px solid rgba(34, 197, 94, 0.15);
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 179, 71, 0.2);
             border-radius: 20px; padding: 12px 14px; margin-bottom: 10px;
         }
         .friend-ava {
             width: 42px; height: 42px; border-radius: 14px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 16px; color: #052e16;
-            background: linear-gradient(145deg, #4ade80, #16a34a);
+            font-weight: 900; font-size: 16px; color: #2a1000;
+            background: linear-gradient(145deg, #ffa53a, #d86200);
         }
-        .friend-ava.prem { background: linear-gradient(145deg, #fde047, #f59e0b); }
+        .friend-ava.prem { background: linear-gradient(145deg, #fff2a8, #f5c518); }
         .friend-name { font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .friend-sub { font-size: 10px; font-weight: 700; color: #9ca3af; margin-top: 2px; }
-        .tag-prem { color: #facc15; }
+        .friend-sub { font-size: 10px; font-weight: 700; color: #d9b98c; margin-top: 2px; }
+        .tag-prem { color: #ffd24a; }
 
+        /* Оранжевые кнопки с бликом */
+        .btn-main, .claim-btn {
+            position: relative; overflow: hidden;
+            background: linear-gradient(180deg, #ffa53a 0%, #f07a0a 55%, #d86200 100%);
+            border: 1px solid #ffc878;
+            color: #2a1000;
+            font-weight: 900; font-style: italic; text-transform: uppercase;
+            box-shadow: 0 3px 0 #8f3f00;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .btn-main::before, .claim-btn::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 48%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
+            pointer-events: none;
+        }
+        .btn-main:active, .claim-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f3f00; }
+
+        /* Неактивная кнопка: тёмная и приглушённая */
+        .btn-main:disabled, .claim-btn:disabled {
+            background: #2a1a10; border-color: #3d2a1c; color: #7a5a40;
+            box-shadow: none; transform: none;
+        }
+        .btn-main:disabled::before, .claim-btn:disabled::before { display: none; }
+
+        .btn-main { width: 100%; padding: 14px; border-radius: 16px; font-size: 14px; }
         .claim-btn {
             margin-left: auto; flex-shrink: 0;
-            background: var(--accent-green); color: #04140a;
-            font-weight: 900; font-size: 12px; text-transform: uppercase; font-style: italic;
-            padding: 10px 14px; border-radius: 14px;
-            box-shadow: 0 0 16px rgba(34,197,94,0.35);
-            transition: all 0.15s;
+            font-size: 12px; padding: 10px 14px; border-radius: 14px;
         }
-        .claim-btn:active { transform: scale(0.93); }
-        .claim-btn:disabled { opacity: 0.5; box-shadow: none; }
         .done-pill {
             margin-left: auto; flex-shrink: 0;
             font-weight: 800; font-size: 11px; text-transform: uppercase;
-            color: #6b7280; background: rgba(255,255,255,0.05);
+            color: #8a6a4e; background: rgba(0, 0, 0, 0.3);
             padding: 9px 12px; border-radius: 14px;
         }
-
-        .btn-main {
-            width: 100%; padding: 14px; border-radius: 16px;
-            background: var(--accent-green); color: #04140a;
-            font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 14px;
-            transition: all 0.15s;
-        }
-        .btn-main:active { transform: scale(0.96); }
-        .btn-main:disabled { opacity: 0.4; }
         .btn-ghost {
             width: 52px; flex-shrink: 0; border-radius: 16px;
-            border: 1px solid rgba(34,197,94,0.5); color: var(--accent-green);
-            background: rgba(34,197,94,0.08);
+            border: 1px solid var(--line); color: var(--accent);
+            background: rgba(0, 0, 0, 0.35);
             display: flex; align-items: center; justify-content: center;
         }
         .btn-ghost:active { transform: scale(0.92); }
 
         .toast {
             position: fixed; left: 50%; bottom: 120px; transform: translate(-50%, 20px);
-            background: rgba(20, 83, 45, 0.97); border: 1px solid var(--accent-green);
+            background: #1a0b03; border: 1px solid var(--accent);
             color: white; font-weight: 800; font-size: 13px;
             padding: 12px 18px; border-radius: 16px; z-index: 3000;
             opacity: 0; pointer-events: none; transition: all 0.25s;
-            box-shadow: 0 0 24px var(--glow-green);
         }
         .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
         .modal-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7);
             z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 24px;
             opacity: 0; pointer-events: none; transition: opacity 0.25s;
         }
         .modal-overlay.open { opacity: 1; pointer-events: auto; }
         .modal-card {
             width: 100%; max-width: 360px;
-            background: linear-gradient(160deg, #0b1f14 0%, #050a05 100%);
-            border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 28px;
-            padding: 24px 20px 20px; box-shadow: 0 0 40px var(--glow-green);
+            background: linear-gradient(160deg, #4a2108 0%, #1f0d03 100%);
+            border: 1px solid var(--accent); border-radius: 28px;
+            padding: 24px 20px 20px;
             transform: translateY(20px) scale(0.96); transition: transform 0.25s;
         }
         .modal-overlay.open .modal-card { transform: translateY(0) scale(1); }
         .rule-row {
             display: flex; align-items: center; gap: 12px;
-            background: rgba(255,255,255,0.04); border-radius: 16px;
+            background: rgba(0, 0, 0, 0.3); border-radius: 16px;
             padding: 12px 14px; margin-bottom: 10px; text-align: left;
         }
-        .rule-reward { min-width: 52px; text-align: center; font-weight: 900; font-size: 15px; color: var(--accent-green); }
-        .rule-reward.premium { color: #facc15; }
-        .rule-text { font-size: 12px; line-height: 1.35; color: #d1d5db; font-weight: 600; }
+        .rule-reward { min-width: 52px; text-align: center; font-weight: 900; font-size: 15px; color: var(--accent); }
+        .rule-reward.premium { color: #ffd24a; }
+        .rule-text { font-size: 12px; line-height: 1.35; color: #e8d3b8; font-weight: 600; }
         .rule-text b { color: white; }
 
-        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(5, 10, 5, 0.96); border-top: 1px solid rgba(34, 197, 94, 0.2); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; backdrop-filter: blur(25px); height: 95px; }
-        .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #4b5563; flex: 1; }
-        .dock-btn.active { color: var(--accent-green); filter: drop-shadow(0 0 8px var(--accent-green)); }
-        .dock-center { color: #86efac; }
+        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(26, 11, 3, 0.96); border-top: 1px solid var(--line); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; height: 95px; }
+        .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #8a6a4e; flex: 1; }
+        .dock-btn.active { color: var(--accent); }
+        .dock-center { color: var(--text-soft); }
         .dock-center .ico {
             width: 54px; height: 54px; margin: -13px 0; transform: translateY(-16px); border-radius: 20px;
             display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(145deg, #16a34a, #14532d); color: #eafff1;
-            border: 1px solid rgba(34, 197, 94, 0.6);
-            box-shadow: 0 0 22px rgba(34, 197, 94, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            background: linear-gradient(180deg, #ffa53a 0%, #d86200 100%); color: #2a1000;
+            border: 1px solid #ffc878;
+            box-shadow: 0 3px 0 #8f3f00, inset 0 1px 0 rgba(255, 255, 255, 0.4);
         }
-        .dock-center.active .ico { background: linear-gradient(145deg, #22c55e, #15803d); box-shadow: 0 0 30px rgba(34, 197, 94, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
     </style>
 </head>
 <body>
+
+    <div id="sparks"></div>
+
+    <!-- Паутина в правом верхнем углу -->
+    <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round">
+        <path d="M150 0 L0 0 M150 0 L150 150 M150 0 L20 100 M150 0 L60 140 M150 0 L105 150 M150 0 L5 45"/>
+        <path d="M150 28 Q122 30 118 0"/>
+        <path d="M150 58 Q104 62 92 0"/>
+        <path d="M150 92 Q86 96 62 0"/>
+        <path d="M150 128 Q70 132 34 0"/>
+    </svg>
+
+    <!-- Паук на нитке -->
+    <div class="spider-wrap">
+        <div class="spider-thread"></div>
+        <svg width="26" height="24" viewBox="0 0 26 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round">
+            <path d="M8 10 L1 5 M8 12 L0 12 M8 14 L1 19 M9 16 L4 23"/>
+            <path d="M18 10 L25 5 M18 12 L26 12 M18 14 L25 19 M17 16 L22 23"/>
+            <ellipse cx="13" cy="14" rx="6" ry="7" fill="#000"/>
+            <circle cx="13" cy="7" r="3.5" fill="#000"/>
+        </svg>
+    </div>
 
     <div class="main-wrapper">
         <div class="scrollable-content">
 
             <!-- Шапка -->
             <div class="flex items-center justify-between mb-5">
-                <div class="flex items-center gap-2">
-                    <h1 class="text-2xl font-black italic uppercase tracking-tight">Реферал<span class="text-green-500">ы</span></h1>
-                    <button onclick="openRefInfo()" class="info-btn" aria-label="Кого засчитываем">i</button>
-                </div>
+                <div class="font-black italic text-xl tracking-tighter">Fix<span style="color:#ffb347">Stars</span></div>
                 <div class="balance-chip">
                     <span id="bal">0</span>
                     <img src="img/star.png" alt="S">
                 </div>
             </div>
 
+            <div class="flex items-center gap-2 mb-4 px-1">
+                <h1 class="text-2xl font-black italic uppercase tracking-tight">Рефералы</h1>
+                <button onclick="openRefInfo()" class="info-btn" aria-label="Кого засчитываем">i</button>
+            </div>
+
             <!-- Приглашение -->
             <div class="card">
-                <p class="text-[10px] font-black uppercase text-gray-400 mb-2">Твоя реферальная ссылка</p>
+                <p class="text-[10px] font-black uppercase mb-2" style="color:#d9b98c">Твоя реферальная ссылка</p>
                 <div id="ref-link" class="link-box">...</div>
 
                 <div class="flex gap-2 mt-3">
@@ -217,7 +284,7 @@
                 <div class="flex gap-2 mt-4">
                     <div class="stat"><div id="st-total" class="num">0</div><div class="lbl">Приглашено</div></div>
                     <div class="stat"><div id="st-claimed" class="num">0</div><div class="lbl">Получено ⭐</div></div>
-                    <div class="stat"><div id="st-pending" class="num text-yellow-300">0</div><div class="lbl">Ждёт ⭐</div></div>
+                    <div class="stat"><div id="st-pending" class="num" style="color:#ffd24a">0</div><div class="lbl">Ждёт ⭐</div></div>
                 </div>
 
                 <button id="claim-all" onclick="claimAll()" class="btn-main mt-4" disabled>Забрать всё</button>
@@ -225,7 +292,7 @@
 
             <!-- Список -->
             <div class="flex items-center justify-between mt-7 mb-3 px-1">
-                <p class="text-[11px] font-black uppercase text-green-500 opacity-70 tracking-widest">Кто зашёл по твоей ссылке</p>
+                <p class="text-[11px] font-black uppercase tracking-widest" style="color:var(--text-soft)">Кто зашёл по твоей ссылке</p>
             </div>
             <div id="friends"></div>
 
@@ -256,9 +323,8 @@
     <div id="ref-modal" class="modal-overlay" onclick="closeRefInfo(event)">
         <div class="modal-card">
             <div class="text-center mb-5">
-                <div class="text-3xl mb-1">🤝</div>
                 <h3 class="text-lg font-black italic uppercase tracking-tight">Кого мы засчитываем</h3>
-                <p class="text-[11px] text-gray-400 font-semibold mt-1">Нажми «Забрать» рядом с другом, и звёзды упадут на баланс</p>
+                <p class="text-[11px] font-semibold mt-1" style="color:#d9b98c">Нажми «Забрать» рядом с другом, и звёзды упадут на баланс</p>
             </div>
 
             <div class="rule-row">
@@ -271,7 +337,7 @@
                 <div class="rule-text"><b>Друг с Telegram Premium:</b> награда в три раза больше</div>
             </div>
 
-            <div class="rule-row" style="background: rgba(239,68,68,0.07);">
+            <div class="rule-row" style="background: rgba(239,68,68,0.1);">
                 <div class="rule-reward" style="color:#f87171;">✕</div>
                 <div class="rule-text"><b>Не считаются:</b> ты сам, те, кто уже заходил в приложение раньше, и повторные заходы</div>
             </div>
@@ -280,6 +346,7 @@
         </div>
     </div>
 
+    <script src="music.js"></script>
 <script>
     const tg = window.Telegram.WebApp;
     const user = tg.initDataUnsafe?.user;
@@ -289,6 +356,17 @@
 
     // Обычная реферальная ссылка на чат с ботом (бот получит /start <id>)
     const REF_LINK = user ? `https://t.me/${BOT_USERNAME}?start=${user.id}` : '';
+
+    // Звук получения награды
+    const rewardSound = new Audio('skip.mp3');
+    rewardSound.preload = 'auto';
+    function playReward() {
+        try {
+            rewardSound.currentTime = 0;
+            const p = rewardSound.play();
+            if (p && p.catch) p.catch(() => {});
+        } catch (_) {}
+    }
 
     function esc(s) {
         return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -346,10 +424,9 @@
 
         if (!items.length) {
             list.innerHTML = `
-                <div class="text-center py-10 px-6 opacity-70">
-                    <div class="text-4xl mb-2">👥</div>
+                <div class="text-center py-10 px-6 opacity-80">
                     <div class="font-black uppercase italic text-sm">Пока никого нет</div>
-                    <div class="text-[11px] text-gray-400 font-semibold mt-1">Отправь ссылку друзьям: за обычного +1 ⭐, за Premium +3 ⭐</div>
+                    <div class="text-[11px] font-semibold mt-1" style="color:#d9b98c">Отправь ссылку друзьям: за обычного +1 ⭐, за Premium +3 ⭐</div>
                 </div>`;
             return;
         }
@@ -377,7 +454,7 @@
     async function loadReferrals() {
         if (!user || !tg.initData) {
             document.getElementById('friends').innerHTML =
-                `<div class="text-center py-10 text-gray-400 text-sm font-bold">Открой приложение через Telegram</div>`;
+                `<div class="text-center py-10 text-sm font-bold" style="color:#d9b98c">Открой приложение через Telegram</div>`;
             return;
         }
         try {
@@ -394,6 +471,7 @@
         try {
             const d = await api('/claim_referral', { referral_id: id });
             if (d.success) {
+                playReward();
                 tg.HapticFeedback?.notificationOccurred('success');
                 toast(`+${d.reward} ⭐ на баланс`);
             } else {
@@ -411,6 +489,7 @@
         try {
             const d = await api('/claim_all_referrals');
             if (d.success) {
+                playReward();
                 tg.HapticFeedback?.notificationOccurred('success');
                 toast(`+${d.reward} ⭐ на баланс`);
             } else {
@@ -464,6 +543,22 @@
         if (navigator.clipboard?.writeText) navigator.clipboard.writeText(REF_LINK).then(done).catch(fallback);
         else fallback();
     }
+
+    // Поднимающиеся искры (только оформление)
+    (function makeSparks() {
+        const box = document.getElementById('sparks');
+        for (let i = 0; i < 22; i++) {
+            const s = document.createElement('div');
+            const size = 2 + Math.random() * 3;
+            s.className = 'spark';
+            s.style.width = s.style.height = size + 'px';
+            s.style.left = Math.random() * 100 + '%';
+            s.style.animationDuration = (6 + Math.random() * 8) + 's';
+            s.style.animationDelay = (-Math.random() * 12) + 's';
+            s.style.setProperty('--drift', (Math.random() * 60 - 30) + 'px');
+            box.appendChild(s);
+        }
+    })();
 
     window.onload = () => {
         try { tg.expand(); tg.ready(); } catch (_) {}
