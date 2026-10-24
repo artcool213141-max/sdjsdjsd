@@ -3,107 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>StarsDrop - Daily Bonus</title>
+    <title>FixStars - Daily Bonus</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        :root { --accent: #22c55e; }
-        
-        * { -webkit-tap-highlight-color: transparent; user-select: none; }
-        
-        body { 
-            background: #050505; color: white; font-family: 'Inter', sans-serif; 
-            margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; 
+        :root {
+            --orange: #ff7a1a;
+            --orange-light: #ffb347;
+            --line: rgba(255, 150, 60, 0.35);
         }
 
-        .header-panel { 
-            padding: 12px 20px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a; 
+        * { -webkit-tap-highlight-color: transparent; user-select: none; box-sizing: border-box; }
+
+        body {
+            background:
+                radial-gradient(circle at 50% 38%, rgba(255, 122, 26, 0.7) 0%, rgba(255, 122, 26, 0.18) 30%, transparent 58%),
+                linear-gradient(180deg, #5a1e00 0%, #2a0d00 45%, #120500 100%);
+            background-attachment: fixed;
+            color: white; font-family: 'Inter', sans-serif;
+            margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column;
+        }
+
+        #stars-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .layer { position: relative; z-index: 1; }
+
+        /* паутина и паук */
+        .web { position: fixed; top: 0; right: 0; width: 100px; height: 100px; z-index: 0; pointer-events: none; opacity: 0.8; }
+        .spider-wrap { position: fixed; top: 0; left: 68%; z-index: 2; pointer-events: none; animation: spiderDrop 5s ease-in-out infinite; }
+        .spider-wrap .thread { width: 2px; height: 60px; background: #000; margin: 0 auto; }
+        .spider-wrap .sp { font-size: 26px; line-height: 1; margin-left: -12px; margin-top: -3px; filter: brightness(0); }
+        @keyframes spiderDrop { 0%,100% { transform: translateY(-28px); } 50% { transform: translateY(6px); } }
+
+        .header-panel {
+            padding: 12px 20px; background: rgba(20, 6, 0, 0.45); border-bottom: 1px solid var(--line);
             padding-top: calc(12px + var(--tg-safe-area-inset-top, 0px));
         }
+        .back-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 12px; background: rgba(20, 6, 0, 0.8); border: 1px solid var(--line); }
+        .back-btn:active { transform: scale(0.9); }
+        .bal-pill { display: flex; align-items: center; gap: 8px; background: rgba(20, 6, 0, 0.8); padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); color: var(--orange-light); }
 
         .bonus-container {
             flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px;
         }
 
-        .gift-box {
-            font-size: 80px; filter: drop-shadow(0 0 20px rgba(34, 197, 94, 0.2));
-            animation: float 3s ease-in-out infinite;
-        }
-
+        .gift-box { width: 170px; height: 170px; animation: float 3s ease-in-out infinite; filter: drop-shadow(0 0 24px rgba(255, 140, 30, 0.7)); }
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
         }
 
-        .btn-main { 
-            background: var(--accent); color: white; font-weight: 900; border-radius: 18px; 
-            transition: 0.2s; box-shadow: 0 0 25px rgba(34, 197, 94, 0.3);
-        }
-        .btn-main:active { transform: scale(0.97); }
-        .btn-main:disabled { opacity: 0.2; filter: grayscale(1); box-shadow: none; }
+        .timer-box { background: rgba(20, 6, 0, 0.75); border: 1px solid var(--line); }
+        .timer-ready { color: var(--orange-light); border-color: rgba(255, 179, 71, 0.6); box-shadow: 0 0 20px rgba(255, 122, 26, 0.35); }
 
-        #win-modal { display: none; position: fixed; inset: 0; z-index: 999; background: rgba(0,0,0,0.92); backdrop-filter: blur(10px); align-items: center; justify-content: center; }
-        .modal-box { background: #0f0f0f; border: 1px solid var(--accent); border-radius: 24px; width: 85%; padding: 25px; text-align: center; }
-        
+        .bottom-panel { padding: 24px; padding-bottom: calc(24px + var(--tg-safe-area-inset-bottom, 0px)); background: rgba(20, 6, 0, 0.55); border-top: 1px solid var(--line); }
+        .btn-main {
+            position: relative; overflow: hidden;
+            background: linear-gradient(135deg, #ffa13a, #e2570a 60%, #c2410c); color: white; font-weight: 900; border-radius: 18px;
+            transition: 0.2s; box-shadow: 0 0 25px rgba(255, 122, 26, 0.5), inset 0 -3px 0 rgba(120, 30, 0, 0.45);
+        }
+        .btn-main::after { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent); transform: skewX(-20deg); animation: shine 3s infinite; }
+        @keyframes shine { 0% { left: -60%; } 60%, 100% { left: 130%; } }
+        .btn-main:active { transform: scale(0.97); }
+        .btn-main:disabled { background: rgba(0, 0, 0, 0.45); color: #b58a6a; box-shadow: none; border: 1px solid rgba(255, 150, 60, 0.15); }
+        .btn-main:disabled::after { display: none; }
+
+        #win-modal { display: none; position: fixed; inset: 0; z-index: 999; background: rgba(10, 3, 0, 0.92); backdrop-filter: blur(10px); align-items: center; justify-content: center; }
+        .modal-box {
+            background: radial-gradient(circle at 50% 0%, #6b2400 0%, #1c0900 70%);
+            border: 1px solid rgba(255, 170, 80, 0.7); box-shadow: 0 0 40px rgba(255, 122, 26, 0.5);
+            border-radius: 28px; width: 85%; max-width: 340px; padding: 28px 24px 24px; text-align: center; animation: pop 0.3s ease;
+        }
+        @keyframes pop { from { transform: scale(0.88); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .m-btn { position: relative; overflow: hidden; width: 100%; padding: 15px; border-radius: 16px; font-weight: 900; font-style: italic; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #fff; background: linear-gradient(135deg, #ffa13a, #e2570a 60%, #c2410c); box-shadow: 0 0 22px rgba(255, 122, 26, 0.55), inset 0 -3px 0 rgba(120, 30, 0, 0.45); }
+        .m-btn::after { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent); transform: skewX(-20deg); animation: shine 3s infinite; }
+        .m-btn:active { transform: scale(0.96); }
+
         ::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
-    <header class="header-panel flex justify-between items-center">
+    <canvas id="stars-canvas"></canvas>
+
+    <!-- паутина в углу и паук -->
+    <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#000" stroke-width="1">
+        <path d="M150 0 L0 0 M150 0 L150 150 M150 0 L0 110 M150 0 L40 150 M150 0 L90 150 M150 0 L0 50"/>
+        <path d="M120 0 Q115 25 150 30 M85 0 Q80 45 150 60 M50 0 Q45 70 150 95 M15 0 Q10 100 150 130"/>
+    </svg>
+    <div class="spider-wrap"><div class="thread"></div><div class="sp">🕷️</div></div>
+
+    <header class="header-panel layer flex justify-between items-center">
         <div class="flex items-center gap-3">
-            <button onclick="goHome()" class="flex items-center justify-center w-8 h-8 rounded-xl bg-[#111] border border-[#222] active:scale-90 transition-transform">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <button onclick="goHome()" class="back-btn">
+                <svg class="w-4 h-4 text-orange-200" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                 </svg>
             </button>
-            <div class="font-black italic text-lg tracking-tighter">STARS<span class="text-[#22c55e]">DROP</span></div>
+            <div class="font-black italic text-lg tracking-tighter">Fix<span style="color:#ffb347">Stars</span></div>
         </div>
-        <div class="flex items-center gap-2 bg-[#111] px-4 py-1.5 rounded-full border border-[#222]">
+        <div class="bal-pill">
             <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
             <span id="val-stars" class="font-black text-sm">0.00</span>
         </div>
     </header>
 
-    <div class="bonus-container">
-        <div class="gift-box" id="gift-icon">🎁</div>
-        <h1 class="text-xs uppercase font-black tracking-widest text-gray-500">До следующего бонуса</h1>
-        <div id="countdown-timer" class="text-3xl font-black italic tracking-tight text-white bg-[#0a0a0a] px-6 py-2 rounded-2xl border border-[#151515]">
+    <div class="bonus-container layer">
+        <div class="gift-box" id="gift-icon"></div>
+        <h1 class="text-xs uppercase font-black tracking-widest" style="color:#ffd2a0">До следующего бонуса</h1>
+        <div id="countdown-timer" class="timer-box text-3xl font-black italic tracking-tight text-white px-6 py-2 rounded-2xl">
             --:--:--
         </div>
-        <p class="text-[11px] text-center text-gray-400 max-w-[240px] px-4 mt-2">
-            Заходи каждые 24 часа и забирай случайный призовой дроп от <span class="text-green-400 font-bold">0.05</span> до <span class="text-green-400 font-bold">0.50</span> ★
+        <p class="text-[11px] text-center max-w-[240px] px-4 mt-2" style="color:#e2c4a8">
+            Заходи каждые 24 часа и забирай случайный призовой дроп от <span style="color:#ffb347" class="font-bold">0.05</span> до <span style="color:#ffb347" class="font-bold">0.50</span> ★
         </p>
     </div>
 
-    <div class="p-6 bg-[#0a0a0a] border-t border-[#181818] pb-[calc(24px + var(--tg-safe-area-inset-bottom, 0px))]">
+    <div class="bottom-panel layer">
         <button id="bonus-btn" onclick="claimDailyBonus()" class="w-full py-4 btn-main uppercase tracking-widest text-sm" disabled>Загрузка данных...</button>
     </div>
 
     <div id="win-modal">
         <div class="modal-box">
-            <h2 class="text-lg font-black italic uppercase text-green-400 tracking-tight">Бонус получен!</h2>
-            <div class="bg-white/5 py-4 rounded-xl border border-white/5 my-5 flex flex-col items-center justify-center">
-                <img src="img/star.png" class="w-12 h-12 mb-2" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
-                <p id="bonus-gain-text" class="text-2xl font-black text-green-400">+0.00 ★</p>
+            <h2 class="text-lg font-black italic uppercase tracking-tight" style="color:#ffb347">Бонус получен!</h2>
+            <div class="py-4 rounded-2xl my-5 flex flex-col items-center justify-center" style="background: rgba(255,122,26,0.12); border: 1px solid rgba(255,150,60,0.3);">
+                <img src="img/star.png" class="w-12 h-12 mb-2" style="filter: drop-shadow(0 0 14px rgba(255,150,40,0.8))" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
+                <p id="bonus-gain-text" class="text-2xl font-black" style="color:#ffb347">+0.00 ★</p>
             </div>
-            <button onclick="confirmAndReload()" class="w-full bg-[#22c55e] py-4 rounded-xl font-black uppercase text-xs tracking-wider text-black">Отлично</button>
+            <button onclick="confirmAndReload()" class="m-btn">Отлично</button>
         </div>
     </div>
 
+    <script src="music.js"></script>
     <script>
         const SB_URL = "https://xbklrdpguqsuvqndcujb.supabase.co";
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhia2xyZHBndXFzdXZxbmRjdWpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzQ0NzUsImV4cCI6MjEwNzIxMDQ3NX0.IeK3NGOTu_J1jDOd_XjHQUOySnkbFh4uThGCPeu-Wu4";
         const SB = supabase.createClient(SB_URL, SB_KEY);
         const tg = window.Telegram.WebApp;
-        
+
         tg.expand();
         tg.enableClosingConfirmation();
+        try {
+            tg.headerColor = '#5a1e00';
+            tg.backgroundColor = '#1a0a00';
+        } catch (_) {}
 
         let user = null;
         let generatedBonus = 0;
+
+        // звук получения награды (skip.mp3 лежит рядом с wheel.html)
+        const sndReward = new Audio('skip.mp3');
+        sndReward.preload = 'auto';
+        function playReward() {
+            try {
+                sndReward.currentTime = 0;
+                const p = sndReward.play();
+                if (p && p.catch) p.catch(e => console.warn('звук не играет', e));
+            } catch (_) {}
+        }
+
+        function showWin() {
+            document.getElementById('win-modal').style.display = 'flex';
+            playReward();
+        }
 
         function goHome() {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
@@ -116,12 +181,12 @@
             try {
                 let { data, error } = await SB.from('users').select('*').eq('id', userId).maybeSingle();
                 if (error) throw error;
-                
+
                 if (!data) {
                     const { data: newUser, error: insError } = await SB.from('users').insert([
                         { id: userId, balance: 5, username: tg.initDataUnsafe?.user?.username || "Player" }
                     ]).select().single();
-                    
+
                     if (insError) throw insError;
                     data = newUser;
                 }
@@ -138,29 +203,26 @@
         function initBonusTimer() {
             const btn = document.getElementById('bonus-btn');
             const timerEl = document.getElementById('countdown-timer');
-            const giftEl = document.getElementById('gift-icon');
-            
+
             const lastBonus = user && user.hasOwnProperty('last_bonus_claim') && user.last_bonus_claim ? new Date(user.last_bonus_claim).getTime() : 0;
-            
+
             const updateTimer = () => {
                 const now = Date.now();
                 const remaining = 86400000 - (now - lastBonus);
 
                 if (remaining <= 0) {
                     timerEl.innerText = "ГОТОВ";
-                    timerEl.className = "text-3xl font-black italic tracking-tight text-green-400 bg-[#0a0a0a] px-6 py-2 rounded-2xl border border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.15)]";
+                    timerEl.className = "timer-box timer-ready text-3xl font-black italic tracking-tight px-6 py-2 rounded-2xl";
                     btn.innerText = "ЗАБРАТЬ ПРИЗ";
                     btn.disabled = false;
-                    giftEl.innerText = "🎁";
                 } else {
-                    timerEl.className = "text-3xl font-black italic tracking-tight text-white bg-[#0a0a0a] px-6 py-2 rounded-2xl border border-[#151515]";
+                    timerEl.className = "timer-box text-3xl font-black italic tracking-tight text-white px-6 py-2 rounded-2xl";
                     btn.disabled = true;
-                    giftEl.innerText = "🔒";
 
                     const hours = Math.floor(remaining / 3600000).toString().padStart(2, '0');
                     const minutes = Math.floor((remaining % 3600000) / 60000).toString().padStart(2, '0');
                     const seconds = Math.floor((remaining % 60000) / 1000).toString().padStart(2, '0');
-                    
+
                     timerEl.innerText = `${hours}:${minutes}:${seconds}`;
                     btn.innerText = `ДОСТУПНО ЧЕРЕЗ ${hours}:${minutes}:${seconds}`;
                 }
@@ -172,7 +234,7 @@
 
         async function claimDailyBonus() {
             if (!user) return;
-            
+
             const btn = document.getElementById('bonus-btn');
             btn.disabled = true;
             btn.innerText = "СОХРАНЕНИЕ...";
@@ -184,7 +246,7 @@
             const targetBalance = parseFloat((currentBalance + generatedBonus).toFixed(2));
 
             let updateData = { balance: targetBalance };
-            
+
             if (user.hasOwnProperty('last_bonus_claim')) {
                 updateData.last_bonus_claim = new Date().toISOString();
             }
@@ -198,11 +260,11 @@
                 document.getElementById('val-stars').innerText = targetBalance.toFixed(2);
 
                 document.getElementById('bonus-gain-text').innerText = `+${generatedBonus.toFixed(2)} ★`;
-                document.getElementById('win-modal').style.display = 'flex';
+                showWin();
             } catch (err) {
                 console.error("Ошибка при работе с базой:", err.message);
                 document.getElementById('bonus-gain-text').innerText = `+${generatedBonus.toFixed(2)} ★ (Тест)`;
-                document.getElementById('win-modal').style.display = 'flex';
+                showWin();
             }
         }
 
@@ -212,6 +274,58 @@
         }
 
         checkAuth();
+
+        // тыква из tikva.tgs (gzip-нутый lottie json), крутится по кругу
+        fetch('tikva.tgs')
+            .then(r => r.arrayBuffer())
+            .then(buf => {
+                const json = JSON.parse(pako.inflate(new Uint8Array(buf), { to: 'string' }));
+                lottie.loadAnimation({
+                    container: document.getElementById('gift-icon'),
+                    renderer: 'svg',
+                    loop: true,
+                    autoplay: true,
+                    animationData: json
+                });
+            })
+            .catch(e => {
+                console.warn('tgs не загрузился', e);
+                document.getElementById('gift-icon').innerHTML = '<div style="font-size:100px;line-height:170px;text-align:center">🎃</div>';
+            });
+
+        // искры на фоне
+        const canvas = document.getElementById('stars-canvas');
+        const ctx = canvas.getContext('2d');
+        let embers = [];
+        function initStars() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            embers = Array.from({ length: 30 }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2 + 0.5,
+                speed: Math.random() * 0.4 + 0.12,
+                drift: (Math.random() - 0.5) * 0.3,
+                opacity: Math.random() * 0.6 + 0.2,
+                yellow: Math.random() < 0.4
+            }));
+        }
+        function animateStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            embers.forEach(s => {
+                ctx.beginPath();
+                ctx.globalAlpha = s.opacity;
+                ctx.fillStyle = s.yellow ? '#ffd27a' : '#ff8a2a';
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+                s.y -= s.speed;
+                s.x += s.drift;
+                if (s.y < -5) { s.y = canvas.height + 5; s.x = Math.random() * canvas.width; }
+            });
+            requestAnimationFrame(animateStars);
+        }
+        initStars(); animateStars();
+        window.addEventListener('resize', initStars);
     </script>
 </body>
 </html>
