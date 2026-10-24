@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>FixStars Halloween</title>
+    <title>FixStars</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
@@ -52,25 +54,14 @@
             z-index: 1;
         }
 
-        /* Паутина */
-        .web { position: fixed; top: 0; right: 0; width: 150px; height: 150px; z-index: 2; pointer-events: none; opacity: 0.4; }
+        /* паутина в углу */
+        .web { position: fixed; top: 0; right: 0; width: 150px; height: 150px; z-index: 2; pointer-events: none; opacity: 0.8; }
 
-        /* Паук на нитке */
-        .spider-wrap { position: fixed; top: 0; left: 22px; z-index: 2; pointer-events: none; animation: spiderDrop 5s ease-in-out infinite; transform-origin: top center; }
-        .spider-wrap .thread { width: 1px; height: 70px; background: rgba(255,255,255,0.5); margin: 0 auto; }
-        .spider-wrap .sp { font-size: 22px; line-height: 1; margin-left: -10px; }
-        @keyframes spiderDrop { 0%,100% { transform: translateY(-25px); } 50% { transform: translateY(5px); } }
-
-        /* Летучие мыши */
-        .bat { position: fixed; z-index: 2; pointer-events: none; font-size: 20px; opacity: 0; animation: batFly 14s linear infinite; }
-        .bat.b2 { animation-delay: 6s; top: 24% !important; font-size: 15px; animation-duration: 18s; }
-        @keyframes batFly {
-            0%   { transform: translateX(-60px) translateY(0) scaleX(1); opacity: 0; }
-            10%  { opacity: 0.85; }
-            50%  { transform: translateX(55vw) translateY(-30px) scaleX(-1); }
-            90%  { opacity: 0.85; }
-            100% { transform: translateX(110vw) translateY(10px) scaleX(1); opacity: 0; }
-        }
+        /* паук на ниточке */
+        .spider-wrap { position: fixed; top: 0; left: 22px; z-index: 2; pointer-events: none; animation: spiderDrop 5s ease-in-out infinite; }
+        .spider-wrap .thread { width: 2px; height: 80px; background: #000; margin: 0 auto; }
+        .spider-wrap .sp { font-size: 44px; line-height: 1; margin-left: -21px; margin-top: -4px; filter: brightness(0); }
+        @keyframes spiderDrop { 0%,100% { transform: translateY(-30px); } 50% { transform: translateY(8px); } }
 
         .scrollable-content {
             flex: 1;
@@ -89,8 +80,7 @@
         .balance-item-v2 img { width: 20px; height: 20px; object-fit: contain; filter: drop-shadow(0 0 5px var(--orange)); }
 
         .hero-zone { position: relative; text-align: center; margin: 30px 0 10px; }
-        .pumpkin { font-size: 78px; display: inline-block; animation: heroFloat 4s ease-in-out infinite; filter: drop-shadow(0 0 30px rgba(255, 150, 40, 0.8)); }
-        @keyframes heroFloat { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-10px) rotate(3deg); } }
+        #tikva { width: 150px; height: 150px; margin: 0 auto; }
         .title-glow { text-shadow: 0 0 22px rgba(255, 140, 30, 0.7); }
 
         .game-card {
@@ -147,13 +137,11 @@
     <canvas id="stars-canvas"></canvas>
 
     <!-- Хэллоуин-декор -->
-    <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#fff" stroke-width="0.8">
+    <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#000" stroke-width="1">
         <path d="M150 0 L0 0 M150 0 L150 150 M150 0 L0 110 M150 0 L40 150 M150 0 L90 150 M150 0 L0 50"/>
         <path d="M120 0 Q115 25 150 30 M85 0 Q80 45 150 60 M50 0 Q45 70 150 95 M15 0 Q10 100 150 130"/>
     </svg>
     <div class="spider-wrap"><div class="thread"></div><div class="sp">🕷️</div></div>
-    <div class="bat" style="top: 14%; left: 0;">🦇</div>
-    <div class="bat b2" style="left: 0;">🦇</div>
 
     <div class="main-wrapper">
         <div class="scrollable-content">
@@ -179,10 +167,9 @@
 
             <!-- ЗАГОЛОВОК -->
             <div class="hero-zone">
-                <div class="pumpkin">🎃</div>
+                <div id="tikva"></div>
                 <h1 class="text-5xl font-black italic mt-2 uppercase tracking-tighter title-glow">Fix<span style="color:#ffb347">Stars</span></h1>
-                <div class="h-1 w-14 rounded-full mx-auto mt-3" style="background:#ffb347; box-shadow:0 0 14px rgba(255,170,80,0.9)"></div>
-                <div class="text-[10px] font-bold uppercase tracking-[0.35em] mt-3" style="color:#ffd2a0">Halloween Edition</div>
+                <div class="h-1 w-14 rounded-full mx-auto mt-3" style="background:#ffb347"></div>
             </div>
 
             <!-- МЕНЮ -->
@@ -448,7 +435,25 @@
         }, 800);
     };
 
-    // Искры (оранжевые и жёлтые, медленно поднимаются вверх)
+    // тыква из tikva.tgs (это просто gzip-нутый lottie json)
+    fetch('tikva.tgs')
+        .then(r => r.arrayBuffer())
+        .then(buf => {
+            const json = JSON.parse(pako.inflate(new Uint8Array(buf), { to: 'string' }));
+            lottie.loadAnimation({
+                container: document.getElementById('tikva'),
+                renderer: 'svg',
+                loop: true,
+                autoplay: true,
+                animationData: json
+            });
+        })
+        .catch(e => {
+            console.warn('tgs не загрузился', e);
+            document.getElementById('tikva').innerHTML = '<div style="font-size:90px;line-height:150px;text-align:center">🎃</div>';
+        });
+
+    // искры
     const canvas = document.getElementById('stars-canvas');
     const ctx = canvas.getContext('2d');
     let embers = [];
