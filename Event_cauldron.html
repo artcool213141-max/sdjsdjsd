@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Кровавый Котёл</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="event.css">
+</head>
+<body>
+    <div class="page">
+        <div class="top" id="top"></div>
+        <div id="view"><div class="status">Загрузка...</div></div>
+    </div>
+    <nav id="nav" class="nav"></nav>
+
+    <script src="event.js"></script>
+    <script>
+        let P = null, busy = false;
+        const star = (s) => `<img src="img/star.png" alt="" style="width:${s}px;height:${s}px;vertical-align:middle" onerror="this.style.display='none'">`;
+
+        function draw() {
+            setSouls(P.souls);
+            const rate = P.cfg.soul_per_star;
+            const left = Math.max(0, P.cfg.daily_star_cap - P.converted_today);
+            const opts = [1, 2, 3].filter(n => n <= P.cfg.daily_star_cap).map(n => {
+                const ok = !busy && n <= left && P.souls >= n * rate;
+                return `<button class="btn" ${ok ? '' : 'disabled'} onclick="convert(${n})">
+                    ${n} ${star(14)} <span style="opacity:.8">за ${n * rate}</span> ${ico('soul', 13)}
+                </button>`;
+            }).join('');
+
+            $('view').innerHTML = `
+                <div class="card center">
+                    ${ico('cauldron', 56)}
+                    <h3>Кровавый Котёл</h3>
+                    <p class="muted small">Брось души в котёл — получи звёзды на основной баланс.</p>
+                    <div class="big" style="font-size:26px">${rate} ${ico('soul', 26)} = 1 ${star(26)}</div>
+                </div>
+                <div class="card">
+                    <div class="grid3" style="grid-template-columns:1fr 1fr">
+                        <div class="cell"><b>${P.souls}</b><span>Твои души</span></div>
+                        <div class="cell"><b>${Number(P.stars_balance).toFixed(2)}</b><span>Звёзды</span></div>
+                    </div>
+                    <p class="muted small center">Лимит: ${P.cfg.daily_star_cap} ${star(12)} в сутки · осталось ${Number(left).toFixed(0)}</p>
+                    ${opts}
+                </div>`;
+        }
+
+        async function convert(n) {
+            if (busy) return;
+            busy = true; haptic('medium'); draw();
+            try {
+                const d = await api('/event/convert', { stars: n });
+                if (d.ok) {
+                    P.souls = d.souls_balance;
+                    P.stars_balance = d.stars_balance;
+                    P.converted_today += n;
+                    toast('+' + n + ' звезда(ы) на баланс');
+                    try { tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'); } catch (_) {}
+                } else {
+                    const m = { not_enough: 'Не хватает душ', daily_cap: 'Дневной лимит исчерпан', bad_amount: 'Неверная сумма' };
+                    toast(m[d.reason] || 'Не получилось');
+                }
+            } catch (e) { toast('Ошибка сети'); }
+            busy = false;
+            draw();
+        }
+
+        initEvent('cauldron', async () => {
+            renderTop('event.html', ico('cauldron', 22) + ' Котёл', true);
+            try { P = await api('/event/profile'); draw(); } catch (e) { showError(e); }
+        });
+    </script>
+</body>
+</html>
