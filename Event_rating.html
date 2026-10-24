@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Рейтинг Жнецов</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="event.css">
+</head>
+<body>
+    <div class="page">
+        <div class="top" id="top"></div>
+        <div class="tabs">
+            <button id="t-stolen" class="on" onclick="setKind('stolen')">По кражам</button>
+            <button id="t-souls" onclick="setKind('souls')">По душам</button>
+        </div>
+        <div id="view"><div class="status">Загрузка...</div></div>
+    </div>
+    <nav id="nav" class="nav"></nav>
+
+    <script src="event.js"></script>
+    <script>
+        let kind = 'stolen', token = 0;
+        const medal = (r) => r === 1 ? '🥇' : r === 2 ? '🥈' : r === 3 ? '🥉' : r;
+
+        async function load() {
+            const my = ++token;
+            $('view').innerHTML = '<div class="status">Загрузка...</div>';
+            try {
+                const d = await api('/event/rating', { kind });
+                if (my !== token) return;
+                if (!d.items.length) { $('view').innerHTML = '<div class="status">Пока никого нет</div>'; return; }
+                $('view').innerHTML = d.items.map(it => `
+                    <div class="row ${it.is_me ? 'me' : ''}">
+                        <div class="rank">${medal(it.rank)}</div>
+                        <div class="rname">${esc(it.name)}${it.is_me ? ' (ты)' : ''}</div>
+                        <div class="rval">${kind === 'stolen' ? it.stolen : it.souls} ${ico(kind === 'stolen' ? 'skull' : 'soul', 14)}</div>
+                    </div>`).join('');
+            } catch (e) { if (my === token) showError(e); }
+        }
+
+        function setKind(k) {
+            kind = k;
+            $('t-stolen').classList.toggle('on', k === 'stolen');
+            $('t-souls').classList.toggle('on', k === 'souls');
+            load();
+        }
+
+        initEvent('rating', () => {
+            renderTop('event.html', ico('rating', 22) + ' Рейтинг Жнецов', false);
+            load();
+        });
+    </script>
+</body>
+</html>
