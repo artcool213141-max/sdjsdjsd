@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Логи - FixStars</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Creepster&display=swap');
+
+        :root {
+            --accent: #ffb347;
+            --text-soft: #ffd9a0;
+            --muted: #d9b98c;
+            --panel: rgba(30, 12, 3, 0.55);
+            --line: rgba(255, 179, 71, 0.3);
+        }
+
+        body {
+            background: linear-gradient(180deg, #3a1a08 0%, #6b2f0c 55%, #a04a12 100%);
+            background-attachment: fixed;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Искры */
+        #sparks { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+        .spark {
+            position: absolute; bottom: -10px; border-radius: 50%;
+            background: #ffb347; opacity: 0;
+            animation: rise linear infinite;
+        }
+        @keyframes rise {
+            0%   { transform: translateY(0) translateX(0); opacity: 0; }
+            15%  { opacity: 0.9; }
+            100% { transform: translateY(-105vh) translateX(var(--drift, 20px)); opacity: 0; }
+        }
+
+        /* Паутина и паук */
+        .web { position: fixed; top: 0; right: 0; width: 150px; height: 150px; pointer-events: none; z-index: 1; }
+        .spider-wrap {
+            position: fixed; top: 0; right: 22px; z-index: 1; pointer-events: none;
+            display: flex; flex-direction: column; align-items: center;
+            animation: hang 4s ease-in-out infinite; transform-origin: top center;
+        }
+        .spider-thread { width: 1px; height: 80px; background: #000; }
+        @keyframes hang { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+        @media (prefers-reduced-motion: reduce) { .spark, .spider-wrap { animation: none; } }
+
+        .page {
+            position: relative; z-index: 2;
+            padding: calc(16px + var(--tg-safe-area-inset-top, 0px)) 16px 40px 16px;
+            max-width: 560px; margin: 0 auto;
+        }
+
+        .back-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 34px; height: 34px; border-radius: 12px;
+            background: rgba(0, 0, 0, 0.35); border: 1px solid var(--line);
+            color: var(--text-soft); transition: transform 0.15s;
+        }
+        .back-btn:active { transform: scale(0.9); }
+
+        .total-chip {
+            background: rgba(0, 0, 0, 0.55); border: 1px solid var(--line);
+            padding: 7px 14px; border-radius: 14px;
+            font-weight: 900; font-size: 13px; color: var(--accent);
+        }
+
+        .panel {
+            background: var(--panel); border: 1px solid var(--line);
+            border-radius: 22px; padding: 14px;
+        }
+
+        /* Переключатель режимов */
+        .seg { display: flex; gap: 6px; padding: 4px; border-radius: 16px; background: rgba(0, 0, 0, 0.35); border: 1px solid var(--line); margin-bottom: 12px; }
+        .seg button {
+            flex: 1; padding: 10px; border-radius: 12px; font-weight: 900; font-size: 13px;
+            text-transform: uppercase; font-style: italic; color: var(--muted);
+        }
+        .seg button.on {
+            background: linear-gradient(180deg, #ffa53a 0%, #d86200 100%);
+            color: #2a1000; box-shadow: 0 2px 0 #8f3f00;
+        }
+
+        .search {
+            width: 100%; box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 179, 71, 0.25);
+            color: white; border-radius: 12px; padding: 11px 12px;
+            font-weight: 700; font-size: 14px;
+        }
+        .search::placeholder { color: #8a6a4e; }
+        .search:focus { outline: none; border-color: var(--accent); }
+
+        .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; margin-top: 10px; }
+        .chips::-webkit-scrollbar { display: none; }
+        .chip {
+            flex-shrink: 0; padding: 7px 13px; border-radius: 999px;
+            border: 1px solid var(--line); background: rgba(0, 0, 0, 0.35);
+            color: var(--muted); font-size: 12px; font-weight: 800; white-space: nowrap;
+            transition: transform 0.15s;
+        }
+        .chip:active { transform: scale(0.94); }
+        .chip.on {
+            background: linear-gradient(180deg, #ffa53a 0%, #d86200 100%);
+            border-color: #ffc878; color: #2a1000;
+        }
+
+        .live { display: flex; align-items: center; gap: 8px; margin: 14px 4px 0; font-size: 12px; font-weight: 700; color: var(--muted); }
+        .live i { width: 8px; height: 8px; border-radius: 50%; background: #7fd48a; display: inline-block; }
+
+        /* Сводка по игроку */
+        .sum-card { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 14px; margin-top: 14px; }
+        .sum-head { display: flex; align-items: center; gap: 12px; }
+        .sum-name { font-weight: 900; font-size: 17px; word-break: break-word; }
+        .sum-id { font-size: 12px; font-weight: 700; color: var(--muted); margin-top: 2px; }
+        .sum-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+        .cell { background: rgba(0, 0, 0, 0.3); border-radius: 14px; padding: 10px 6px; text-align: center; }
+        .cell b { display: block; font-size: 17px; font-weight: 900; color: var(--accent); }
+        .cell span { display: block; font-size: 10px; font-weight: 800; color: var(--muted); margin-top: 2px; text-transform: uppercase; }
+
+        .day {
+            font-size: 11px; font-weight: 900; text-transform: uppercase;
+            letter-spacing: 0.12em; color: var(--text-soft); margin: 18px 4px 8px;
+        }
+
+        /* Строка лога */
+        .row {
+            display: flex; gap: 12px; align-items: flex-start;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 179, 71, 0.2);
+            border-radius: 18px; padding: 12px; margin-bottom: 8px;
+        }
+        .row.fresh { border-color: var(--accent); background: rgba(255, 179, 71, 0.12); }
+        .row-main { flex: 1; min-width: 0; }
+        .row-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+        .name { font-weight: 800; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .name small { color: var(--muted); font-weight: 700; font-size: 11px; margin-left: 6px; }
+        .time { font-size: 11px; font-weight: 700; color: var(--muted); flex-shrink: 0; }
+        .act { display: flex; align-items: center; gap: 8px; margin-top: 5px; font-size: 14px; font-weight: 700; }
+        .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+        .amt { display: inline-flex; align-items: center; gap: 4px; font-weight: 900; color: var(--accent); margin-left: auto; flex-shrink: 0; }
+        .amt img { width: 12px; height: 12px; }
+        .det { font-size: 12px; font-weight: 600; color: #e8d3b8; margin-top: 3px; word-break: break-word; }
+
+        /* Аватарка: буква под фото, если фото не загрузилось, останется буква */
+        .ava {
+            position: relative; width: 40px; height: 40px; border-radius: 14px; flex-shrink: 0; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 16px; color: #2a1000;
+        }
+        .ava.big { width: 54px; height: 54px; border-radius: 18px; font-size: 22px; }
+        .ava img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+        .btn-more {
+            position: relative; overflow: hidden; width: 100%; margin-top: 8px;
+            background: linear-gradient(180deg, #ffa53a 0%, #f07a0a 55%, #d86200 100%);
+            border: 1px solid #ffc878; color: #2a1000;
+            font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 13px;
+            padding: 13px; border-radius: 16px; box-shadow: 0 3px 0 #8f3f00;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .btn-more::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 48%;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
+            pointer-events: none;
+        }
+        .btn-more:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f3f00; }
+
+        .status { text-align: center; padding: 40px 20px; color: var(--muted); font-weight: 700; font-size: 14px; }
+        .denied {
+            background: #000; border: 2px solid #c0392b; border-radius: 28px;
+            padding: 28px 22px; text-align: center; margin-top: 30px;
+        }
+        .denied img { width: 84px; height: 84px; object-fit: contain; margin: 0 auto 10px; }
+        .denied h2 { font-family: 'Creepster', cursive; font-size: 30px; margin: 0; }
+        .denied p { color: #d6c3b0; font-weight: 600; font-size: 14px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+
+    <div id="sparks"></div>
+
+    <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round">
+        <path d="M150 0 L0 0 M150 0 L150 150 M150 0 L20 100 M150 0 L60 140 M150 0 L105 150 M150 0 L5 45"/>
+        <path d="M150 28 Q122 30 118 0"/>
+        <path d="M150 58 Q104 62 92 0"/>
+        <path d="M150 92 Q86 96 62 0"/>
+        <path d="M150 128 Q70 132 34 0"/>
+    </svg>
+
+    <div class="spider-wrap">
+        <div class="spider-thread"></div>
+        <svg width="26" height="24" viewBox="0 0 26 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round">
+            <path d="M8 10 L1 5 M8 12 L0 12 M8 14 L1 19 M9 16 L4 23"/>
+            <path d="M18 10 L25 5 M18 12 L26 12 M18 14 L25 19 M17 16 L22 23"/>
+            <ellipse cx="13" cy="14" rx="6" ry="7" fill="#000"/>
+            <circle cx="13" cy="7" r="3.5" fill="#000"/>
+        </svg>
+    </div>
+
+    <div class="page" id="page">
+
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <button class="back-btn" onclick="location.href='profile.html'" aria-label="Назад">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <h1 class="text-2xl font-black italic uppercase tracking-tight">Логи</h1>
+            </div>
+            <div class="total-chip" id="total">0</div>
+        </div>
+
+        <div class="seg">
+            <button id="seg-all" class="on" onclick="setMode('all')">Общие</button>
+            <button id="seg-user" onclick="setMode('user')">Игрок</button>
+        </div>
+
+        <div class="panel">
+            <div id="userBox" style="display:none">
+                <input id="search" class="search" type="text" placeholder="ID или @username игрока" autocomplete="off">
+                <div class="chips" id="periods"></div>
+            </div>
+            <div class="chips" id="groups" style="margin-top:0"></div>
+        </div>
+
+        <div id="live" class="live"><i></i>Новые действия появляются сами</div>
+        <div id="summary"></div>
+        <div id="list"></div>
+        <div id="status" class="status" style="display:none"></div>
+        <button id="more" class="btn-more" style="display:none" onclick="load(false)">Показать ещё</button>
+
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
+        const PAGE = 40;
+        const POLL_MS = 4000;
+        const KEEP = 300;
+
+        // Тексты действий простым языком
+        const TYPES = {
+            gift:       { verb: 'Заказал вывод',            color: '#ffb347', sign: '−' },
+            task_done:  { verb: 'Выполнил задание',         color: '#7fd48a', sign: '+' },
+            task_skip:  { verb: 'Пропустил задание',        color: '#e86a5a', sign: ''  },
+            promo_ok:   { verb: 'Ввёл промокод',            color: '#ffd24a', sign: '+' },
+            promo_fail: { verb: 'Ввёл неверный промокод',   color: '#b88a7a', sign: ''  },
+            ref:        { verb: 'Забрал награду за друзей', color: '#8ec5ff', sign: '+' },
+            bonus:      { verb: 'Забрал ежедневный бонус',  color: '#d9a8ff', sign: '+' }
+        };
+
+        const GROUPS = [
+            { id: 'gift',  label: 'Выводы',    types: ['gift'] },
+            { id: 'done',  label: 'Выполнено', types: ['task_done'] },
+            { id: 'skip',  label: 'Пропущено', types: ['task_skip'] },
+            { id: 'promo', label: 'Промокоды', types: ['promo_ok', 'promo_fail'] },
+            { id: 'ref',   label: 'Рефералы',  types: ['ref'] },
+            { id: 'bonus', label: 'Бонус',     types: ['bonus'] }
+        ];
+        const PERIODS = [
+            { days: 1,  label: 'Сегодня' },
+            { days: 7,  label: '7 дней' },
+            { days: 30, label: '30 дней' },
+            { days: 0,  label: 'Всё время' }
+        ];
+
+        const state = {
+            mode: 'all',            // 'all' = общая лента, 'user' = один игрок
+            groups: new Set(),
+            days: 0,
+            search: '',
+            items: [],
+            fresh: new Set(),
+            summary: null,
+            total: 0,
+            hasMore: false,
+            busy: false,
+            token: 0
+        };
+
+        function esc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        function fmtNum(v) {
+            const n = Number(v);
+            return Number.isInteger(n) ? String(n) : n.toFixed(2);
+        }
+        function dayLabel(d) {
+            const same = (a, b) => a.toDateString() === b.toDateString();
+            if (same(d, new Date())) return 'Сегодня';
+            if (same(d, new Date(Date.now() - 864e5))) return 'Вчера';
+            return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long' });
+        }
+        function timeLabel(d) {
+            return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        }
+        function nameOf(it) {
+            return it.username ? '@' + String(it.username).replace(/^@/, '') : 'Без имени';
+        }
+
+        function avaHtml(it, big) {
+            const raw = String(it.username || it.user_id || '?').replace(/^@/, '');
+            const letter = raw.charAt(0).toUpperCase();
+            const hue = 15 + (parseInt(String(it.user_id).slice(-3), 10) || 0) % 40;
+            const img = it.photo_url && String(it.photo_url).startsWith('https://')
+                ? `<img src="${esc(it.photo_url)}" alt="" onerror="this.remove()">` : '';
+            return `<div class="ava${big ? ' big' : ''}" style="background:hsl(${hue},85%,55%)"><span>${esc(letter)}</span>${img}</div>`;
+        }
+
+        function currentTypes() {
+            return [...state.groups].flatMap(id => GROUPS.find(g => g.id === id).types);
+        }
+
+        function setStatus(text) {
+            const s = document.getElementById('status');
+            s.style.display = text ? 'block' : 'none';
+            s.innerText = text || '';
+        }
+        function setTotal(n) {
+            state.total = n;
+            document.getElementById('total').innerText = n;
+        }
+
+        function showDenied(text) {
+            document.getElementById('page').innerHTML = `
+                <div class="denied">
+                    <img src="img/cher.png" alt="">
+                    <h2>Нет доступа</h2>
+                    <p>${esc(text)}</p>
+                    <button class="btn-more" onclick="location.href='profile.html'">Назад</button>
+                </div>`;
+        }
+
+        // ---------- Фильтры и режимы ----------
+        function renderFilters() {
+            document.getElementById('periods').innerHTML = PERIODS.map(p =>
+                `<button class="chip ${state.days === p.days ? 'on' : ''}" onclick="setPeriod(${p.days})">${p.label}</button>`
+            ).join('');
+
+            document.getElementById('groups').innerHTML =
+                `<button class="chip ${state.groups.size === 0 ? 'on' : ''}" onclick="clearGroups()">Все</button>` +
+                GROUPS.map(g =>
+                    `<button class="chip ${state.groups.has(g.id) ? 'on' : ''}" onclick="toggleGroup('${g.id}')">${g.label}</button>`
+                ).join('');
+        }
+        function setPeriod(days) { state.days = days; renderFilters(); load(true); }
+        function clearGroups() { state.groups.clear(); renderFilters(); load(true); }
+        function toggleGroup(id) {
+            if (state.groups.has(id)) state.groups.delete(id); else state.groups.add(id);
+            renderFilters();
+            load(true);
+        }
+
+        function setMode(mode) {
+            state.mode = mode;
+            document.getElementById('seg-all').classList.toggle('on', mode === 'all');
+            document.getElementById('seg-user').classList.toggle('on', mode === 'user');
+            document.getElementById('userBox').style.display = mode === 'user' ? 'block' : 'none';
+            document.getElementById('live').style.display = mode === 'all' ? 'flex' : 'none';
+            if (mode === 'all') state.search = '';
+            load(true);
+        }
+
+        // Тап по имени в общей ленте открывает игрока
+        function openPlayer(id) {
+            document.getElementById('search').value = id;
+            state.search = String(id);
+            setMode('user');
+        }
+
+        // ---------- Отрисовка ----------
+        function renderSummary() {
+            const box = document.getElementById('summary');
+            if (state.mode !== 'user' || !state.summary || !state.items.length) { box.innerHTML = ''; return; }
+            const c = state.summary.counts || {};
+            const s = state.summary.sums || {};
+            const earned = ['task_done', 'promo_ok', 'ref', 'bonus'].reduce((a, t) => a + Number(s[t] || 0), 0);
+            const out = Number(s.gift || 0);
+            const first = state.items[0];
+            const cell = (label, val) => `<div class="cell"><b>${esc(val)}</b><span>${label}</span></div>`;
+            box.innerHTML = `
+                <div class="sum-card">
+                    <div class="sum-head">
+                        ${avaHtml(first, true)}
+                        <div>
+                            <div class="sum-name">${esc(nameOf(first))}</div>
+                            <div class="sum-id">ID ${esc(first.user_id)}</div>
+                        </div>
+                    </div>
+                    <div class="sum-grid">
+                        ${cell('Выполнено', c.task_done || 0)}
+                        ${cell('Пропущено', c.task_skip || 0)}
+                        ${cell('Промокодов', c.promo_ok || 0)}
+                        ${cell('Заработал', fmtNum(earned))}
+                        ${cell('Вывел', fmtNum(out))}
+                        ${cell('Награды за друзей', c.ref || 0)}
+                    </div>
+                </div>`;
+        }
+
+        function render() {
+            let html = '';
+            let last = '';
+            for (const it of state.items) {
+                const d = new Date(it.created_at);
+                const dl = dayLabel(d);
+                if (dl !== last) { html += `<div class="day">${esc(dl)}</div>`; last = dl; }
+
+                const t = TYPES[it.type] || { verb: it.type, color: '#d9b98c', sign: '' };
+                const hasAmt = it.amount !== null && it.amount !== undefined && it.amount !== '';
+                const amt = hasAmt
+                    ? `<span class="amt">${t.sign}${fmtNum(it.amount)} <img src="img/star.png" alt=""></span>` : '';
+                const nameHtml = state.mode === 'all'
+                    ? `<span class="name" onclick="openPlayer('${esc(it.user_id)}')" style="cursor:pointer">${esc(nameOf(it))}<small>ID ${esc(it.user_id)}</small></span>`
+                    : `<span class="name">${esc(nameOf(it))}<small>ID ${esc(it.user_id)}</small></span>`;
+
+                html += `
+                    <div class="row ${state.fresh.has(it.id) ? 'fresh' : ''}">
+                        ${avaHtml(it, false)}
+                        <div class="row-main">
+                            <div class="row-top">${nameHtml}<span class="time">${esc(timeLabel(d))}</span></div>
+                            <div class="act"><span class="dot" style="background:${t.color}"></span>${esc(t.verb)}${amt}</div>
+                            ${it.details ? `<div class="det">${esc(it.details)}</div>` : ''}
+                        </div>
+                    </div>`;
+            }
+            document.getElementById('list').innerHTML = html;
+            renderSummary();
+            document.getElementById('more').style.display = state.hasMore && state.items.length ? 'block' : 'none';
+        }
+
+        // ---------- Запросы ----------
+        async function request(extra) {
+            const user = state.mode === 'user';
+            const res = await fetch(BACKEND_URL + '/admin_logs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    init_data: tg.initData,
+                    types: currentTypes().length ? currentTypes() : null,
+                    search: user ? (state.search || null) : null,
+                    days: user && state.days ? state.days : null,
+                    limit: PAGE,
+                    ...extra
+                })
+            });
+            if (res.status === 401 || res.status === 403) {
+                const e = new Error('denied'); e.denied = true; throw e;
+            }
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        }
+
+        async function load(reset) {
+            if (!reset && state.busy) return;
+            const my = ++state.token;
+            state.busy = true;
+            try {
+                if (reset) {
+                    state.items = []; state.fresh = new Set(); state.summary = null; state.hasMore = false;
+                    render();
+                    if (state.mode === 'user' && !state.search) {
+                        setTotal(0);
+                        setStatus('Введите ID или @username игрока');
+                        return;
+                    }
+                    setStatus('Загрузка...');
+                }
+                const extra = {};
+                if (!reset && state.items.length) extra.before_id = state.items[state.items.length - 1].id;
+                if (reset && state.mode === 'user') extra.summary = true;
+
+                const data = await request(extra);
+                if (my !== state.token) return;   // пока грузилось, фильтр сменили
+
+                const items = data.items || [];
+                const have = new Set(state.items.map(i => i.id));
+                state.items = state.items.concat(items.filter(i => !have.has(i.id)));
+                state.hasMore = items.length === PAGE;
+                if (reset) {
+                    state.summary = data.summary || null;
+                    setTotal(data.total || 0);
+                }
+                setStatus(state.items.length ? '' : 'Ничего не найдено');
+                render();
+            } catch (e) {
+                if (e.denied) { showDenied('Эта страница только для администратора.'); return; }
+                console.error(e);
+                setStatus('Не удалось загрузить логи. Потяни вниз и открой заново.');
+            } finally {
+                if (my === state.token) state.busy = false;
+            }
+        }
+
+        // Живая лента: раз в несколько секунд спрашиваем только новые записи
+        async function poll() {
+            if (state.mode !== 'all' || document.hidden || state.busy) return;
+            const top = state.items.length ? state.items[0].id : 0;
+            try {
+                const data = await request({ after_id: top, limit: 50 });
+                const have = new Set(state.items.map(i => i.id));
+                const fresh = (data.items || []).filter(i => !have.has(i.id));
+                if (!fresh.length) return;
+                state.fresh = new Set(fresh.map(i => i.id));
+                state.items = fresh.concat(state.items).slice(0, KEEP);
+                setTotal(state.total + fresh.length);
+                setStatus('');
+                render();
+            } catch (e) {
+                if (e.denied) showDenied('Эта страница только для администратора.');
+            }
+        }
+
+        // Поиск игрока с задержкой, чтобы не слать запрос на каждую букву
+        let searchTimer = null;
+        document.getElementById('search').addEventListener('input', (e) => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                state.search = e.target.value.trim();
+                if (state.mode === 'user') load(true);
+            }, 400);
+        });
+
+        // Искры (только оформление)
+        (function makeSparks() {
+            const box = document.getElementById('sparks');
+            for (let i = 0; i < 18; i++) {
+                const s = document.createElement('div');
+                const size = 2 + Math.random() * 3;
+                s.className = 'spark';
+                s.style.width = s.style.height = size + 'px';
+                s.style.left = Math.random() * 100 + '%';
+                s.style.animationDuration = (6 + Math.random() * 8) + 's';
+                s.style.animationDelay = (-Math.random() * 12) + 's';
+                s.style.setProperty('--drift', (Math.random() * 60 - 30) + 'px');
+                box.appendChild(s);
+            }
+        })();
+
+        function initPage() {
+            try { tg.expand(); tg.ready(); } catch (_) {}
+            if (!tg.initData) {
+                showDenied('Открой приложение через Telegram.');
+                return;
+            }
+            renderFilters();
+            load(true);
+            setInterval(poll, POLL_MS);
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPage);
+        else initPage();
+    </script>
+    <script src="music.js"></script>
+</body>
+</html>
