@@ -618,5 +618,40 @@
     initStars(); animateStars();
     window.addEventListener('resize', initStars);
 </script>
+    <audio id="bgMusic" src="index.mp3" loop preload="auto"></audio>
+
+<script>
+    (function () {
+        const music = document.getElementById('bgMusic');
+        music.volume = 0.5;               // громкость от 0 до 1
+        let unlocked = false;
+
+        function tryPlay() {
+            if (unlocked) return;
+            music.play().then(() => {
+                unlocked = true;
+                removeUnlockers();
+            }).catch(() => { /* браузер заблокировал, ждём первое касание */ });
+        }
+
+        function onFirstTouch() { tryPlay(); }
+        function removeUnlockers() {
+            ['pointerdown', 'touchstart', 'click'].forEach(ev =>
+                document.removeEventListener(ev, onFirstTouch));
+        }
+
+        // 1. пробуем включить сразу при заходе
+        tryPlay();
+        // 2. если заблокировано, включится при первом касании экрана
+        ['pointerdown', 'touchstart', 'click'].forEach(ev =>
+            document.addEventListener(ev, onFirstTouch, { passive: true }));
+
+        // пауза, когда приложение свернули, и продолжение при возврате
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) music.pause();
+            else if (unlocked) music.play().catch(() => {});
+        });
+    })();
+</script>
 </body>
 </html>
