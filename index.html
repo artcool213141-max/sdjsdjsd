@@ -306,8 +306,11 @@
 
 <script src="music.js"></script>
 <script>
-    const tg = window.Telegram.WebApp;
-    const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
+const tg = window.Telegram.WebApp;
+const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
+
+// сохраняем initData, чтобы подстраницы ивента могли его взять, если Telegram не передаст
+try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e) {}
 
     const tgUser = tg.initDataUnsafe?.user;
     const user = (tgUser && tgUser.id) ? tgUser : { id: '12345', username: 'TestUser', first_name: 'Тестер' };
