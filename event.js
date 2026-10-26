@@ -88,7 +88,7 @@ function initEvent(active, cb) {
     try { tg.expand(); tg.ready(); tg.headerColor = '#3a1500'; tg.backgroundColor = '#1a0700'; } catch (_) {}
     renderNav(active);
     if (!tg.initData) {
-        $('view').innerHTML = '<div class="status">Открой приложение через Telegram</div>';
+        $('view').innerHTML = '<div class="status">Открой приложение через Telegram<br><small>platform: ' + esc(tg.platform) + '</small></div>';
         return;
     }
     cb();
