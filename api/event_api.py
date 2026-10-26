@@ -111,19 +111,30 @@ def profile(body: Base):
     uid, name = auth(body.init_data)
     p = rpc("event_ensure_profile", {"p_user": uid, "p_username": name})
 
-    stars_balance, converted_today = 0, 0.0
+    stars_balance, converted_today = 0.0, 0.0
+
+    # Баланс звёзд: в таблице users ключ — колонка id (как в /get_balance)
     try:
-        row = sb.table("users").select("*").eq("user_id", uid).execute().data
-        if not row:
-            row = sb.table("users").select("*").eq("user_id", str(uid)).execute().data
+        row = sb.table("users").select("balance").eq("id", str(uid)).execute().data
         if row:
-            r0 = row[0]
-            stars_balance = float((r0.get("stars") if "stars" in r0 else r0.get("balance")) or 0)
+            stars_balance = float(row[0].get("balance") or 0)
+    except Exception as e:  # noqa: BLE001
+        print(f"[event] profile stars_balance failed: {e}")
+
+    # Сколько звёзд уже сконвертировано за последние 24 часа
+    try:
         since = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
-        conv = sb.table("event_conversions").select("stars").eq("user_id", uid).gte("created_at", since).execute().data
+        conv = (
+            sb.table("event_conversions")
+            .select("stars")
+            .eq("user_id", uid)
+            .gte("created_at", since)
+            .execute()
+            .data
+        )
         converted_today = float(sum(float(c["stars"]) for c in conv))
     except Exception as e:  # noqa: BLE001
-        print(f"[event] profile extras failed: {e}")
+        print(f"[event] profile converted_today failed: {e}")
 
     return {
         "souls": p["souls_balance"],
