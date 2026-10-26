@@ -18,6 +18,7 @@ import json
 import os
 import time
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, HTTPException
@@ -44,6 +45,7 @@ CFG = {
     "min_souls_battle": 10,
     "round_seconds": 12,
     "steal_percent": 15,
+    "bot_name": "@St1fix_official",
 }
 
 
@@ -95,6 +97,10 @@ class BattleIn(Base):
 
 class MoveIn(BattleIn):
     spell: str
+
+
+class BotIn(Base):
+    spell: Optional[str] = None  # None = игрок не успел выбрать
 
 
 class ConvertIn(Base):
@@ -187,6 +193,14 @@ def battle_move(body: MoveIn):
 def battle_state(body: BattleIn):
     uid, _ = auth(body.init_data)
     return rpc("event_battle_state", {"p_user": uid, "p_battle": body.battle_id})
+
+
+@router.post("/battle/bot")
+def battle_bot(body: BotIn):
+    uid, _ = auth(body.init_data)
+    if body.spell not in (None, "candle", "ghost", "curse"):
+        raise HTTPException(400, "bad_spell")
+    return rpc("event_battle_bot", {"p_user": uid, "p_spell": body.spell})
 
 
 @router.post("/convert")
