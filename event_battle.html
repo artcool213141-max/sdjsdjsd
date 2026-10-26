@@ -19,29 +19,33 @@
     <script>
         const SPELLS = { candle: 'Свеча', ghost: 'Призрак', curse: 'Проклятие' };
         const ROUND = 12;
+        const BOT_WAIT = 3000;       // сколько ждём живого соперника, потом — бот
 
         let P = null;                // профиль (для баланса и настроек)
         let sbc = null, chan = null; // Supabase Realtime
         let battleId = null, S = null, picked = null, busy = false, stateBusy = false;
         let endAt = 0, searchStarted = 0, searching = false, searchBusy = false;
         let pollT = null, tickT = null, searchT = null;
+        let botT = null, botFightT = null, oppT = null, botMode = false;
 
         try { sbc = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch (_) {}
 
         function clearTimers() {
             clearInterval(pollT); clearInterval(tickT); clearInterval(searchT);
-            pollT = tickT = searchT = null;
+            clearTimeout(botT); clearTimeout(botFightT); clearTimeout(oppT);
+            pollT = tickT = searchT = botT = botFightT = oppT = null;
         }
         function unsub() { if (chan && sbc) { try { sbc.removeChannel(chan); } catch (_) {} } chan = null; }
         function leaveBattle() {
             clearTimers(); unsub();
-            battleId = null; S = null; picked = null; searching = false;
+            battleId = null; S = null; picked = null; searching = false; botMode = false;
             try { localStorage.removeItem('ev_battle'); } catch (_) {}
         }
 
         // ---------- 1. Старт ----------
         function showIdle() {
             clearTimers();
+            botMode = false;
             $('view').dataset.mode = 'idle';
             $('view').innerHTML = `
                 <div class="card center">
@@ -57,7 +61,7 @@
         // ---------- 2. Поиск соперника ----------
         function startSearch() {
             haptic('medium');
-            S = null; picked = null; searching = true;
+            S = null; picked = null; searching = true; botMode = false;
             searchStarted = Date.now();
             $('view').dataset.mode = 'search';
             $('view').innerHTML = `
@@ -69,6 +73,7 @@
                 </div>`;
             searchStep();
             searchT = setInterval(searchStep, 2000);
+            botT = setTimeout(startBotFight, BOT_WAIT);
         }
 
         async function searchStep() {
@@ -86,7 +91,7 @@
                     searching = false; clearInterval(searchT);
                     enterBattle(d.battle_id);
                 } else if (d.status === 'error') {
-                    searching = false; clearInterval(searchT);
+                    searching = false; clearInterval(searchT); clearTimeout(botT);
                     toast(d.reason === 'not_enough_souls' ? 'Нужно минимум ' + d.need + ' душ' : 'Ошибка поиска');
                     showIdle();
                 }
@@ -96,9 +101,66 @@
 
         async function cancelSearch() {
             searching = false;
-            clearInterval(searchT);
+            clearInterval(searchT); clearTimeout(botT);
             try { await api('/event/battle/cancel'); } catch (_) {}
             showIdle();
+        }
+
+        // ---------- 2б. Бой с ботом (если живой соперник не нашёлся за 3 сек) ----------
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+        function botName() { return (P && P.cfg && P.cfg.bot_name) || '@St1fix_official'; }
+
+        async function startBotFight() {
+            if (!searching) return;
+            clearInterval(searchT);
+            while (searchBusy) await sleep(100);                // дожидаемся уже идущего запроса поиска
+            if (!searching) return;                             // нашёлся живой соперник или была отмена
+            searching = false;
+            try { await api('/event/battle/cancel'); } catch (_) {}
+            if ($('view').dataset.mode !== 'search') return;    // пока отменяли, нажали «Отмена»
+            runBotFight();
+        }
+
+        function runBotFight() {
+            clearTimers();
+            botMode = true; battleId = null; picked = null; busy = false;
+            S = { you_picked: false, opp_picked: false, opponent_name: botName() };
+            endAt = Date.now() + ROUND * 1000;
+            $('view').dataset.mode = '';                        // перерисовать экран боя
+            renderFight();
+            tickT = setInterval(tickTimer, 250);
+            // «соперник выбирает» — для живости
+            oppT = setTimeout(() => { if (botMode && S) { S.opp_picked = true; renderFight(); } }, 2000 + Math.random() * 4000);
+            // не успел выбрать — поражение
+            botFightT = setTimeout(() => { if (botMode && S && !S.you_picked) pickBot(null); }, ROUND * 1000);
+        }
+
+        async function pickBot(k) {
+            busy = true; picked = k;
+            if (k) haptic('medium'); else toast('Время вышло');
+            S.you_picked = true;
+            renderFight();
+            try {
+                const [d] = await Promise.all([api('/event/battle/bot', { spell: k }), sleep(1200)]);
+                if (!botMode) return;
+                busy = false;
+                if (!d.ok) {
+                    toast(d.reason === 'not_enough_souls' ? 'Нужно минимум ' + d.need + ' душ' : 'Ошибка боя');
+                    clearTimers(); showIdle();
+                    return;
+                }
+                S = {
+                    result: d.result, you_won: d.result === 'win',
+                    stolen: Math.abs(d.delta), blocked: d.blocked,
+                    you_spell: d.you_spell, opp_spell: d.bot_spell,
+                    opponent_name: botName(), balance: d.balance
+                };
+                showResult();
+            } catch (e) {
+                toast('Ошибка сети, попробуй ещё раз');
+                S.you_picked = false; picked = null; busy = false;
+                renderFight();
+            }
         }
 
         // ---------- 3. Бой ----------
@@ -179,6 +241,7 @@
 
         async function pick(k) {
             if (!S || S.you_picked || busy) return;
+            if (botMode) return pickBot(k);
             busy = true; picked = k;
             haptic('medium');
             renderFight();
@@ -198,6 +261,7 @@
         function showResult() {
             clearTimers(); unsub();
             try { localStorage.removeItem('ev_battle'); } catch (_) {}
+            botMode = false;
             $('view').dataset.mode = 'result';
             setSouls(S.balance);
 
