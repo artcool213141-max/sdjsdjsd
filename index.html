@@ -618,35 +618,36 @@
     initStars(); animateStars();
     window.addEventListener('resize', initStars);
 </script>
-    <audio id="bgMusic" src="index.mp3" loop preload="auto"></audio>
+<audio id="bgMusic" src="index.mp3" loop preload="auto"></audio>
 
 <script>
     (function () {
         const music = document.getElementById('bgMusic');
-        music.volume = 0.5;               // громкость от 0 до 1
+        music.volume = 0.5;
         let unlocked = false;
+
+        music.addEventListener('error', () => {
+            console.error('index.mp3 не загрузился', music.error);
+            if (window.Telegram && Telegram.WebApp.showAlert) {
+                Telegram.WebApp.showAlert('index.mp3 не найден или не открывается');
+            }
+        });
 
         function tryPlay() {
             if (unlocked) return;
-            music.play().then(() => {
-                unlocked = true;
-                removeUnlockers();
-            }).catch(() => { /* браузер заблокировал, ждём первое касание */ });
+            const p = music.play();
+            if (p && p.then) {
+                p.then(() => { unlocked = true; removeUnlockers(); })
+                 .catch(e => console.warn('play заблокирован:', e.name, e.message));
+            }
         }
 
-        function onFirstTouch() { tryPlay(); }
-        function removeUnlockers() {
-            ['pointerdown', 'touchstart', 'click'].forEach(ev =>
-                document.removeEventListener(ev, onFirstTouch));
-        }
+        const evs = ['touchend', 'click', 'keydown'];
+        function removeUnlockers() { evs.forEach(ev => document.removeEventListener(ev, tryPlay)); }
 
-        // 1. пробуем включить сразу при заходе
         tryPlay();
-        // 2. если заблокировано, включится при первом касании экрана
-        ['pointerdown', 'touchstart', 'click'].forEach(ev =>
-            document.addEventListener(ev, onFirstTouch, { passive: true }));
+        evs.forEach(ev => document.addEventListener(ev, tryPlay, { passive: true }));
 
-        // пауза, когда приложение свернули, и продолжение при возврате
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) music.pause();
             else if (unlocked) music.play().catch(() => {});
