@@ -568,41 +568,5 @@
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPage);
     else initPage();
 </script>
-<audio id="bgMusic" src="profile.mp3" loop preload="auto"></audio>
-
-<script>
-    (function () {
-        const music = document.getElementById('bgMusic');
-        music.volume = 0.25;
-        let unlocked = false;
-
-        music.addEventListener('error', () => {
-            console.error('profile.mp3 не загрузился', music.error);
-            if (window.Telegram && Telegram.WebApp.showAlert) {
-                Telegram.WebApp.showAlert('profile.mp3 не найден или не открывается');
-            }
-        });
-
-        function tryPlay() {
-            if (unlocked) return;
-            const p = music.play();
-            if (p && p.then) {
-                p.then(() => { unlocked = true; removeUnlockers(); })
-                 .catch(e => console.warn('play заблокирован:', e.name, e.message));
-            }
-        }
-
-        const evs = ['touchend', 'click', 'keydown'];
-        function removeUnlockers() { evs.forEach(ev => document.removeEventListener(ev, tryPlay)); }
-
-        tryPlay();
-        evs.forEach(ev => document.addEventListener(ev, tryPlay, { passive: true }));
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) music.pause();
-            else if (unlocked) music.play().catch(() => {});
-        });
-    })();
-</script>
 </body>
 </html>
