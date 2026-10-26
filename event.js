@@ -25,7 +25,8 @@ const EMO = {
     curse:    '🔮'    // заклинание «Проклятие»
 };
 function ico(key, size) {
-    return `<span class="emo" style="font-size:${size || 20}px">${EMO[key] || ''}</span>`;
+    const s = size || 20;
+    return `<img src="img/ev_${key}.png" class="emo" style="width:${s}px;height:${s}px" alt="">`;
 }
 
 function esc(s) {
