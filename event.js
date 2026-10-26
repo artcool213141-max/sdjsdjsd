@@ -1,5 +1,6 @@
 // Общий код всех страниц ивента «Кровавая Жатва»
 const tg = window.Telegram.WebApp;
+const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
 
 // initData может теряться при переходе между страницами — держим копию
 let INIT = tg.initData || '';
