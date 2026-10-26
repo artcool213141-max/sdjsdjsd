@@ -1,5 +1,12 @@
 // Общий код всех страниц ивента «Кровавая Жатва»
 const tg = window.Telegram.WebApp;
+
+// initData может теряться при переходе между страницами — держим копию
+let INIT = tg.initData || '';
+try {
+    if (INIT) localStorage.setItem('tg_init', INIT);
+    else INIT = localStorage.getItem('tg_init') || '';
+} catch (_) {}
 const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
 
 // Публичные ключи Supabase (anon-ключ можно светить, service_role — НИКОГДА)
@@ -53,7 +60,7 @@ async function api(path, body) {
     const res = await fetch(BACKEND_URL + path, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ init_data: tg.initData, ...(body || {}) })
+        body: JSON.stringify({ init_data: INIT, ...(body || {}) })
     });
     let data = {};
     try { data = await res.json(); } catch (_) {}
@@ -87,7 +94,7 @@ function setSouls(v) { const el = $('souls'); if (el) el.textContent = v; }
 function initEvent(active, cb) {
     try { tg.expand(); tg.ready(); tg.headerColor = '#3a1500'; tg.backgroundColor = '#1a0700'; } catch (_) {}
     renderNav(active);
-    if (!tg.initData) {
+    if (!INIT) {
         $('view').innerHTML = '<div class="status">Открой приложение через Telegram<br><small>platform: ' + esc(tg.platform) + '</small></div>';
         return;
     }
