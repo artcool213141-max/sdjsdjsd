@@ -6,6 +6,14 @@
     <title>Кровавая Жатва</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <link rel="stylesheet" href="event.css">
+    <script>
+        // ВРЕМЕННО: показывает JS-ошибки на экране. После починки блок можно удалить.
+        window.onerror = function (m, s, l) {
+            document.body.insertAdjacentHTML('afterbegin',
+                '<div style="position:fixed;top:0;left:0;right:0;z-index:99999;background:#900;color:#fff;font:12px monospace;padding:8px">'
+                + m + ' @' + (s || '').split('/').pop() + ':' + l + '</div>');
+        };
+    </script>
 </head>
 <body>
     <div class="page">
@@ -14,7 +22,7 @@
     </div>
     <nav id="nav" class="nav"></nav>
 
-    <script src="event.js"></script>
+    <script src="event.js?v=3"></script>
     <script>
         let P = null, harvestEnd = 0, shieldEnd = 0;
 
