@@ -7,7 +7,6 @@ try {
     if (INIT) localStorage.setItem('tg_init', INIT);
     else INIT = localStorage.getItem('tg_init') || '';
 } catch (_) {}
-const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
 
 // Публичные ключи Supabase (anon-ключ можно светить, service_role — НИКОГДА)
 const SUPABASE_URL = 'https://xbklrdpguqsuvqndcujb.supabase.co';
