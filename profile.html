@@ -245,7 +245,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
             <div class="price-pill"><img src="img/ton.png" alt="TON"><span id="item-p-ton">0</span></div>
         </div>
         <div class="item-actions">
-            <button class="btn wide" id="item-withdraw" onclick="withdrawItem()">Вывести</button>
+            <button class="btn wide" id="item-withdraw" onclick="()">Вывести</button>
             <button class="btn wide ghost" id="item-sell" onclick="sellItem()">Продать</button>
             <button class="btn wide ghost" id="item-sell-ton" onclick="sellItemTon()">Продать за TON</button>
             <button class="btn wide" id="item-upgrade" onclick="upgradeItem()">Улучшить</button>
@@ -470,6 +470,12 @@ async function withdrawItem() {
             await api('/inventory/withdraw', { nft_id: it.nft_id });
             haptic('notificationOccurred', 'success');
             notify('Заявка успешно создана! Ожидайте вывода.');
+            
+            // --- ВОЗВРАЩАЕМ ОБНОВЛЕНИЕ ---
+            syncData();      // обновляем баланс (списание 30 звезд)
+            loadInventory(); // обновляем список (удаляем гифт)
+            // -----------------------------
+            
         } catch (e) {
             haptic('notificationOccurred', 'error');
             notify('Ошибка: ' + e.message);
