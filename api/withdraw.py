@@ -7,10 +7,8 @@ try:
 except ImportError:
     from api.ref import BOT_TOKEN, supabase
 
-# Создаем роутер, чтобы index.py мог его подключить
 router = APIRouter()
 
-# Группа, куда уходят заявки
 WITHDRAW_GROUP_ID = os.environ.get("WITHDRAW_GROUP_ID", "-5372143983")
 
 
@@ -28,7 +26,7 @@ def _req_text(r: dict) -> str:
         f"🎁 Предмет: <b>{r.get('name') or '—'}</b>\n"
         f"⭐ Цена в Stars: <b>{r.get('price_stars') or 0}</b>\n"
         f"💎 Цена в TON: <b>{r.get('price_ton') or 0}</b>\n"
-        f"📋 Статус: <b>{'Ожидание' if r['status']=='pending' else ('Выведено' if r['status']=='done' else 'Отклонено')}</b>"
+        f"📋 Статус: <b>{'Ожидание' if r.get('status') == 'pending' else ('Выведено' if r.get('status') == 'done' else 'Отклонено')}</b>"
     )
 
 
@@ -64,8 +62,7 @@ async def create_withdraw_request(user: dict, res: dict, nft_id: int, fee: float
     if not request_id:
         raise HTTPException(500, "withdraw_item did not return request_id")
 
-    # Мы НЕ делаем insert/upsert, потому что база уже создала заявку.
-    # Мы просто берем её из базы.
+    # Заявка уже создана функцией в базе, просто берем её
     row = _req_row(int(request_id))
     
     if not row:
@@ -97,7 +94,7 @@ async def set_status(req_id: int, status: str, cq: dict):
 
     msg = cq.get("message") or {}
     chat_id = (msg.get("chat") or {}).get("id")
-    message_id = msg.get("message_id")
+    message_id = (msg.get("message_id"))
     if chat_id and message_id:
         try:
             async with httpx.AsyncClient(timeout=10) as c:
