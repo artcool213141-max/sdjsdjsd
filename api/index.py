@@ -47,16 +47,21 @@ async def get_balance(user_id: str, username: str = "Unknown"):
     if supabase is None:
         return {"error": "supabase env missing", "balance": 0}
     try:
-        result = supabase.table("users").select("balance").eq("id", user_id).execute()
+        try:
+            result = supabase.table("users").select("balance, ton_balance").eq("id", user_id).execute()
+        except Exception:
+            # колонки ton_balance ещё нет (не выполнен topup_supabase.sql)
+            result = supabase.table("users").select("balance").eq("id", user_id).execute()
         if result.data:
-            return {"balance": result.data[0]["balance"] or 0}
+            row = result.data[0]
+            return {"balance": row.get("balance") or 0, "ton_balance": row.get("ton_balance") or 0}
 
         supabase.table("users").upsert(
             {"id": user_id, "balance": 0, "username": username},
             on_conflict="id",
             ignore_duplicates=True,
         ).execute()
-        return {"balance": 0}
+        return {"balance": 0, "ton_balance": 0}
     except Exception as e:
         print("get_balance error:", repr(e))
         return {"error": str(e), "balance": 0}
