@@ -7,10 +7,10 @@
   POST /topup/ton_create     {init_data, amount}  -> {id, address, nano, payload}
   POST /topup/ton_check      {init_data, id}      -> {status}
 
-Из api/bot.py (вебхук) нужно вызывать:  await handle_update(update)
+Из api/bot.py (вебхук) вызывается:  await handle_update(update)
 
-Переменные окружения: BOT_TOKEN, SUPABASE_URL, SUPABASE_SERVICE_KEY,
-TON_WALLET, TON_PER_STAR (по умолчанию 150), TONCENTER_KEY (необязательно)
+Переменные окружения: TON_WALLET, TON_PER_STAR (по умолчанию 150),
+TONCENTER_KEY (необязательно). BOT_TOKEN и supabase берутся из api/ref.py.
 """
 import os
 import hmac
@@ -19,13 +19,11 @@ import time
 import base64
 import hashlib
 import secrets
+from datetime import datetime, timezone
 from urllib.parse import parse_qsl
 
 import httpx
 from fastapi import APIRouter, HTTPException
-from supabase import create_client, Client
-
-router = APIRouter()
 
 # BOT_TOKEN и supabase берём оттуда же, откуда их берут bot.py и tasks.py
 try:
@@ -33,10 +31,12 @@ try:
 except ImportError:
     from api.ref import BOT_TOKEN, supabase
 
+router = APIRouter()
+
 TON_WALLET = os.environ.get("TON_WALLET", "")
-TON_PER_STAR = float(os.environ.get("TON_PER_STAR", "150"))   # 1 TON = 150 Stars
 TONCENTER_KEY = os.environ.get("TONCENTER_KEY", "")
 TG_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
+
 
 # ---------- проверка подписи Telegram WebApp ----------
 def verify_init_data(init_data: str):
@@ -96,7 +96,7 @@ async def stars_invoice(req: dict):
 
 
 async def handle_update(update: dict):
-    """Вызывайте из api/bot.py для каждого апдейта вебхука."""
+    """Вызывается из api/bot.py для pre_checkout_query и successful_payment."""
     if supabase is None:
         return
 
@@ -146,7 +146,7 @@ async def ton_create(req: dict):
         raise HTTPException(status_code=400, detail="amount 0.1..1000")
 
     topup_id = "fs" + secrets.token_hex(6)                  # он же комментарий к переводу
-    credited = round(amount * TON_PER_STAR, 2)
+    credited = amount                                       # TON зачисляется на отдельный TON-баланс
     supabase.table("topups").insert({
         "id": topup_id, "user_id": str(u["id"]), "method": "ton",
         "amount": amount, "credited": credited, "status": "pending",
@@ -167,7 +167,6 @@ async def ton_check(req: dict):
         return {"status": "paid"}
 
     # старше часа и не оплачен — просрочен
-    from datetime import datetime, timezone
     created = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
     if (datetime.now(timezone.utc) - created).total_seconds() > 3600:
         supabase.table("topups").update({"status": "expired"}).eq("id", topup_id).eq("status", "pending").execute()
