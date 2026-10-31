@@ -19,6 +19,12 @@ try:
 except ImportError:
     from api.tasks import MANDATORY_CHANNELS, is_member
 
+# Пополнение баланса (Stars): pre_checkout_query и successful_payment
+try:
+    from topup import handle_update as topup_update
+except ImportError:
+    from api.topup import handle_update as topup_update
+
 router = APIRouter()
 
 # Ссылка на твою мини-апку (страница index.html)
@@ -446,6 +452,12 @@ async def handle_rass_callback(cq: dict):
 
 
 async def handle_update(update: dict):
+    # Платежи Stars: проверка перед оплатой и зачисление после неё (api/topup.py).
+    # Должно стоять ПЕРВЫМ, иначе блок ниже с `return` съест successful_payment.
+    if update.get("pre_checkout_query") or (update.get("message") or {}).get("successful_payment"):
+        await topup_update(update)
+        return
+
     msg = update.get("message")
     if msg:
         chat = msg.get("chat") or {}
