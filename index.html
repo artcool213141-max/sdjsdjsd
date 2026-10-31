@@ -392,7 +392,6 @@
                     <div class="tp-chip" data-v="5">5</div>
                 </div>
                 <input id="ton-amount" class="tp-input" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Своя сумма (TON)" value="1">
-                <div id="ton-connect-btn"></div>
                 <div class="tp-note" id="ton-note">Подключите кошелёк через TonConnect и подтвердите перевод. Зачисление после подтверждения в сети (обычно до минуты).</div>
                 <button class="tp-pay" id="ton-pay-btn" onclick="payTon()">Оплатить TON</button>
             </div>
@@ -760,20 +759,39 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
 
     // --- TON (TonConnect) ---
     let tonUI = null;
+    let reopenAfterWallet = false;
+    const TON_NOTE_DEFAULT = 'Нажмите кнопку: сначала подключите кошелёк, затем подтвердите перевод. Зачисление после подтверждения в сети (обычно до минуты).';
+    // создаём TonConnect заранее, чтобы список кошельков загрузился и окно открывалось сразу
+    window.addEventListener('load', () => setTimeout(() => initTon(), 300));
     function initTon() {
         if (tonUI || !window.TON_CONNECT_UI) return;
         try {
             tonUI = new TON_CONNECT_UI.TonConnectUI({
                 // файл должен лежать по публичному HTTPS-адресу рядом с index.html
-                manifestUrl: location.origin + '/tonconnect-manifest.json',
-                buttonRootId: 'ton-connect-btn',
+                // манифест отдаёт сам бэкенд (api/index.py), отдельный файл не нужен
+                manifestUrl: BACKEND_URL + '/tonconnect-manifest.json',
                 // после подтверждения в кошельке вернуться обратно в бота
                 actionsConfiguration: { twaReturnUrl: 'https://t.me/FixStarsBot' }
             });
             // при подключении кошелька обновляем подпись на кнопке оплаты
             tonUI.onStatusChange((wallet) => {
-                const b = document.getElementById('ton-pay-btn');
-                if (b && !b.disabled) b.innerText = wallet ? 'Оплатить TON' : 'Подключить кошелёк';
+                const note = document.getElementById('ton-note');
+                if (!note) return;
+                if (wallet) {
+                    let addr = wallet.account.address;
+                    try { addr = TON_CONNECT_UI.toUserFriendlyAddress(addr); } catch (e) {}
+                    note.innerText = 'Кошелёк подключён: ' + addr.slice(0, 5) + '…' + addr.slice(-4);
+                } else {
+                    note.innerText = TON_NOTE_DEFAULT;
+                }
+            });
+            // окно кошелька закрылось (подключили или отменили) — возвращаем окно пополнения
+            tonUI.onModalStateChange((state) => {
+                if (state.status === 'closed' && reopenAfterWallet) {
+                    reopenAfterWallet = false;
+                    openTopup();
+                    switchTab('ton');
+                }
             });
         } catch (e) { console.warn('TonConnect не запустился', e); }
     }
@@ -784,7 +802,13 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
 
         initTon();
         if (!tonUI) { notify('TonConnect не загрузился. Проверьте интернет.'); return; }
-        if (!tonUI.connected) { tonUI.openModal(); return; }
+        if (!tonUI.connected) {
+            // прячем нашу модалку, иначе окно кошелька окажется под ней
+            reopenAfterWallet = true;
+            closeTopup();
+            setTimeout(() => tonUI.openModal(), 280);
+            return;
+        }
 
         const btn = document.getElementById('ton-pay-btn');
         btn.disabled = true;
