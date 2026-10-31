@@ -202,7 +202,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
             </div>
             <input id="stars-amount" class="tp-input" type="number" inputmode="numeric" min="1" step="1" placeholder="Своя сумма (Stars)" value="100">
             <div class="tp-note">Оплата через Telegram Stars. Баланс пополнится сразу после оплаты: 1 Telegram Star = 1 Star.</div>
-            <button class="btn wide" id="stars-pay-btn" onclick="payStars()">Пополнить Stars</button>
+            <button class="btn wide" id="stars-pay-btn" onclick="()">Пополнить Stars</button>
         </div>
 
         <div class="tp-pane" id="pane-ton">
@@ -510,14 +510,34 @@ async function waitStarsCredit(before) {
 async function payStars() {
     const amount = parseInt(document.getElementById('stars-amount').value, 10);
     if (!amount || amount < 1 || amount > 10000) { notify('Введите сумму от 1 до 10000 Stars'); return; }
+    
     const btn = document.getElementById('stars-pay-btn');
     btn.disabled = true;
     const oldText = btn.innerText;
     btn.innerText = 'Создаём счёт...';
+
+    // Защита от вечной загрузки (10 секунд)
+    let isTimeout = false;
+    const timer = setTimeout(() => {
+        isTimeout = true;
+        btn.disabled = false;
+        btn.innerText = oldText;
+        notify('Ошибка: Сервер не отвечает. Проверьте интернет.');
+    }, 10000);
+
     try {
         const before = (await syncData()) || 0;
+        
+        // Ждем ответ от сервера
         const data = await api('/topup/stars_invoice', { amount });
+        clearTimeout(timer); // Сервер ответил, отключаем таймер
+        
+        if (isTimeout) return;
         if (!data.link) throw new Error('Не получили ссылку на оплату');
+
+        btn.innerText = 'Ожидание оплаты...';
+
+        // Открываем окно оплаты Telegram
         tg.openInvoice(data.link, async (status) => {
             if (status === 'paid') {
                 haptic('notificationOccurred', 'success');
@@ -527,11 +547,16 @@ async function payStars() {
                 if (ok) closeTopup();
             } else if (status === 'failed') {
                 notify('Не удалось оплатить. Попробуйте ещё раз.');
+            } else {
+                notify('Оплата отменена.');
             }
             btn.disabled = false;
             btn.innerText = oldText;
         });
+        
     } catch (e) {
+        clearTimeout(timer);
+        if (isTimeout) return;
         notify('Ошибка: ' + e.message);
         btn.disabled = false;
         btn.innerText = oldText;
