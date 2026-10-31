@@ -14,37 +14,29 @@ except ImportError:
     from api.ref import BOT_TOKEN, supabase
 
 try:
-    from withdraw import set_status, WITHDRAW_GROUP_ID
-except ImportError:
-    from api.withdraw import set_status, WITHDRAW_GROUP_ID
-
-# MANDATORY_CHANNELS и is_member берём из tasks.py, чтобы список каналов был в одном месте
-try:
     from tasks import MANDATORY_CHANNELS, is_member
 except ImportError:
     from api.tasks import MANDATORY_CHANNELS, is_member
 
-# Пополнение баланса (Stars): pre_checkout_query и successful_payment
 try:
     from topup import handle_update as topup_update
 except ImportError:
     from api.topup import handle_update as topup_update
 
+try:
+    from withdraw import set_status, WITHDRAW_GROUP_ID
+except ImportError:
+    from api.withdraw import set_status, WITHDRAW_GROUP_ID
+
 router = APIRouter()
 
-# Ссылка на твою мини-апку (страница index.html)
 WEBAPP_URL = os.environ.get("WEBAPP_URL", "https://sdjsdjsd.vercel.app").rstrip("/")
-# Секрет вебхука (необязательно, но желательно): тот же, что указан в setWebhook как secret_token
 WEBHOOK_SECRET = os.environ.get("WEBHOOK_SECRET", "")
-# Если 1 — каналы, где бот не может проверить подписку (не админ), пропускаются.
-# Нужно для теста, пока бота не добавили в админы. Потом поставь 0.
 SKIP_CHECK_ERRORS = os.environ.get("SUB_CHECK_SKIP_ERRORS", "0") == "1"
 
-# Админы, которым доступна рассылка /rass (через запятую, можно задать в переменной ADMIN_IDS)
 ADMIN_IDS = {int(x) for x in os.environ.get("ADMIN_IDS", "7140366080").split(",")
              if x.strip().isdigit()}
 
-# Рассылка: сообщений в секунду (лимит Telegram ~30) и максимум секунд на всю рассылку
 BROADCAST_RATE = 25
 BROADCAST_DEADLINE = 270
 
@@ -63,7 +55,6 @@ async def tg_call(method: str, payload: dict):
 
 
 def clean_payload(s: str) -> str:
-    # payload из /start <payload> (реферальный id); оставляем только безопасные символы
     return re.sub(r"[^A-Za-z0-9_\-]", "", s or "")[:32]
 
 
@@ -111,7 +102,6 @@ CAPTION = (
     "и забрать свои первые NFT!"
 )
 
-# Текст, который видит пользователь после успешной проверки подписки
 OPEN_TEXT = CAPTION
 
 
@@ -165,15 +155,6 @@ async def handle_check(cq: dict):
         })
 
 
-# ===================== Рассылка (/rass) =====================
-# Состояние диалога хранится в таблице admin_state (см. broadcast.sql),
-# потому что на Vercel память между запросами не сохраняется.
-#
-# Шаги (step): await_content -> await_btn_choice -> [await_btn_text -> await_btn_url] -> confirm
-#
-# Сообщение админа не пересобирается, а копируется пользователям через copyMessage:
-# так сохраняются форматирование, ссылки, премиум-эмодзи и картинка с подписью.
-
 def kb(rows):
     return {"inline_keyboard": rows}
 
@@ -222,7 +203,6 @@ def st_reset(aid: int, step: str):
 
 
 def st_clear(aid: int):
-    # Возвращает удалённые строки: пустой список значит, что состояния уже нет
     return supabase.table("admin_state").delete().eq("admin_id", str(aid)).execute().data or []
 
 
@@ -282,7 +262,6 @@ async def show_confirm(aid: int, chat_id: int, state: dict):
 
 
 async def admin_message(msg: dict) -> bool:
-    """Обрабатывает сообщение админа. Возвращает True, если оно относится к рассылке."""
     aid = msg["from"]["id"]
     chat_id = msg["chat"]["id"]
     text = (msg.get("text") or "").strip()
@@ -304,7 +283,7 @@ async def admin_message(msg: dict) -> bool:
             return True
         return False
 
-    if cmd:  # любые другие команды (например /start) обрабатываются как обычно
+    if cmd:
         return False
 
     state = st_get(aid)
@@ -342,7 +321,6 @@ async def admin_message(msg: dict) -> bool:
         await show_confirm(aid, chat_id, state)
         return True
 
-    # await_btn_choice / confirm: ждём нажатия кнопки
     await say(chat_id, "Нажмите одну из кнопок выше или отправьте /cancel.")
     return True
 
@@ -375,7 +353,6 @@ async def send_copy(client: httpx.AsyncClient, uid, src_chat, src_msg, markup) -
 
 
 async def run_broadcast(aid: int, chat_id: int, cq: dict):
-    # Забираем состояние атомарно: повторное нажатие или повтор вебхука рассылку не запустит
     taken = st_clear(aid)
     if not taken:
         await answer_cb(cq, "Рассылка уже запущена или отменена.", alert=True)
@@ -458,9 +435,36 @@ async def handle_rass_callback(cq: dict):
         await answer_cb(cq, "Это действие уже неактуально.", alert=True)
 
 
+async def group_admin_ids() -> set[int]:
+    r = await tg_call("getChat", {"chat_id": WITHDRAW_GROUP_ID})
+    desc = (r.get("result") or {}).get("description") or ""
+    return {int(x) for x in re.findall(r"\d{6,}", desc)}
+
+
+async def handle_withdraw_callback(cq: dict):
+    data = cq.get("data") or ""
+    uid = cq["from"]["id"]
+    admins = await group_admin_ids()
+    if uid not in admins:
+        await tg_call("answerCallbackQuery", {
+            "callback_query_id": cq["id"],
+            "text": "Нет прав на изменение заявки",
+            "show_alert": True,
+        })
+        return
+    try:
+        req_id = int(data.split(":", 1)[1])
+    except (ValueError, IndexError):
+        return
+    status = "done" if data.startswith("wd_done:") else "rejected"
+    res = await set_status(req_id, status, cq)
+    await tg_call("answerCallbackQuery", {
+        "callback_query_id": cq["id"],
+        "text": ("Готово" if res.get("ok") else (res.get("description") or "Ошибка")),
+    })
+
+
 async def handle_update(update: dict):
-    # Платежи Stars: проверка перед оплатой и зачисление после неё (api/topup.py).
-    # Должно стоять ПЕРВЫМ, иначе блок ниже с `return` съест successful_payment.
     if update.get("pre_checkout_query") or (update.get("message") or {}).get("successful_payment"):
         await topup_update(update)
         return
@@ -488,6 +492,8 @@ async def handle_update(update: dict):
         await handle_check(cq)
     elif data.startswith("rass:"):
         await handle_rass_callback(cq)
+    elif data.startswith("wd_done:") or data.startswith("wd_reject:"):
+        await handle_withdraw_callback(cq)
 
 
 @router.post("/bot/webhook")
@@ -500,5 +506,4 @@ async def bot_webhook(request: Request,
         await handle_update(update)
     except Exception as e:
         print("bot_webhook exception:", repr(e))
-    # Всегда отвечаем 200, чтобы Telegram не слал одно и то же обновление повторно
     return {"ok": True}
