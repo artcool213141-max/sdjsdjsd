@@ -13,6 +13,11 @@ try:
 except ImportError:
     from api.ref import BOT_TOKEN, supabase
 
+try:
+    from withdraw import set_status, WITHDRAW_GROUP_ID
+except ImportError:
+    from api.withdraw import set_status, WITHDRAW_GROUP_ID
+
 # MANDATORY_CHANNELS и is_member берём из tasks.py, чтобы список каналов был в одном месте
 try:
     from tasks import MANDATORY_CHANNELS, is_member
