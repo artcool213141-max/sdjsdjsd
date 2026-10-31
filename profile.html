@@ -45,18 +45,28 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
 .btn.link{background:none;box-shadow:none;color:#8fb0f0;padding:8px}
 .inv-head{display:flex;align-items:center;justify-content:space-between}
 .inv-badge{min-width:26px;height:26px;padding:0 8px;border-radius:999px;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900}
+.inv-total{display:flex;gap:8px;margin-top:12px}
+.inv-chip{display:flex;align-items:center;gap:6px;padding:6px 14px 6px 8px;border-radius:999px;background:rgba(3,14,60,.4);border:1px solid var(--glass-line);font-weight:900;font-size:13px}
+.inv-chip img{width:18px;height:18px;object-fit:contain}
 .inv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
-.inv-slot{aspect-ratio:1/1;border-radius:20px;background:rgba(3,14,60,.35);border:1px solid var(--glass-line);display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;transition:transform .15s,border-color .15s}
-.inv-slot:active{transform:scale(.94);border-color:#fff}
-.inv-slot img{width:72%;height:72%;object-fit:contain;filter:drop-shadow(0 5px 10px rgba(0,20,90,.5))}
+.inv-slot{padding:6px;border-radius:22px;background:rgba(3,14,60,.38);border:1px solid var(--glass-line);cursor:pointer;transition:transform .15s,border-color .15s}
+.inv-slot:active{transform:scale(.95);border-color:#fff}
+.nft-img{position:relative;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:rgba(255,255,255,.08)}
+.nft-img img{width:100%;height:100%;object-fit:cover;display:block}
+.nft-img::after{content:'';position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);pointer-events:none}
+.nft-img.big{width:150px;margin:0 auto;border-radius:26px;box-shadow:0 12px 26px rgba(0,20,90,.5)}
+.price-stack{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.price-pill{display:flex;align-items:center;justify-content:center;gap:4px;height:22px;padding:0 6px;border-radius:999px;background:rgba(255,255,255,.12);font-weight:900;font-size:10px;white-space:nowrap}
+.price-pill img{width:12px;height:12px;object-fit:contain;flex-shrink:0}
+.price-row{display:flex;justify-content:center;gap:8px;margin-bottom:18px}
+.price-row .price-pill{height:30px;padding:0 14px;gap:6px;font-size:14px}
+.price-row .price-pill img{width:18px;height:18px}
 .inv-empty{margin-top:14px;padding:22px 12px;text-align:center;border:1px dashed var(--glass-line);border-radius:20px;font-size:12px;font-weight:700;color:#cfe0ff;line-height:1.5}
 .inv-empty a{color:#fff;font-weight:900;text-decoration:underline}
 #item-modal{position:fixed;inset:0;z-index:100002;display:none;align-items:center;justify-content:center;background:rgba(2,10,40,.8);backdrop-filter:blur(6px)}
 #item-modal.show{display:flex}
 .item-box{width:84%;max-width:340px;padding:26px 22px 18px;text-align:center;border-radius:28px;background:linear-gradient(180deg,#1c4bc4 0%,#0a2468 100%);border:1px solid var(--glass-line)}
-.item-box img{width:130px;height:130px;object-fit:contain;filter:drop-shadow(0 10px 18px rgba(0,20,90,.55))}
-.item-name{font-size:20px;margin:12px 0 4px}
-.item-sub{font-size:11px;font-weight:700;color:#cfe0ff;margin-bottom:18px}
+.item-name{font-size:20px;margin:16px 0 12px}
 .item-actions{display:flex;flex-direction:column;gap:10px}
 .btn.wide{width:100%;display:block;text-align:center;text-decoration:none;padding:16px;font-size:14px}
 
@@ -157,6 +167,10 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
             <div class="inv-badge" id="inv-badge">0</div>
         </div>
         <div class="card-desc">NFT из кейсов можно продать или вывести</div>
+        <div class="inv-total">
+            <div class="inv-chip"><img src="img/star.png" alt="Stars"><span id="inv-sum-stars">0</span></div>
+            <div class="inv-chip"><img src="img/ton.png" alt="TON"><span id="inv-sum-ton">0</span></div>
+        </div>
         <div id="inv-grid" class="inv-grid"></div>
         <div id="inv-empty" class="inv-empty">Пока пусто. Открывайте <a href="case.html">кейсы</a>, и NFT появятся здесь.</div>
     </section>
@@ -234,9 +248,12 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
 <!-- предмет из инвентаря -->
 <div id="item-modal" onclick="closeItem()">
     <div class="item-box" onclick="event.stopPropagation()">
-        <img id="item-img" src="" alt="">
+        <div class="nft-img big"><img id="item-img" src="" alt=""></div>
         <div id="item-name" class="item-name italic-title"></div>
-        <div id="item-sub" class="item-sub"></div>
+        <div class="price-row">
+            <div class="price-pill"><img src="img/star.png" alt="Stars"><span id="item-p-stars">0</span></div>
+            <div class="price-pill"><img src="img/ton.png" alt="TON"><span id="item-p-ton">0</span></div>
+        </div>
         <div class="item-actions">
             <button class="btn wide" id="item-withdraw" onclick="withdrawItem()">Вывести</button>
             <button class="btn wide ghost" id="item-sell" onclick="sellItem()">Продать</button>
@@ -330,32 +347,64 @@ async function loadInventory() {
     } catch (e) { console.warn('Инвентарь не загружен:', e); }
 }
 
+function fmt(n) { return Number(n || 0).toLocaleString('ru-RU', { maximumFractionDigits: 2 }); }
+
+function imgFallback(img) {
+    img.onerror = () => {
+        img.onerror = null;
+        img.src = 'img/star.png';
+        img.style.objectFit = 'contain';
+        img.style.padding = '22%';
+        img.style.boxSizing = 'border-box';
+    };
+}
+
 function renderInventory() {
     const grid = document.getElementById('inv-grid');
     grid.innerHTML = '';
     document.getElementById('inv-badge').innerText = inventory.length;
     document.getElementById('inv-empty').style.display = inventory.length ? 'none' : 'block';
+
+    let sumStars = 0, sumTon = 0;
     inventory.forEach(it => {
+        sumStars += Number(it.price_stars) || 0;
+        sumTon += Number(it.price_ton) || 0;
+
         const slot = document.createElement('div');
         slot.className = 'inv-slot';
-        const img = document.createElement('img');
-        img.src = previewUrl(it);
+        slot.innerHTML =
+            '<div class="nft-img"><img alt=""></div>' +
+            '<div class="price-stack">' +
+            '<div class="price-pill"><img src="img/star.png" alt=""><span></span></div>' +
+            '<div class="price-pill"><img src="img/ton.png" alt=""><span></span></div>' +
+            '</div>';
+        const img = slot.querySelector('.nft-img img');
         img.alt = it.name;
-        img.onerror = () => { img.onerror = null; img.src = 'img/star.png'; };
-        slot.appendChild(img);
+        img.loading = 'lazy';
+        imgFallback(img);
+        img.src = previewUrl(it);
+        const spans = slot.querySelectorAll('.price-pill span');
+        spans[0].textContent = fmt(it.price_stars);
+        spans[1].textContent = fmt(it.price_ton);
         slot.onclick = () => openItem(it);
         grid.appendChild(slot);
     });
+
+    document.getElementById('inv-sum-stars').textContent = fmt(Math.round(sumStars * 1000) / 1000);
+    document.getElementById('inv-sum-ton').textContent = fmt(Math.round(sumTon * 1000) / 1000);
 }
 
 function openItem(it) {
     selectedItem = it;
     const img = document.getElementById('item-img');
-    img.onerror = () => { img.onerror = null; img.src = 'img/star.png'; };
+    img.style.objectFit = '';
+    img.style.padding = '';
+    imgFallback(img);
     img.src = previewUrl(it);
     document.getElementById('item-name').innerText = it.name;
-    document.getElementById('item-sub').innerText = 'Стоимость: ' + Number(it.price) + ' Stars';
-    document.getElementById('item-sell').innerText = 'Продать за ' + Number(it.price) + ' Stars';
+    document.getElementById('item-p-stars').innerText = fmt(it.price_stars);
+    document.getElementById('item-p-ton').innerText = fmt(it.price_ton);
+    document.getElementById('item-sell').innerText = 'Продать за ' + fmt(it.price_stars) + ' Stars';
     document.getElementById('item-withdraw').innerText = withdrawFee > 0 ? `Вывести (${withdrawFee} Stars)` : 'Вывести';
     document.getElementById('item-modal').classList.add('show');
 }
@@ -371,13 +420,13 @@ function confirmAction(text, onOk) {
 async function sellItem() {
     if (!selectedItem || invBusy) return;
     const it = selectedItem;
-    confirmAction(`Продать «${it.name}» за ${Number(it.price)} Stars?`, async () => {
+    confirmAction(`Продать «${it.name}» за ${Number(it.price_stars)} Stars?`, async () => {
         invBusy = true;
         closeItem();
         try {
             await api('/inventory/sell', { nft_id: it.nft_id });
             haptic('notificationOccurred', 'success');
-            notify(`Предмет продан: +${Number(it.price)} Stars`);
+            notify(`Предмет продан: +${Number(it.price_stars)} Stars`);
         } catch (e) {
             haptic('notificationOccurred', 'error');
             notify(e.message);
