@@ -84,7 +84,7 @@ async def missing_channels(user_id: int):
 def sub_keyboard(missing, payload: str):
     rows = [[{"text": f"📢 {ch['name']}", "url": f"https://t.me/{ch['id'].lstrip('@')}"}]
             for ch in missing]
-    rows.append([{"text": "Я подписался 🎃", "callback_data": f"chk:{payload}"}])
+    rows.append([{"text": "Я подписался 🐼", "callback_data": f"chk:{payload}"}])
     return {"inline_keyboard": rows}
 
 
@@ -105,6 +105,9 @@ CAPTION = (
     "Подписка засчитана. Жми кнопку ниже, чтобы ворваться в игру "
     "и забрать свои первые NFT!"
 )
+
+# Текст, который видит пользователь после успешной проверки подписки
+OPEN_TEXT = CAPTION
 
 
 async def handle_start(chat_id: int, user_id: int, payload: str):
