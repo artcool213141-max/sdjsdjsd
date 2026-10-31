@@ -18,15 +18,12 @@ try:
 except ImportError:
     from api.tasks import MANDATORY_CHANNELS, is_member
 
+# --- ВОТ ЭТОТ БЛОК ОТВЕЧАЕТ ЗА ОПЛАТУ ЗВЕЗДАМИ ---
 try:
     from topup import handle_update as topup_update
 except ImportError:
     from api.topup import handle_update as topup_update
-
-try:
-    from withdraw import set_status, WITHDRAW_GROUP_ID
-except ImportError:
-    from api.withdraw import set_status, WITHDRAW_GROUP_ID
+# --------------------------------------------------
 
 router = APIRouter()
 
@@ -435,41 +432,14 @@ async def handle_rass_callback(cq: dict):
         await answer_cb(cq, "Это действие уже неактуально.", alert=True)
 
 
-async def group_admin_ids() -> set[int]:
-    r = await tg_call("getChat", {"chat_id": WITHDRAW_GROUP_ID})
-    desc = (r.get("result") or {}).get("description") or ""
-    return {int(x) for x in re.findall(r"\d{6,}", desc)}
-
-
-async def handle_withdraw_callback(cq: dict):
-    data = cq.get("data") or ""
-    uid = cq["from"]["id"]
-    admins = await group_admin_ids()
-    if uid not in admins:
-        await tg_call("answerCallbackQuery", {
-            "callback_query_id": cq["id"],
-            "text": "Нет прав на изменение заявки",
-            "show_alert": True,
-        })
-        return
-    try:
-        req_id = int(data.split(":", 1)[1])
-    except (ValueError, IndexError):
-        return
-    status = "done" if data.startswith("wd_done:") else "rejected"
-    res = await set_status(req_id, status, cq)
-    await tg_call("answerCallbackQuery", {
-        "callback_query_id": cq["id"],
-        "text": ("Готово" if res.get("ok") else (res.get("description") or "Ошибка")),
-    })
-
-
 async def handle_update(update: dict):
-    # Ловим оплату Stars
+    # --- 1. ПЛАТЕЖИ (Stars) ---
+    # Этот блок ОБЯЗАТЕЛЬНО должен быть первым, чтобы ловить pre_checkout_query и successful_payment
     if update.get("pre_checkout_query") or (update.get("message") or {}).get("successful_payment"):
         await topup_update(update)
         return
 
+    # --- 2. ОБЫЧНЫЕ СООБЩЕНИЯ ---
     msg = update.get("message")
     if msg:
         chat = msg.get("chat") or {}
@@ -485,6 +455,7 @@ async def handle_update(update: dict):
             await handle_start(chat["id"], msg["from"]["id"], payload)
         return
 
+    # --- 3. CALLBACK КНОПКИ ---
     cq = update.get("callback_query")
     if not cq:
         return
@@ -493,8 +464,6 @@ async def handle_update(update: dict):
         await handle_check(cq)
     elif data.startswith("rass:"):
         await handle_rass_callback(cq)
-    elif data.startswith("wd_done:") or data.startswith("wd_reject:"):
-        await handle_withdraw_callback(cq)
 
 
 @router.post("/bot/webhook")
