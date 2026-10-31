@@ -181,11 +181,11 @@
 
         /* балансы: пилюли как в референсе */
         .balance-container-v2 { display: flex; flex-direction: column; gap: 6px; cursor: pointer; }
-        .balance-item-v2 {
-            display: flex; align-items: center; gap: 8px; min-width: 120px;
-            padding: 5px 6px 5px 10px; border-radius: 999px; color: #fff;
-            background: var(--glass); border: 1px solid var(--glass-line); backdrop-filter: blur(10px);
-        }
+.balance-item-v2 {
+    display: flex; align-items: center; gap: 8px; min-width: 120px;
+    padding: 5px 6px 5px 10px; border-radius: 999px; color: #fff;
+    background: var(--glass); border: 1px solid #000; backdrop-filter: blur(10px);
+}
         .balance-item-v2 img { width: 20px; height: 20px; object-fit: contain; }
         .balance-item-v2 span { flex: 1; text-align: left; font-weight: 900; font-size: 15px; }
         .bal-plus { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; line-height: 1; color: #fff; background: var(--blue); }
@@ -297,8 +297,30 @@
                 <div onclick="openEvent()" class="game-card event-card">
                     <img src="img/ivent.png" alt="Event">
                     <div>
-                        <div class="card-title">Ивент</div>
-                        <div class="card-desc">Началось....Кровавая Жатва🩸</div>
+                        <div class="card-title">Рулетка</div>
+                        <div class="card-desc">Ежедневный прокрут раз в 24часа🩸</div>
+                    </div>
+                    <div class="ml-auto opacity-50">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <div onclick="window.location.href='case.html'" class="game-card">
+    <img src="img/bonus.png" alt="case">
+    <div>
+        <div class="card-title">Кейсы</div>
+        <div class="card-desc">Испытай свою удачу</div>
+    </div>
+    <div class="ml-auto"><div class="w-3 h-3 rounded-full animate-ping" style="background:#8fc2ff"></div></div>
+</div>
+
+                <div onclick="window.location.href='games.html?v=' + Date.now()" class="game-card">
+                    <img src="img/game.png" alt="Games">
+                    <div>
+                        <div class="card-title">Мини игры</div>
+                        <div class="card-desc">Играй в мини игры и удваивай свой выигрыш</div>
                     </div>
                     <div class="ml-auto opacity-50">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -319,43 +341,6 @@
                         </svg>
                     </div>
                 </div>
-
-                <div onclick="window.location.href='wheel.html'" class="game-card">
-                    <img src="img/bonus.png" alt="Wheel">
-                    <div>
-                        <div class="card-title">Ежедневный бонус</div>
-                        <div class="card-desc">Испытай свою удачу</div>
-                    </div>
-                    <div class="ml-auto"><div class="w-3 h-3 rounded-full animate-ping" style="background:#8fc2ff"></div></div>
-                </div>
-
-                <div onclick="window.location.href='games.html?v=' + Date.now()" class="game-card">
-                    <img src="img/game.png" alt="Games">
-                    <div>
-                        <div class="card-title">Мини игры</div>
-                        <div class="card-desc">Играй в мини игры и удваивай свой выигрыш</div>
-                    </div>
-                    <div class="ml-auto opacity-50">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                </div>
-
-                <div onclick="window.location.href='Tiktok.html?v=' + Date.now()" class="game-card">
-                    <img src="img/tiktok.png" alt="TikTok" class="tiktok-ico">
-                    <div>
-                        <div class="card-title">Заработай на PandaGift</div>
-                        <div class="card-desc">Снимай → Набирай просмотры → Получай выплату</div>
-                    </div>
-                    <div class="ml-auto opacity-50">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- ТУЛБАР -->
         <div class="dock-bar">
