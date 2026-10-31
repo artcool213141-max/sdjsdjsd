@@ -319,6 +319,8 @@ let withdrawFee = 0;
 let selectedItem = null;
 let invBusy = false;
 
+function previewUrl(it) { return `${BACKEND_URL}/inventory/preview/${it.nft_id}`; }
+
 async function loadInventory() {
     try {
         const r = await api('/inventory/list', {});
@@ -337,7 +339,7 @@ function renderInventory() {
         const slot = document.createElement('div');
         slot.className = 'inv-slot';
         const img = document.createElement('img');
-        img.src = 'img/' + it.image;
+        img.src = previewUrl(it);
         img.alt = it.name;
         img.onerror = () => { img.onerror = null; img.src = 'img/star.png'; };
         slot.appendChild(img);
@@ -350,7 +352,7 @@ function openItem(it) {
     selectedItem = it;
     const img = document.getElementById('item-img');
     img.onerror = () => { img.onerror = null; img.src = 'img/star.png'; };
-    img.src = 'img/' + it.image;
+    img.src = previewUrl(it);
     document.getElementById('item-name').innerText = it.name;
     document.getElementById('item-sub').innerText = 'Стоимость: ' + Number(it.price) + ' Stars';
     document.getElementById('item-sell').innerText = 'Продать за ' + Number(it.price) + ' Stars';
