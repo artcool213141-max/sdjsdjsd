@@ -3,36 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>FixStars - Дартс</title>
+    <title>PandaGift - Дартс</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        :root { --accent: #22c55e; }
+        :root {
+            --bg-dark: #07173f;
+            --blue: #2f6bff;
+            --blue-light: #8fc2ff;
+            --blue-deep: #1d4ed8;
+            --glass: rgba(255, 255, 255, 0.12);
+            --glass-line: rgba(255, 255, 255, 0.18);
+        }
 
         * { -webkit-tap-highlight-color: transparent; user-select: none; }
 
         body {
-            background: #050505; color: white; font-family: 'Inter', sans-serif;
+            background:
+                radial-gradient(circle at 50% 24%, #4a86ff 0%, rgba(47,107,255,0.35) 28%, transparent 62%),
+                linear-gradient(180deg, #1f55d6 0%, #133ea6 42%, #08205f 100%);
+            background-attachment: fixed;
+            color: white; font-family: 'Inter', sans-serif;
             margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column;
         }
 
         .header-panel {
-            padding: 12px 20px; background: #0a0a0a; border-bottom: 1px solid #1a1a1a;
+            padding: 12px 20px; background: rgba(8, 28, 92, 0.55); border-bottom: 1px solid var(--glass-line);
+            backdrop-filter: blur(20px);
             padding-top: calc(12px + var(--tg-safe-area-inset-top, 0px));
         }
+        .back-btn { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 12px; background: var(--glass); border: 1px solid var(--glass-line); transition: transform 0.15s; }
+        .back-btn:active { transform: scale(0.9); }
+        .bal-pill { display: flex; align-items: center; gap: 8px; background: var(--glass); padding: 6px 16px; border-radius: 999px; border: 1px solid #000; backdrop-filter: blur(10px); }
 
         /* ПОЛЕ */
         .field {
             flex-grow: 1; position: relative; overflow: hidden;
-            background: radial-gradient(ellipse at 50% 20%, rgba(239,68,68,0.10), transparent 65%);
+            background: radial-gradient(ellipse at 50% 20%, rgba(143,194,255,0.18), transparent 65%);
         }
 
         .board {
             position: absolute; top: 24px; left: 50%; margin-left: -105px;
             width: 210px; height: 210px; z-index: 2;
-            filter: drop-shadow(0 0 22px rgba(239,68,68,0.18));
+            filter: drop-shadow(0 0 22px rgba(0, 20, 90, 0.45));
         }
         .board.wobble { animation: wobble 0.5s ease-out; }
         .board.bull { animation: bullpulse 0.7s ease-out; }
@@ -45,7 +60,7 @@
         }
         @keyframes bullpulse {
             0% { transform: scale(1); }
-            30% { transform: scale(1.07); filter: drop-shadow(0 0 30px rgba(34,197,94,0.7)); }
+            30% { transform: scale(1.07); filter: drop-shadow(0 0 30px rgba(110,231,160,0.8)); }
             100% { transform: scale(1); }
         }
 
@@ -53,7 +68,7 @@
             position: absolute; bottom: 24px; left: 50%; margin-left: -15px;
             width: 30px; height: 96px; z-index: 5;
             transform-origin: 50% 0%;
-            filter: drop-shadow(0 0 2px rgba(255,255,255,0.9)) drop-shadow(0 8px 8px rgba(0,0,0,0.6));
+            filter: drop-shadow(0 0 2px rgba(255,255,255,0.9)) drop-shadow(0 8px 8px rgba(0,0,0,0.5));
         }
         .dart.fly { transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.3, 1); }
 
@@ -61,43 +76,45 @@
             position: absolute; top: 246px; left: 0; right: 0; text-align: center;
             font-size: 26px; font-weight: 900; font-style: italic; text-transform: uppercase;
             opacity: 0; transition: opacity 0.25s; letter-spacing: -0.02em; z-index: 6;
+            text-shadow: 0 2px 10px rgba(0, 20, 90, 0.6);
         }
         .result-flash.show { opacity: 1; }
 
         /* ПАНЕЛЬ СТАВКИ */
         .bet-panel {
-            padding: 16px 20px; background: #0a0a0a; border-top: 1px solid #181818;
+            padding: 16px 20px; background: rgba(8, 28, 92, 0.7); border-top: 1px solid var(--glass-line);
+            backdrop-filter: blur(20px);
             padding-bottom: calc(20px + var(--tg-safe-area-inset-bottom, 0px));
         }
 
         .bet-input {
-            width: 100%; background: #111; border: 1px solid #222; border-radius: 16px;
+            width: 100%; background: rgba(3, 14, 60, 0.45); border: 1px solid var(--glass-line); border-radius: 18px;
             padding: 14px 16px; font-size: 20px; font-weight: 900; color: white;
             outline: none; text-align: center; transition: 0.2s;
         }
-        .bet-input:focus { border-color: var(--accent); }
+        .bet-input:focus { border-color: var(--blue-light); }
 
         .chip {
-            flex: 1; background: #111; border: 1px solid #222; border-radius: 12px;
-            padding: 9px 0; font-size: 11px; font-weight: 900; color: #9ca3af;
+            flex: 1; background: var(--glass); border: 1px solid var(--glass-line); border-radius: 999px;
+            padding: 9px 0; font-size: 11px; font-weight: 900; color: #cfe0ff;
             transition: 0.15s;
         }
-        .chip:active { transform: scale(0.94); border-color: var(--accent); color: white; }
+        .chip:active { transform: scale(0.94); border-color: #fff; color: white; }
 
         .btn-main {
-            background: var(--accent); color: white; font-weight: 900; border-radius: 18px;
-            transition: 0.2s; box-shadow: 0 0 25px rgba(34, 197, 94, 0.3);
+            background: linear-gradient(180deg, #4f8cff, #1d4ed8); color: white; font-weight: 900; border-radius: 999px;
+            transition: 0.2s; box-shadow: 0 0 25px rgba(47, 107, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35);
         }
         .btn-main:active { transform: scale(0.97); }
-        .btn-main:disabled { opacity: 0.25; filter: grayscale(1); box-shadow: none; }
+        .btn-main:disabled { background: rgba(3, 14, 60, 0.55); color: #8fb0f0; border: 1px solid var(--glass-line); box-shadow: none; }
 
         /* МОДАЛКА */
         #result-modal {
             display: none; position: fixed; inset: 0; z-index: 999;
-            background: rgba(0,0,0,0.92); backdrop-filter: blur(10px);
+            background: rgba(2, 10, 40, 0.85); backdrop-filter: blur(10px);
             align-items: center; justify-content: center;
         }
-        .modal-box { background: #0f0f0f; border-radius: 24px; width: 85%; padding: 25px; text-align: center; }
+        .modal-box { background: linear-gradient(180deg, #1c4bc4 0%, #0a2468 100%); border-radius: 28px; width: 85%; max-width: 340px; padding: 25px; text-align: center; box-shadow: 0 0 40px rgba(47, 107, 255, 0.5); }
 
         ::-webkit-scrollbar { display: none; }
         input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
@@ -107,14 +124,14 @@
 
     <header class="header-panel flex justify-between items-center">
         <div class="flex items-center gap-3">
-            <button onclick="goBack()" class="flex items-center justify-center w-8 h-8 rounded-xl bg-[#111] border border-[#222] active:scale-90 transition-transform">
-                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <button onclick="goBack()" class="back-btn">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
                 </svg>
             </button>
-            <div class="font-black italic text-lg tracking-tighter">FIX<span class="text-[#22c55e]">STARS</span></div>
+            <div class="font-black italic text-lg tracking-tighter">Panda<span style="color:#8fc2ff">Gift</span></div>
         </div>
-        <div class="flex items-center gap-2 bg-[#111] px-4 py-1.5 rounded-full border border-[#222]">
+        <div class="bal-pill">
             <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
             <span id="val-stars" class="font-black text-sm">0.00</span>
         </div>
@@ -156,7 +173,7 @@
 
     <div class="bet-panel">
         <div class="flex justify-center items-center mb-3 px-1">
-            <span class="text-[10px] uppercase font-black tracking-widest text-gray-500">Выигрыш <span class="text-green-400">x2</span></span>
+            <span class="text-[10px] uppercase font-black tracking-widest" style="color:#cfe0ff">Выигрыш <span style="color:#8fc2ff">x2</span></span>
         </div>
 
         <input id="bet-input" type="number" inputmode="decimal" step="0.01" min="1" placeholder="Ставка ★" class="bet-input" oninput="updatePotential()">
@@ -175,20 +192,25 @@
     <div id="result-modal">
         <div class="modal-box" id="modal-box">
             <h2 id="modal-title" class="text-lg font-black italic uppercase tracking-tight"></h2>
-            <div class="bg-white/5 py-4 rounded-xl border border-white/5 my-5 flex flex-col items-center justify-center">
+            <div class="py-4 rounded-2xl my-5 flex flex-col items-center justify-center" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22);">
                 <img src="img/star.png" class="w-12 h-12 mb-2" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
                 <p id="modal-amount" class="text-2xl font-black"></p>
             </div>
-            <button onclick="closeModal()" class="w-full bg-[#22c55e] py-4 rounded-xl font-black uppercase text-xs tracking-wider text-black">Играть ещё</button>
+            <button onclick="closeModal()" class="w-full py-4 rounded-full font-black uppercase text-xs tracking-wider text-white btn-main">Играть ещё</button>
         </div>
     </div>
 
+    <script src="music.js"></script>
     <script>
         const SB_URL = "https://xbklrdpguqsuvqndcujb.supabase.co";
         const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhia2xyZHBndXFzdXZxbmRjdWpiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE2MzQ0NzUsImV4cCI6MjEwNzIxMDQ3NX0.IeK3NGOTu_J1jDOd_XjHQUOySnkbFh4uThGCPeu-Wu4";
         const SB = supabase.createClient(SB_URL, SB_KEY);
         const tg = window.Telegram.WebApp;
         tg.expand();
+        try {
+            tg.headerColor = '#1f55d6';
+            tg.backgroundColor = '#08205f';
+        } catch (_) {}
 
         // ===== НАСТРОЙКИ ИГРЫ =====
         const WIN_CHANCE = 0.23;   // 23% на яблочко
@@ -351,11 +373,11 @@
                     if (isWin) {
                         board.classList.add('bull');
                         haptic('heavy');
-                        flash('В ЯБЛОЧКО!', '#22c55e');
+                        flash('В ЯБЛОЧКО!', '#6ee7a0');
                     } else {
                         board.classList.add('wobble');
                         haptic('light');
-                        flash('ПОЧТИ!', '#ef4444');
+                        flash('ПОЧТИ!', '#ff8a8a');
                     }
                 }, 1050);
 
@@ -376,17 +398,21 @@
             const amount = $('modal-amount');
 
             if (isWin) {
-                box.style.border = '1px solid #22c55e';
-                title.className = 'text-lg font-black italic uppercase tracking-tight text-green-400';
+                box.style.border = '1px solid #6ee7a0';
+                title.className = 'text-lg font-black italic uppercase tracking-tight';
+                title.style.color = '#6ee7a0';
                 title.innerText = 'Яблочко! Победа';
-                amount.className = 'text-2xl font-black text-green-400';
+                amount.className = 'text-2xl font-black';
+                amount.style.color = '#6ee7a0';
                 amount.innerText = `+${payout.toFixed(2)} ★`;
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             } else {
-                box.style.border = '1px solid #3f3f46';
-                title.className = 'text-lg font-black italic uppercase tracking-tight text-gray-400';
+                box.style.border = '1px solid rgba(255,255,255,0.35)';
+                title.className = 'text-lg font-black italic uppercase tracking-tight';
+                title.style.color = '#cfe0ff';
                 title.innerText = 'Не повезло';
-                amount.className = 'text-2xl font-black text-red-400';
+                amount.className = 'text-2xl font-black';
+                amount.style.color = '#ff8a8a';
                 amount.innerText = `-${bet.toFixed(2)} ★`;
                 if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
             }
