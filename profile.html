@@ -469,15 +469,12 @@ async function withdrawItem() {
         try {
             await api('/inventory/withdraw', { nft_id: it.nft_id });
             haptic('notificationOccurred', 'success');
-            // Тот самый текст, который ты просил
             notify('Заявка успешно создана! Ожидайте вывода.');
         } catch (e) {
             haptic('notificationOccurred', 'error');
             notify('Ошибка: ' + e.message);
         } finally {
             invBusy = false;
-            syncData();
-            loadInventory();
         }
     });
 }
