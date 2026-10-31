@@ -83,7 +83,7 @@ async def stars_invoice(req: dict):
 
     async with httpx.AsyncClient(timeout=15) as c:
         r = (await c.post(f"{TG_API}/createInvoiceLink", json={
-            "title": "Пополнение FixStars",
+            "title": "Пополнение PandaGift",
             "description": f"Пополнение баланса на {amount} Stars",
             "payload": topup_id,
             "provider_token": "",
