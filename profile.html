@@ -1,572 +1,494 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Profile - FixStars</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=Creepster&display=swap');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>PandaGift - Профиль</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+:root{--bg-dark:#07173f;--blue:#2f6bff;--blue-light:#8fc2ff;--glass:rgba(255,255,255,.12);--glass-line:rgba(255,255,255,.18);--tc-z-index:200000}
+*{box-sizing:border-box}
+body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:0;height:100vh;width:100vw;overflow:hidden;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#stars-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.main-wrapper{background:radial-gradient(circle at 50% 10%,#4a86ff 0%,rgba(47,107,255,.35) 26%,transparent 60%),linear-gradient(180deg,#1f55d6 0%,#133ea6 42%,#08205f 100%);height:100vh;display:flex;flex-direction:column;position:relative;z-index:1}
+.scrollable-content{flex:1;overflow-y:auto;padding:24px 24px 120px;scrollbar-width:none}
+.scrollable-content::-webkit-scrollbar{display:none}
+.italic-title{font-weight:900;font-style:italic;text-transform:uppercase}
 
-        :root {
-            --accent: #ffb347;
-            --text-soft: #ffd9a0;
-            --panel: rgba(30, 12, 3, 0.55);
-            --line: rgba(255, 179, 71, 0.3);
-        }
+/* шапка профиля */
+.profile-head{text-align:center;margin:10px 0 22px}
+.avatar-wrap{position:relative;width:96px;margin:0 auto}
+.avatar-wrap::before{content:'';position:absolute;left:50%;top:50%;width:170px;height:170px;margin:-85px 0 0 -85px;border-radius:50%;background:radial-gradient(circle,rgba(190,220,255,.5) 0%,rgba(120,170,255,.15) 45%,transparent 70%);animation:glow 4s ease-in-out infinite}
+.avatar-wrap img{position:relative;width:96px;height:96px;border-radius:28px;object-fit:cover;background:#0a2468;border:2px solid rgba(255,255,255,.6);box-shadow:0 10px 24px rgba(0,20,90,.45)}
+.online{position:absolute;right:-4px;bottom:-4px;width:18px;height:18px;border-radius:50%;background:var(--blue-light);border:3px solid #0a2468}
+@keyframes glow{0%,100%{opacity:.55;transform:scale(.95)}50%{opacity:.9;transform:scale(1.05)}}
+#u-name{font-size:22px;margin:16px 0 0;letter-spacing:-.3px;text-shadow:0 4px 18px rgba(0,20,100,.55)}
+#u-id{font-size:11px;font-weight:700;color:#cfe0ff;margin-top:4px;opacity:.85}
 
-        body {
-            background: linear-gradient(180deg, #3a1a08 0%, #6b2f0c 55%, #a04a12 100%);
-            background-attachment: fixed;
-            color: white;
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            min-height: 100vh;
-            width: 100vw;
-            overflow-x: hidden;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
+/* карточки */
+.card{background:linear-gradient(135deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.06) 100%);border:1px solid var(--glass-line);border-radius:24px;padding:18px;margin-bottom:12px;backdrop-filter:blur(10px)}
+.card-title{font-size:16px;line-height:1;letter-spacing:-.3px;display:flex;align-items:center;gap:10px}
+.card-title img{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,20,90,.4))}
+.card-desc{font-size:10px;font-weight:700;color:#cfe0ff;text-transform:uppercase;margin-top:8px}
 
-        /* Искры на фоне */
-        #sparks { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
-        .spark {
-            position: absolute; bottom: -10px; border-radius: 50%;
-            background: #ffb347; opacity: 0;
-            animation: rise linear infinite;
-        }
-        @keyframes rise {
-            0%   { transform: translateY(0) translateX(0); opacity: 0; }
-            15%  { opacity: 0.9; }
-            100% { transform: translateY(-105vh) translateX(var(--drift, 20px)); opacity: 0; }
-        }
+/* баланс */
+.bal-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
+.bal-col{display:flex;flex-direction:column;gap:6px}
+.bal-pill{display:flex;align-items:center;gap:8px;min-width:128px;padding:5px 12px 5px 10px;border-radius:999px;background:var(--glass);border:1px solid #000;backdrop-filter:blur(10px)}
+.bal-pill img{width:20px;height:20px;object-fit:contain}
+.bal-pill span{font-weight:900;font-size:15px}
+.btn{border:none;border-radius:999px;padding:14px 20px;background:linear-gradient(180deg,#4f8cff,#1d4ed8);color:#fff;font:italic 900 12px 'Inter',sans-serif;text-transform:uppercase;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.35);transition:transform .15s}
+.btn:active{transform:scale(.96)}
+.btn:disabled{opacity:.6}
+.btn.wide{width:100%;display:block;text-align:center;text-decoration:none;padding:16px;font-size:14px}
 
-        /* Паутина и паук */
-        .web {
-            position: fixed; top: 0; right: 0; width: 150px; height: 150px;
-            pointer-events: none; z-index: 1;
-        }
-        .spider-wrap {
-            position: fixed; top: 0; right: 22px; z-index: 1; pointer-events: none;
-            display: flex; flex-direction: column; align-items: center;
-            animation: hang 4s ease-in-out infinite;
-            transform-origin: top center;
-        }
-        .spider-thread { width: 1px; height: 70px; background: #000; }
-        @keyframes hang {
-            0%, 100% { transform: rotate(-3deg); }
-            50%      { transform: rotate(3deg); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            .spark, .spider-wrap { animation: none; }
-        }
+/* промокод */
+.promo-row{display:flex;gap:8px;margin-top:14px}
+.promo-row input{flex:1;min-width:0;padding:14px;border-radius:16px;border:1px solid var(--glass-line);background:rgba(3,14,60,.45);color:#fff;font:800 14px 'Inter',sans-serif;text-transform:uppercase;outline:none;user-select:text}
+.promo-row input:focus{border-color:var(--blue-light)}
+.promo-row input::placeholder{color:#8fb0f0}
 
-        .main-wrapper {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            z-index: 2;
-        }
+/* рефералы */
+.ref-count{display:flex;align-items:baseline;gap:8px;margin:14px 0 16px}
+.ref-count b{font-size:38px;font-weight:900;font-style:italic;line-height:1}
+.ref-count span{font-size:12px;font-weight:700;color:#cfe0ff}
 
-        .scrollable-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: calc(20px + var(--tg-safe-area-inset-top, 0px)) 20px 120px 20px;
-        }
+/* нижняя панель */
+.dock-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(8,28,92,.92);border-top:1px solid var(--glass-line);display:flex;justify-content:space-around;padding:12px 10px 34px;z-index:1000;backdrop-filter:blur(25px);height:95px}
+.dock-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#8fb0f0;flex:1;cursor:pointer}
+.dock-btn.active{color:#fff}
+.dock-btn svg{width:28px;height:28px}
+.dock-btn span{font-size:10px;font-weight:900;font-style:italic;text-transform:uppercase}
+.dock-center{color:#e3eeff}
+.dock-center .ico{width:54px;height:54px;margin:-13px 0;transform:translateY(-16px);border-radius:20px;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#5b94ff,#1d4ed8);color:#fff;border:1px solid rgba(255,255,255,.4);box-shadow:0 6px 16px rgba(5,25,100,.6),inset 0 1px 0 rgba(255,255,255,.35)}
 
-        .profile-card {
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: 30px;
-            padding: 30px 20px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
+/* модалка пополнения */
+#topup-modal{position:fixed;inset:0;z-index:100001;display:none;align-items:flex-end;justify-content:center;background:rgba(2,10,40,.75);backdrop-filter:blur(6px);opacity:0;transition:opacity .25s}
+#topup-modal.show{display:flex}
+#topup-modal.vis{opacity:1}
+.tp-box{width:100%;max-width:480px;max-height:92vh;overflow-y:auto;padding:22px 20px 34px;border-radius:28px 28px 0 0;background:linear-gradient(180deg,#1c4bc4 0%,#0a2468 100%);border:1px solid var(--glass-line);border-bottom:none;transform:translateY(40px);transition:transform .25s}
+#topup-modal.vis .tp-box{transform:translateY(0)}
+.tp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.tp-title{font-size:20px}
+.tp-x{background:rgba(255,255,255,.14);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer}
+.tp-tabs{display:flex;gap:8px;margin-bottom:16px}
+.tp-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:999px;border:1px solid var(--glass-line);background:var(--glass);color:#cfe0ff;font:italic 900 13px 'Inter',sans-serif;text-transform:uppercase;cursor:pointer}
+.tp-tab img{width:20px;height:20px;object-fit:contain}
+.tp-tab.active{background:linear-gradient(135deg,#4f8cff,#1d4ed8);color:#fff;border-color:rgba(255,255,255,.4)}
+.tp-pane{display:none}
+.tp-pane.active{display:block}
+.tp-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.tp-chip{padding:12px 0;text-align:center;border-radius:999px;border:1px solid var(--glass-line);background:var(--glass);font-weight:900;font-size:14px;cursor:pointer}
+.tp-chip.sel{border-color:#fff;background:rgba(255,255,255,.28)}
+.tp-input{width:100%;padding:14px;border-radius:16px;border:1px solid var(--glass-line);background:rgba(3,14,60,.45);color:#fff;font-size:16px;font-weight:700;outline:none;margin-bottom:12px;user-select:text}
+.tp-input:focus{border-color:var(--blue-light)}
+.tp-note{font-size:11px;color:#cfe0ff;line-height:1.4;margin-bottom:14px;text-align:center}
+.tp-sec{flex:1;padding:11px 8px;border-radius:999px;border:1px solid var(--glass-line);background:var(--glass);color:#e3eeff;font-weight:800;font-size:12px;cursor:pointer}
 
-        .avatar-main {
-            width: 100px;
-            height: 100px;
-            border-radius: 35px;
-            border: 3px solid var(--accent);
-            margin: 0 auto 15px;
-            object-fit: cover;
-        }
-
-        .promo-box {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 20px;
-            padding: 15px;
-            margin-top: 15px;
-        }
-
-        .promo-input {
-            flex: 1; min-width: 0;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 179, 71, 0.25);
-            color: white; border-radius: 12px; padding: 0 12px;
-            text-transform: uppercase; font-weight: 700; font-size: 14px;
-        }
-        .promo-input::placeholder { color: #8a6a4e; }
-        .promo-input:focus { outline: none; border-color: var(--accent); }
-
-        /* Оранжевая кнопка с бликом */
-        .btn-orange {
-            position: relative; overflow: hidden;
-            background: linear-gradient(180deg, #ffa53a 0%, #f07a0a 55%, #d86200 100%);
-            border: 1px solid #ffc878;
-            color: #2a1000;
-            font-weight: 900; text-transform: uppercase; font-size: 12px;
-            padding: 10px 18px; border-radius: 12px;
-            box-shadow: 0 3px 0 #8f3f00;
-            transition: transform 0.15s, box-shadow 0.15s;
-        }
-        .btn-orange::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 48%;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
-            pointer-events: none;
-        }
-        .btn-orange:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f3f00; }
-        .btn-orange:disabled {
-            background: #2a1a10; border-color: #3d2a1c; color: #7a5a40;
-            box-shadow: none; transform: none;
-        }
-        .btn-orange:disabled::before { display: none; }
-
-        .gifts-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .gift-card {
-            background: var(--panel);
-            border: 1px solid rgba(255, 179, 71, 0.2);
-            border-radius: 24px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            transition: transform 0.15s, background 0.15s;
-        }
-        .gift-card:active { transform: scale(0.95); background: rgba(255, 179, 71, 0.15); }
-
-        .gift-img {
-            width: 60px;
-            height: 60px;
-            margin-bottom: 8px;
-        }
-
-        .gift-name { font-weight: 800; text-transform: uppercase; font-size: 13px; margin-bottom: 4px; }
-
-        .price-tag {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            color: var(--accent);
-            font-weight: 900;
-            font-size: 14px;
-        }
-        .price-tag img { width: 14px; height: 14px; }
-
-        /* Кнопка настроек (только для админа) */
-        .admin-btn {
-            display: none; align-items: center; justify-content: center; gap: 8px;
-            width: 100%; padding: 13px; margin-bottom: 20px; border-radius: 18px;
-            background: rgba(0, 0, 0, 0.45); border: 1px solid var(--line);
-            color: var(--text-soft); font-weight: 900; font-size: 13px;
-            text-transform: uppercase; font-style: italic;
-            transition: transform 0.15s;
-        }
-        .admin-btn:active { transform: scale(0.97); }
-
-        /* Модалки промокода */
-        .pm-overlay {
-            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.75);
-            z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 24px;
-            opacity: 0; pointer-events: none; transition: opacity 0.2s;
-        }
-        .pm-overlay.open { opacity: 1; pointer-events: auto; }
-        .pm-card {
-            width: 100%; max-width: 320px; border-radius: 28px;
-            padding: 28px 22px 22px; text-align: center;
-            transform: translateY(16px); transition: transform 0.2s;
-        }
-        .pm-overlay.open .pm-card { transform: translateY(0); }
-        .pm-card.ok {
-            background: linear-gradient(180deg, #ffa53a 0%, #e8700a 100%);
-            border: 1px solid #ffd08a; color: #2a1000;
-        }
-        .pm-card.fail {
-            background: #000; border: 2px solid #c0392b; color: white;
-        }
-        .pm-title { font-family: 'Creepster', cursive; font-size: 30px; letter-spacing: 0.04em; line-height: 1.1; }
-        .pm-text { font-size: 14px; font-weight: 600; margin-top: 8px; line-height: 1.4; }
-        .pm-card.fail .pm-text { color: #d6c3b0; }
-        .pm-amount {
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            font-size: 44px; font-weight: 900; font-style: italic; margin-top: 14px;
-        }
-        .pm-amount img { width: 32px; height: 32px; }
-        .pm-skull { width: 84px; height: 84px; margin: 0 auto 10px; object-fit: contain; }
-        .pm-btn {
-            width: 100%; margin-top: 20px; padding: 13px; border-radius: 16px;
-            font-weight: 900; font-size: 14px; text-transform: uppercase; font-style: italic;
-            transition: transform 0.15s;
-        }
-        .pm-btn:active { transform: scale(0.96); }
-        .pm-card.ok .pm-btn { background: #2a1000; color: #ffd9a0; }
-        .pm-card.fail .pm-btn {
-            position: relative; overflow: hidden;
-            background: linear-gradient(180deg, #ffa53a 0%, #f07a0a 55%, #d86200 100%);
-            border: 1px solid #ffc878; color: #2a1000; box-shadow: 0 3px 0 #8f3f00;
-        }
-
-        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(26, 11, 3, 0.96); border-top: 1px solid var(--line); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; height: 95px; }
-        .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #8a6a4e; flex: 1; }
-        .dock-btn.active { color: var(--accent); }
-        .dock-center { color: var(--text-soft); }
-        .dock-center .ico {
-            width: 54px; height: 54px; margin: -13px 0; transform: translateY(-16px); border-radius: 20px;
-            display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(180deg, #ffa53a 0%, #d86200 100%); color: #2a1000;
-            border: 1px solid #ffc878;
-            box-shadow: 0 3px 0 #8f3f00, inset 0 1px 0 rgba(255, 255, 255, 0.4);
-        }
-    </style>
+/* загрузка */
+#loader{position:fixed;inset:0;background:var(--bg-dark);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .25s}
+#loader.hidden{opacity:0;pointer-events:none}
+.ring{width:50px;height:50px;border:3px solid #12308a;border-left-color:var(--blue-light);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.avatar-wrap::before,.ring{animation:none}}
+</style>
 </head>
 <body>
 
-    <div id="sparks"></div>
+<div id="loader">
+    <div class="ring"></div>
+    <div class="italic-title" style="margin-top:16px;color:#8fc2ff;letter-spacing:3px;font-size:14px">PandaGift</div>
+</div>
 
-    <!-- Паутина в правом верхнем углу -->
-    <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round">
-        <path d="M150 0 L0 0 M150 0 L150 150 M150 0 L20 100 M150 0 L60 140 M150 0 L105 150 M150 0 L5 45"/>
-        <path d="M150 28 Q122 30 118 0"/>
-        <path d="M150 58 Q104 62 92 0"/>
-        <path d="M150 92 Q86 96 62 0"/>
-        <path d="M150 128 Q70 132 34 0"/>
-    </svg>
+<canvas id="stars-canvas"></canvas>
 
-    <!-- Паук на нитке -->
-    <div class="spider-wrap">
-        <div class="spider-thread"></div>
-        <svg width="26" height="24" viewBox="0 0 26 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round">
-            <path d="M8 10 L1 5 M8 12 L0 12 M8 14 L1 19 M9 16 L4 23"/>
-            <path d="M18 10 L25 5 M18 12 L26 12 M18 14 L25 19 M17 16 L22 23"/>
-            <ellipse cx="13" cy="14" rx="6" ry="7" fill="#000"/>
-            <circle cx="13" cy="7" r="3.5" fill="#000"/>
-        </svg>
+<div class="main-wrapper">
+<div class="scrollable-content">
+
+    <div class="profile-head">
+        <div class="avatar-wrap">
+            <img id="u-avatar" src="" alt="">
+            <div class="online"></div>
+        </div>
+        <h1 id="u-name" class="italic-title">Загрузка...</h1>
+        <div id="u-id">ID: ...</div>
     </div>
 
-    <div class="main-wrapper">
-        <div class="scrollable-content">
-
-            <div class="profile-card">
-                <img id="p-avatar" src="" class="avatar-main">
-                <h2 id="p-name" class="text-2xl font-black italic uppercase tracking-tight">Загрузка...</h2>
-                <p id="p-id" class="font-bold text-sm" style="color:#d9b98c">ID: 00000000</p>
-
-                <div class="promo-box">
-                    <p class="text-[10px] font-black uppercase mb-2 text-left" style="color:#d9b98c">Активация промокода</p>
-                    <div class="flex gap-2">
-                        <input type="text" id="promo-input" placeholder="ВВЕДИТЕ КОД" class="promo-input">
-                        <button id="promo-btn" onclick="claimPromo()" class="btn-orange">ОК</button>
-                    </div>
-                </div>
-
+    <section class="card">
+        <div class="card-title italic-title">Ваш баланс</div>
+        <div class="bal-row">
+            <div class="bal-col">
+                <div class="bal-pill"><img src="img/star.png" alt="Stars"><span id="bal-stars">0.00</span></div>
+                <div class="bal-pill"><img src="img/ton.png" alt="TON"><span id="bal-ton">0.00</span></div>
             </div>
+            <button class="btn" onclick="openTopup()">Пополнить</button>
+        </div>
+    </section>
 
-            <button id="admin-btn" class="admin-btn" onclick="location.href='event.html'">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33h.01a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51h.01a1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82v.01a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"></path></svg>
-                Настройки
-            </button>
+    <section class="card">
+        <div class="card-title italic-title">Промокод</div>
+        <div class="card-desc">Введите код и получите бонус</div>
+        <div class="promo-row">
+            <input id="promo-input" type="text" maxlength="64" placeholder="Введите промокод" autocomplete="off">
+            <button class="btn" id="promo-btn" onclick="handlePromo()">Ок</button>
+        </div>
+    </section>
 
-            <div class="flex flex-col items-center justify-center mb-6 px-2 text-center">
-                <p class="text-[10px] font-black uppercase tracking-widest mb-1" style="color:var(--text-soft)">Доступно к выводу</p>
-                <div class="flex items-center gap-3">
-                    <span id="p-balance" class="text-5xl font-black italic tracking-tighter">0.00</span>
-                    <img src="img/star.png" class="w-8 h-8" alt="S">
-                </div>
-            </div>
+    <section class="card">
+        <div class="card-title italic-title">Друзья</div>
+        <div class="ref-count"><b id="ref-count">0</b><span>приглашено</span></div>
+        <a href="ref.html" class="btn wide">Пригласить друзей</a>
+    </section>
 
-            <div class="h-[1px] w-full mb-8" style="background:rgba(255,179,71,0.2)"></div>
+</div>
 
-            <div class="gifts-grid">
-                <div class="gift-card" onclick="buyGift('Сердечко', 15)">
-                    <img src="img/cccccerce.png" class="gift-img" alt="G">
-                    <div class="gift-name">Сердечко</div>
-                    <div class="price-tag">15 <img src="img/star.png"></div>
-                </div>
+<nav class="dock-bar">
+    <div onclick="location.href='index.html'" class="dock-btn">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+        <span>Главная</span>
+    </div>
+    <div onclick="location.href='ref.html'" class="dock-btn dock-center">
+        <div class="ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="4.5" cy="9.5" r="2.2"/><circle cx="19.5" cy="9.5" r="2.2"/><path d="M1 18c0-2 1.3-3.5 3.5-3.7"/><path d="M23 18c0-2-1.3-3.5-3.5-3.7"/></svg>
+        </div>
+        <span>Рефералы</span>
+    </div>
+    <div class="dock-btn active">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        <span>Профиль</span>
+    </div>
+</nav>
+</div>
 
-                <div class="gift-card" onclick="buyGift('Мишка', 15)">
-                    <img src="img/mixail.png" class="gift-img" alt="G">
-                    <div class="gift-name">Мишка</div>
-                    <div class="price-tag">15 <img src="img/star.png"></div>
-                </div>
-
-                <div class="gift-card" onclick="buyGift('Роза', 25)">
-                    <img src="img/rozka.png" class="gift-img" alt="G">
-                    <div class="gift-name">Роза</div>
-                    <div class="price-tag">25 <img src="img/star.png"></div>
-                </div>
-
-                <div class="gift-card" onclick="buyGift('Подарок', 25)">
-                    <img src="img/pidarynok.png" class="gift-img" alt="G">
-                    <div class="gift-name">Подарок</div>
-                    <div class="price-tag">25 <img src="img/star.png"></div>
-                </div>
-
-                <div class="gift-card" onclick="buyGift('Торт', 50)">
-                    <img src="img/totik.png" class="gift-img" alt="G">
-                    <div class="gift-name">Торт</div>
-                    <div class="price-tag">50 <img src="img/star.png"></div>
-                </div>
-
-                <div class="gift-card" onclick="buyGift('Букет', 50)">
-                    <img src="img/buket.png" class="gift-img" alt="G">
-                    <div class="gift-name">Букет</div>
-                    <div class="price-tag">50 <img src="img/star.png"></div>
-                </div>
-
-                <div class="gift-card" onclick="buyGift('Ракета', 50)">
-                    <img src="img/raketa.png" class="gift-img" alt="G">
-                    <div class="gift-name">Ракета</div>
-                    <div class="price-tag">50 <img src="img/star.png"></div>
-                </div>
-
-                <div class="gift-card" onclick="buyGift('Кубок', 100)">
-                    <img src="img/kypok.png" class="gift-img" alt="G">
-                    <div class="gift-name">Кубок</div>
-                    <div class="price-tag">100 <img src="img/star.png"></div>
-                </div>
-
-                <div class="gift-card" onclick="buyGift('Кольцо', 100)">
-                    <img src="img/kolechko.png" class="gift-img" alt="G">
-                    <div class="gift-name">Кольцо</div>
-                    <div class="price-tag">100 <img src="img/star.png"></div>
-                </div>
-
-                <div class="gift-card" onclick="buyGift('Бриллиант', 100)">
-                    <img src="img/alik.png" class="gift-img" alt="G">
-                    <div class="gift-name">Бриллиант</div>
-                    <div class="price-tag">100 <img src="img/star.png"></div>
-                </div>
-            </div>
-
+<!-- пополнение -->
+<div id="topup-modal" onclick="closeTopup()">
+    <div class="tp-box" onclick="event.stopPropagation()">
+        <div class="tp-head">
+            <div class="tp-title italic-title">Пополнение баланса</div>
+            <button class="tp-x" onclick="closeTopup()">✕</button>
+        </div>
+        <div class="tp-tabs">
+            <button class="tp-tab active" id="tab-stars" onclick="switchTab('stars')"><img src="img/star.png" alt="">Stars</button>
+            <button class="tp-tab" id="tab-ton" onclick="switchTab('ton')"><img src="img/ton.png" alt="">TON</button>
         </div>
 
-        <div class="dock-bar">
-            <div onclick="location.href='index.html'" class="dock-btn ">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                <span class="text-[10px] font-black uppercase italic">Главная</span>
+        <div class="tp-pane active" id="pane-stars">
+            <div class="tp-presets" id="stars-presets">
+                <div class="tp-chip" data-v="50">50</div>
+                <div class="tp-chip sel" data-v="100">100</div>
+                <div class="tp-chip" data-v="250">250</div>
+                <div class="tp-chip" data-v="500">500</div>
             </div>
-            <div onclick="location.href='ref.html'" class="dock-btn dock-center">
-                <div class="ico">
-                    <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"></path><circle cx="4.5" cy="9.5" r="2.2"></circle><circle cx="19.5" cy="9.5" r="2.2"></circle><path d="M1 18c0-2 1.3-3.5 3.5-3.7"></path><path d="M23 18c0-2-1.3-3.5-3.5-3.7"></path></svg>
-                </div>
-                <span class="text-[10px] font-black uppercase italic">Рефералы</span>
+            <input id="stars-amount" class="tp-input" type="number" inputmode="numeric" min="1" step="1" placeholder="Своя сумма (Stars)" value="100">
+            <div class="tp-note">Оплата через Telegram Stars. Баланс пополнится сразу после оплаты: 1 Telegram Star = 1 Star.</div>
+            <button class="btn wide" id="stars-pay-btn" onclick="payStars()">Пополнить Stars</button>
+        </div>
+
+        <div class="tp-pane" id="pane-ton">
+            <div class="tp-presets" id="ton-presets">
+                <div class="tp-chip" data-v="0.5">0.5</div>
+                <div class="tp-chip sel" data-v="1">1</div>
+                <div class="tp-chip" data-v="2">2</div>
+                <div class="tp-chip" data-v="5">5</div>
             </div>
-            <div  class="dock-btn active">
-                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"></path></svg>
-                <span class="text-[10px] font-black uppercase italic">Профиль</span>
+            <input id="ton-amount" class="tp-input" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Своя сумма (TON)" value="1">
+            <div class="tp-note" id="ton-note"></div>
+            <div id="ton-wallet-actions" style="display:none;gap:8px;margin-bottom:12px">
+                <button class="tp-sec" onclick="changeWallet()">Сменить кошелёк</button>
+                <button class="tp-sec" onclick="unlinkWallet()">Отвязать кошелёк</button>
             </div>
+            <button class="btn wide" id="ton-pay-btn" onclick="payTon()">Оплатить TON</button>
         </div>
     </div>
-
-    <!-- Модалка результата промокода -->
-    <div id="pm-overlay" class="pm-overlay" onclick="if(event.target.id==='pm-overlay') closePromoModal()">
-        <div id="pm-card" class="pm-card ok">
-            <img id="pm-skull" src="img/cher.png" class="pm-skull" alt="" style="display:none">
-            <div id="pm-title" class="pm-title"></div>
-            <div id="pm-text" class="pm-text"></div>
-            <div id="pm-amount" class="pm-amount" style="display:none">
-                <span id="pm-amount-val"></span>
-                <img src="img/star.png" alt="">
-            </div>
-            <button id="pm-btn" onclick="closePromoModal()" class="pm-btn">Отлично</button>
-        </div>
-    </div>
+</div>
 
 <script>
-    const tg = window.Telegram.WebApp;
-    const user = tg.initDataUnsafe?.user;
-    const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
-    const ADMIN_TG_ID = '7140366080';
+const tg = window.Telegram.WebApp;
+const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
+const BOT_LINK = 'https://t.me/FixStarsBot'; // куда вернуть пользователя после оплаты в кошельке
 
-    // Звуки промокода: earn.mp3 — зачислен, skip.mp3 — неверный
-    const earnSound = new Audio('earn.mp3');
-    const failSound = new Audio('skip.mp3');
-    earnSound.preload = 'auto';
-    failSound.preload = 'auto';
-    function playSound(a) {
-        try {
-            a.currentTime = 0;
-            const p = a.play();
-            if (p && p.catch) p.catch(() => {});
-        } catch (_) {}
+const tgUser = tg.initDataUnsafe?.user;
+const user = (tgUser && tgUser.id) ? tgUser : { id: '12345', first_name: 'Тестер' };
+
+function notify(msg) { if (tg.showAlert) tg.showAlert(msg); else alert(msg); }
+function haptic(kind, type) { try { tg.HapticFeedback[kind](type); } catch (e) {} }
+
+async function api(path, body) {
+    const res = await fetch(`${BACKEND_URL}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ init_data: tg.initData, ...body })
+    });
+    let data = {};
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) throw new Error(data.error || data.detail || ('HTTP ' + res.status));
+    return data;
+}
+
+/* ---------- данные профиля ---------- */
+async function syncData() {
+    try {
+        const username = user.username || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Player';
+        const res = await fetch(`${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(username)}&t=${Date.now()}`);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        const stars = Number(data.balance) || 0;
+        document.getElementById('bal-stars').innerText = stars.toFixed(2);
+        document.getElementById('bal-ton').innerText = (Number(data.ton_balance) || 0).toFixed(2);
+        return stars;
+    } catch (e) {
+        console.warn('Не удалось обновить баланс:', e);
+        return null;
     }
+}
 
-    function fmt(v) { return Number(v || 0).toFixed(2); }
+async function loadRefs() {
+    try {
+        const list = await api('/get_referrals', {});
+        const arr = Array.isArray(list) ? list : (Array.isArray(list?.referrals) ? list.referrals : []);
+        document.getElementById('ref-count').innerText = arr.length;
+    } catch (e) { console.warn('Рефералы не загружены:', e); }
+}
 
-    // Модалка результата промокода: kind = 'ok' | 'fail'
-    function showPromoModal(kind, title, text, amount) {
-        const ok = kind === 'ok';
-        document.getElementById('pm-card').className = 'pm-card ' + kind;
-        document.getElementById('pm-skull').style.display = ok ? 'none' : 'block';
-        document.getElementById('pm-title').innerText = title;
-        document.getElementById('pm-text').innerText = text || '';
-        const am = document.getElementById('pm-amount');
-        am.style.display = ok && amount !== undefined ? 'flex' : 'none';
-        if (ok && amount !== undefined) document.getElementById('pm-amount-val').innerText = '+' + fmt(amount);
-        document.getElementById('pm-btn').innerText = ok ? 'Отлично' : 'Понятно';
-        document.getElementById('pm-overlay').classList.add('open');
-    }
-    function closePromoModal() {
-        document.getElementById('pm-overlay').classList.remove('open');
-    }
-
-    async function api(path, body) {
-        const res = await fetch(BACKEND_URL + path, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ init_data: tg.initData, ...(body || {}) })
-        });
-        let data = {};
-        try { data = await res.json(); } catch (_) {}
-        return { ok: res.ok, data };
-    }
-
-    async function initProfile() {
-        if (!user) return;
-        document.getElementById('p-name').innerText = (user.username || user.first_name || "PLAYER").toUpperCase();
-        document.getElementById('p-id').innerText = `ID: ${user.id}`;
-        // Кнопка только для админа. Это лишь скрытие кнопки, настоящая проверка на сервере
-        if (String(user.id) === ADMIN_TG_ID) document.getElementById('admin-btn').style.display = 'flex';
-        document.getElementById('p-avatar').src = user.photo_url || `https://ui-avatars.com/api/?background=8f3f00&color=fff&name=${user.first_name}`;
-        fetchBalance();
-    }
-
-    async function fetchBalance() {
-        if (!user) return 0;
-        try {
-            const url = `${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(user.username || user.first_name || 'Unknown')}&t=${Date.now()}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            const bal = Number(data.balance) || 0;
-            document.getElementById('p-balance').innerText = fmt(bal);
-            return bal;
-        } catch (e) {
-            console.error("Ошибка баланса:", e);
-            return 0;
-        }
-    }
-
-    let promoBusy = false;
-    async function claimPromo() {
-        if (promoBusy) return;
-        const input = document.getElementById('promo-input');
-        const btn = document.getElementById('promo-btn');
-        const code = input.value.trim();
-        if (!code) { showPromoModal('fail', 'Введите код', 'Поле пустое. Впишите промокод и нажмите ОК.'); return; }
-        if (!user || !user.id || !tg.initData) { tg.showAlert("Ошибка: открой приложение через Telegram"); return; }
-
-        promoBusy = true;
-        btn.disabled = true;
-        try {
-            const { ok, data } = await api('/activate_promo', { code });
-            if (ok && data.success) {
-                playSound(earnSound);
-                showPromoModal('ok', 'Промокод активирован', 'Звёзды уже на балансе', data.reward);
-                document.getElementById('p-balance').innerText = fmt(data.new_balance);
-                input.value = '';
-            } else {
-                playSound(failSound);
-                showPromoModal('fail', 'Не получилось', data.detail || "Не удалось активировать");
-            }
-        } catch (e) {
-            showPromoModal('fail', 'Нет связи', "Ошибка соединения с сервером.");
-        }
-        promoBusy = false;
+async function handlePromo() {
+    const input = document.getElementById('promo-input');
+    const btn = document.getElementById('promo-btn');
+    const code = input.value.trim();
+    if (!code) { notify('Введите промокод'); return; }
+    btn.disabled = true;
+    try {
+        const r = await api('/activate_promo', { code });
+        haptic('notificationOccurred', 'success');
+        notify(`Промокод активирован: +${r.reward} Stars`);
+        input.value = '';
+        syncData();
+    } catch (e) {
+        haptic('notificationOccurred', 'error');
+        notify(e.message);
+    } finally {
         btn.disabled = false;
     }
+}
 
-    async function buyGift(name, price) {
-        // 1. Проверка условий (друзья и задания)
-        try {
-            const res = await fetch(`${BACKEND_URL}/get_ref_stats/${user.id}`);
-            const data = await res.json();
-            const taskRes = await fetch(`${BACKEND_URL}/get_completed_tasks/${user.id}`);
-            const taskData = await taskRes.json();
+/* ---------- пополнение ---------- */
+function openTopup() {
+    const m = document.getElementById('topup-modal');
+    m.classList.add('show');
+    requestAnimationFrame(() => m.classList.add('vis'));
+    initTon();
+}
+function closeTopup() {
+    const m = document.getElementById('topup-modal');
+    m.classList.remove('vis');
+    setTimeout(() => m.classList.remove('show'), 250);
+}
+function switchTab(name) {
+    ['stars', 'ton'].forEach(n => {
+        document.getElementById('tab-' + n).classList.toggle('active', n === name);
+        document.getElementById('pane-' + n).classList.toggle('active', n === name);
+    });
+}
+function bindPresets(boxId, inputId) {
+    const box = document.getElementById(boxId);
+    const input = document.getElementById(inputId);
+    box.querySelectorAll('.tp-chip').forEach(chip => {
+        chip.onclick = () => {
+            box.querySelectorAll('.tp-chip').forEach(c => c.classList.remove('sel'));
+            chip.classList.add('sel');
+            input.value = chip.dataset.v;
+        };
+    });
+    input.addEventListener('input', () => {
+        box.querySelectorAll('.tp-chip').forEach(c => c.classList.toggle('sel', c.dataset.v === input.value));
+    });
+}
+bindPresets('stars-presets', 'stars-amount');
+bindPresets('ton-presets', 'ton-amount');
 
-            const taskCount = taskData.completed ? taskData.completed.length : 0;
-            const qualifiedRefs = data.ref_count || 0;
+async function waitStarsCredit(before) {
+    for (let i = 0; i < 12; i++) {
+        const now = await syncData();
+        if (now !== null && now > before) return true;
+        await new Promise(r => setTimeout(r, 1500));
+    }
+    return false;
+}
 
-            if (qualifiedRefs < 3 || taskCount < 10) {
-                let message = "⚠️ Недостаточно активности для заказа:\n\n";
-                message += qualifiedRefs < 3 ? `• Пригласить 3 друзей (сейчас: ${qualifiedRefs}/3)\n` : "✅ 3 друга приглашено!\n";
-                message += taskCount < 10 ? `• Выполнить 10 заданий (сейчас: ${taskCount}/10)` : "✅ 10 заданий выполнено!";
-                tg.showAlert(message);
-                return;
+async function payStars() {
+    const amount = parseInt(document.getElementById('stars-amount').value, 10);
+    if (!amount || amount < 1 || amount > 10000) { notify('Введите сумму от 1 до 10000 Stars'); return; }
+    const btn = document.getElementById('stars-pay-btn');
+    btn.disabled = true;
+    const oldText = btn.innerText;
+    btn.innerText = 'Создаём счёт...';
+    try {
+        const before = (await syncData()) || 0;
+        const data = await api('/topup/stars_invoice', { amount });
+        if (!data.link) throw new Error('Не получили ссылку на оплату');
+        tg.openInvoice(data.link, async (status) => {
+            if (status === 'paid') {
+                haptic('notificationOccurred', 'success');
+                btn.innerText = 'Зачисляем...';
+                const ok = await waitStarsCredit(before);
+                notify(ok ? `Баланс пополнен на ${amount} Stars` : 'Оплата прошла. Баланс обновится в течение минуты.');
+                if (ok) closeTopup();
+            } else if (status === 'failed') {
+                notify('Не удалось оплатить. Попробуйте ещё раз.');
             }
-        } catch (e) {
-            tg.showAlert("Ошибка проверки условий. Попробуйте позже.");
-            return;
-        }
+            btn.disabled = false;
+            btn.innerText = oldText;
+        });
+    } catch (e) {
+        notify('Ошибка: ' + e.message);
+        btn.disabled = false;
+        btn.innerText = oldText;
+    }
+}
 
-        // 2. Баланс
-        const currentBalance = await fetchBalance();
-        if (currentBalance < price) {
-            tg.showAlert(`❌ Недостаточно звёзд!\nНужно: ${price}\nУ вас: ${fmt(currentBalance)}`);
-            return;
-        }
+/* ---------- TON ---------- */
+const TON_NOTE_DEFAULT = 'Нажмите кнопку: сначала подключите кошелёк, затем подтвердите перевод. Зачисление после подтверждения в сети (обычно до минуты).';
+document.getElementById('ton-note').innerText = TON_NOTE_DEFAULT;
+let tonUI = null;
+let reopenAfterWallet = false;
 
-        // 3. Подтверждение и покупка (цену сервер берёт сам)
-        tg.showConfirm(`Вы хотите купить "${name}" за ${price} ⭐?`, async (confirmed) => {
-            if (!confirmed) return;
-            try {
-                const { ok, data } = await api('/buy_gift', { gift_name: name });
-                if (ok && data.success) {
-                    tg.showAlert(`✅ Покупка "${name}" успешна!\nАдмин скоро свяжется.`);
-                    document.getElementById('p-balance').innerText = fmt(data.new_balance);
-                } else if (data.error === 'balance') {
-                    tg.showAlert("❌ Недостаточно звёзд!");
-                } else if (data.error === 'conditions') {
-                    tg.showAlert(`⚠️ Нужно 3 друга и 10 заданий.\nСейчас: ${data.refs}/3 друзей, ${data.tasks}/10 заданий`);
-                } else {
-                    tg.showAlert(`Ошибка: ${data.detail || "не удалось оформить заказ"}`);
-                }
-            } catch (e) {
-                tg.showAlert("Ошибка сети или сервера.");
+function openWalletModal() {
+    reopenAfterWallet = true;
+    closeTopup();
+    setTimeout(() => tonUI.openModal(), 280);
+}
+async function unlinkWallet() {
+    if (!tonUI || !tonUI.connected) return;
+    try { await tonUI.disconnect(); notify('Кошелёк отвязан'); }
+    catch (e) { notify('Не удалось отвязать кошелёк: ' + (e && e.message || e)); }
+}
+async function changeWallet() {
+    if (!tonUI) return;
+    try { if (tonUI.connected) await tonUI.disconnect(); } catch (e) {}
+    openWalletModal();
+}
+window.addEventListener('load', () => setTimeout(initTon, 300));
+function initTon() {
+    if (tonUI || !window.TON_CONNECT_UI) return;
+    try {
+        tonUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: BACKEND_URL + '/tonconnect-manifest.json',
+            actionsConfiguration: { twaReturnUrl: BOT_LINK }
+        });
+        const applyWallet = (wallet) => {
+            const note = document.getElementById('ton-note');
+            document.getElementById('ton-wallet-actions').style.display = wallet ? 'flex' : 'none';
+            if (!wallet) { note.innerText = TON_NOTE_DEFAULT; return; }
+            let addr = wallet.account.address;
+            try { addr = TON_CONNECT_UI.toUserFriendlyAddress(addr); } catch (e) {}
+            note.innerText = 'Кошелёк подключён: ' + addr.slice(0, 5) + '…' + addr.slice(-4);
+        };
+        tonUI.onStatusChange(applyWallet);
+        applyWallet(tonUI.wallet);
+        tonUI.onModalStateChange((state) => {
+            if (state.status === 'closed' && reopenAfterWallet) {
+                reopenAfterWallet = false;
+                openTopup();
+                switchTab('ton');
             }
         });
-    }
+    } catch (e) { console.warn('TonConnect не запустился', e); }
+}
 
-    // Поднимающиеся искры (только оформление)
-    (function makeSparks() {
-        const box = document.getElementById('sparks');
-        for (let i = 0; i < 22; i++) {
-            const s = document.createElement('div');
-            const size = 2 + Math.random() * 3;
-            s.className = 'spark';
-            s.style.width = s.style.height = size + 'px';
-            s.style.left = Math.random() * 100 + '%';
-            s.style.animationDuration = (6 + Math.random() * 8) + 's';
-            s.style.animationDelay = (-Math.random() * 12) + 's';
-            s.style.setProperty('--drift', (Math.random() * 60 - 30) + 'px');
-            box.appendChild(s);
+async function payTon() {
+    const amount = parseFloat(document.getElementById('ton-amount').value);
+    if (!amount || amount < 0.1 || amount > 1000) { notify('Введите сумму от 0.1 до 1000 TON'); return; }
+    initTon();
+    if (!tonUI) { notify('TonConnect не загрузился. Проверьте интернет.'); return; }
+    if (!tonUI.connected) { openWalletModal(); return; }
+
+    const btn = document.getElementById('ton-pay-btn');
+    btn.disabled = true;
+    const oldText = btn.innerText;
+    btn.innerText = 'Готовим платёж...';
+    try {
+        const inv = await api('/topup/ton_create', { amount });
+        btn.innerText = 'Подтвердите в кошельке...';
+        await tonUI.sendTransaction({
+            validUntil: Math.floor(Date.now() / 1000) + 600,
+            messages: [{ address: inv.address, amount: String(inv.nano), payload: inv.payload }]
+        });
+        btn.innerText = 'Ждём подтверждение...';
+        let paid = false;
+        for (let i = 0; i < 40; i++) {
+            await new Promise(r => setTimeout(r, 3000));
+            try {
+                const st = await api('/topup/ton_check', { id: inv.id });
+                if (st.status === 'paid') { paid = true; break; }
+                if (st.status === 'expired') break;
+            } catch (e) {}
         }
-    })();
-
-    function initPage() {
-        try { tg.expand(); tg.ready(); } catch (_) {}
-        initProfile();
+        await syncData();
+        if (paid) {
+            haptic('notificationOccurred', 'success');
+            notify(`Баланс пополнен на ${amount} TON`);
+            closeTopup();
+        } else {
+            notify('Платёж ещё не подтверждён. Если TON списались, баланс обновится автоматически.');
+        }
+    } catch (e) {
+        const msg = String(e && e.message || e);
+        if (!/reject|cancel|declin/i.test(msg)) notify('Ошибка: ' + msg);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = oldText;
     }
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPage);
-    else initPage();
+}
+
+/* ---------- фон: светлые пузырьки как на главной ---------- */
+const canvas = document.getElementById('stars-canvas');
+const ctx = canvas.getContext('2d');
+let bubbles = [];
+function initBubbles() {
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+    bubbles = Array.from({ length: 30 }, () => ({
+        x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+        size: Math.random() * 2.2 + .6, speed: Math.random() * .35 + .1,
+        drift: (Math.random() - .5) * .25, opacity: Math.random() * .45 + .15,
+        bright: Math.random() < .4
+    }));
+}
+function animateBubbles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    bubbles.forEach(s => {
+        ctx.beginPath();
+        ctx.globalAlpha = s.opacity;
+        ctx.fillStyle = s.bright ? '#ffffff' : '#9cc4ff';
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+        s.y -= s.speed; s.x += s.drift;
+        if (s.y < -5) { s.y = canvas.height + 5; s.x = Math.random() * canvas.width; }
+    });
+    requestAnimationFrame(animateBubbles);
+}
+initBubbles(); animateBubbles();
+addEventListener('resize', initBubbles);
+
+/* ---------- старт ---------- */
+window.onload = async () => {
+    try {
+        tg.expand(); tg.ready();
+        tg.headerColor = '#1f55d6';
+        tg.backgroundColor = '#08205f';
+    } catch (e) {}
+
+    const name = user.username ? '@' + user.username : (user.first_name || 'Player');
+    document.getElementById('u-name').innerText = name;
+    document.getElementById('u-id').innerText = 'ID: ' + user.id;
+    document.getElementById('u-avatar').src = user.photo_url ||
+        `https://ui-avatars.com/api/?background=1d4ed8&color=fff&name=${encodeURIComponent(user.first_name || 'T')}`;
+
+    await Promise.all([syncData(), loadRefs()]);
+    document.getElementById('loader').classList.add('hidden');
+};
+setTimeout(() => document.getElementById('loader').classList.add('hidden'), 3500);
 </script>
 </body>
 </html>
