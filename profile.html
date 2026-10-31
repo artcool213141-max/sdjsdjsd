@@ -471,10 +471,9 @@ async function withdrawItem() {
             haptic('notificationOccurred', 'success');
             notify('Заявка успешно создана! Ожидайте вывода.');
             
-            // --- ВОЗВРАЩАЕМ ОБНОВЛЕНИЕ ---
-            syncData();      // обновляем баланс (списание 30 звезд)
-            loadInventory(); // обновляем список (удаляем гифт)
-            // -----------------------------
+            // Обновляем баланс и инвентарь (гифт исчезнет сразу)
+            await syncData();
+            await loadInventory();
             
         } catch (e) {
             haptic('notificationOccurred', 'error');
