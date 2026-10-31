@@ -139,7 +139,8 @@
         .tp-pay { width: 100%; padding: 16px; border: none; border-radius: 16px; background: linear-gradient(135deg, #ffa13a, #c2410c); color: #fff; font-size: 15px; font-weight: 900; font-style: italic; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 22px rgba(255,122,26,0.5); }
         .tp-pay:disabled { opacity: 0.6; }
         .tp-pay:active { transform: scale(0.98); }
-        #ton-connect-btn { display: flex; justify-content: center; margin-bottom: 12px; }
+        .tp-sec { flex: 1; padding: 11px 8px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,122,26,0.08); color: #ffd2a0; font-weight: 800; font-size: 12px; cursor: pointer; }
+        .tp-sec:active { transform: scale(0.97); }
 
         .scrollable-content {
             position: relative;
@@ -157,8 +158,8 @@
             padding: 10px 16px; border-radius: 18px; backdrop-filter: blur(14px);
         }
         .balance-item-v2 { display: flex; align-items: center; justify-content: flex-end; gap: 8px; cursor: pointer; color: var(--orange-light); }
-        .balance-item-v2 img { width: 20px; height: 20px; object-fit: contain; filter: drop-shadow(0 0 5px var(--orange)); }
-        .bal-plus { width: 22px; height: 22px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; line-height: 1; color: #fff; background: linear-gradient(145deg, #ffa13a, #c2410c); box-shadow: 0 0 10px rgba(255,122,26,0.6); }
+        .balance-item-v2 img { width: 20px; height: 20px; object-fit: contain; }
+        .bal-plus { width: 22px; height: 22px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; line-height: 1; color: #fff; background: linear-gradient(145deg, #ffa13a, #c2410c); }
 
         .hero-zone { position: relative; text-align: center; margin: 30px 0 10px; }
         #tikva { width: 150px; height: 150px; margin: 0 auto; }
@@ -246,6 +247,7 @@
                     <div class="balance-item-v2">
                         <span id="bal-ton" class="font-black text-xl">0.00</span>
                         <img src="img/ton.png" alt="TON">
+                        <div class="bal-plus">+</div>
                     </div>
                 </div>
             </div>
@@ -393,6 +395,10 @@
                 </div>
                 <input id="ton-amount" class="tp-input" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Своя сумма (TON)" value="1">
                 <div class="tp-note" id="ton-note">Подключите кошелёк через TonConnect и подтвердите перевод. Зачисление после подтверждения в сети (обычно до минуты).</div>
+                <div id="ton-wallet-actions" style="display:none; gap:8px; margin-bottom:12px;">
+                    <button class="tp-sec" onclick="changeWallet()">Сменить кошелёк</button>
+                    <button class="tp-sec" onclick="unlinkWallet()">Отвязать кошелёк</button>
+                </div>
                 <button class="tp-pay" id="ton-pay-btn" onclick="payTon()">Оплатить TON</button>
             </div>
         </div>
@@ -760,6 +766,25 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
     // --- TON (TonConnect) ---
     let tonUI = null;
     let reopenAfterWallet = false;
+
+    // отвязать текущий кошелёк
+    async function unlinkWallet() {
+        if (!tonUI || !tonUI.connected) return;
+        try {
+            await tonUI.disconnect();
+            notify('Кошелёк отвязан');
+        } catch (e) {
+            notify('Не удалось отвязать кошелёк: ' + (e && e.message || e));
+        }
+    }
+    // сменить кошелёк: отвязываем текущий и сразу открываем выбор нового
+    async function changeWallet() {
+        if (!tonUI) return;
+        try { if (tonUI.connected) await tonUI.disconnect(); } catch (e) {}
+        reopenAfterWallet = true;
+        closeTopup();
+        setTimeout(() => tonUI.openModal(), 280);
+    }
     const TON_NOTE_DEFAULT = 'Нажмите кнопку: сначала подключите кошелёк, затем подтвердите перевод. Зачисление после подтверждения в сети (обычно до минуты).';
     // создаём TonConnect заранее, чтобы список кошельков загрузился и окно открывалось сразу
     window.addEventListener('load', () => setTimeout(() => initTon(), 300));
@@ -774,8 +799,10 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
                 actionsConfiguration: { twaReturnUrl: 'https://t.me/FixStarsBot' }
             });
             // при подключении кошелька обновляем подпись на кнопке оплаты
-            tonUI.onStatusChange((wallet) => {
+            const applyWallet = (wallet) => {
                 const note = document.getElementById('ton-note');
+                const actions = document.getElementById('ton-wallet-actions');
+                if (actions) actions.style.display = wallet ? 'flex' : 'none';
                 if (!note) return;
                 if (wallet) {
                     let addr = wallet.account.address;
@@ -784,7 +811,9 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
                 } else {
                     note.innerText = TON_NOTE_DEFAULT;
                 }
-            });
+            };
+            tonUI.onStatusChange(applyWallet);
+            applyWallet(tonUI.wallet);   // если кошелёк запомнился с прошлого раза
             // окно кошелька закрылось (подключили или отменили) — возвращаем окно пополнения
             tonUI.onModalStateChange((state) => {
                 if (state.status === 'closed' && reopenAfterWallet) {
