@@ -1,13 +1,15 @@
 import os
+import re
 
 import httpx
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
 try:
-    from ref import validate_init_data, rpc, BOT_TOKEN, ADMIN_ID
+    from ref import validate_init_data, rpc, supabase, BOT_TOKEN, ADMIN_ID
 except ImportError:
-    from api.ref import validate_init_data, rpc, BOT_TOKEN, ADMIN_ID
+    from api.ref import validate_init_data, rpc, supabase, BOT_TOKEN, ADMIN_ID
 
 router = APIRouter()
 
@@ -20,6 +22,21 @@ ERRORS = {
 }
 
 
+NFT_LINK_RE = re.compile(r"^https://t\.me/nft/[A-Za-z0-9_-]+$")
+OG_IMAGE_RES = (
+    re.compile(r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']', re.I),
+    re.compile(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']', re.I),
+)
+
+
+def extract_og_image(html: str):
+    for rx in OG_IMAGE_RES:
+        m = rx.search(html)
+        if m and m.group(1).startswith("https://"):
+            return m.group(1).replace("&amp;", "&")
+    return None
+
+
 class InitReq(BaseModel):
     init_data: str
 
@@ -29,15 +46,47 @@ class ItemReq(BaseModel):
     item_id: int
 
 
-def grant_item(user_id, item_key: str, source: str = "case"):
+def grant_item(user_id, nft_id: int, source: str = "case"):
     """Выдать NFT пользователю. Вызывай из роута кейсов, когда предмет выпал:
         from inventory import grant_item
-        grant_item(user["id"], "nft_example_1")
+        grant_item(user["id"], 3)   # 3 = id строки в таблице nft_catalog
     """
-    res = rpc("grant_item", {"p_user_id": str(user_id), "p_item_key": item_key, "p_source": source})
+    res = rpc("grant_item", {"p_user_id": str(user_id), "p_nft_id": int(nft_id), "p_source": source})
     if isinstance(res, list):
         res = res[0] if res else {}
     return res or {}
+
+
+@router.get("/inventory/preview/{nft_id}")
+async def inventory_preview(nft_id: int):
+    """Картинка NFT: берёт ссылку t.me/nft/... из каталога, достаёт og:image
+    со страницы и перенаправляет на неё. Результат кэшируется на сутки.
+    Использование на странице: <img src="BACKEND_URL/inventory/preview/ID">"""
+    if supabase is None:
+        raise HTTPException(404, "no db")
+    rows = supabase.table("nft_catalog").select("link").eq("id", nft_id).limit(1).execute().data
+    link = rows[0]["link"] if rows else ""
+    if not NFT_LINK_RE.match(link or ""):
+        raise HTTPException(404, "not found")
+    try:
+        async with httpx.AsyncClient(timeout=8, follow_redirects=False) as c:
+            r = await c.get(link, headers={"User-Agent": "Mozilla/5.0"})
+        img = extract_og_image(r.text) if r.status_code == 200 else None
+    except Exception as e:
+        print("preview fetch error:", repr(e))
+        img = None
+    if not img:
+        raise HTTPException(404, "no image")
+    return RedirectResponse(img, status_code=302, headers={
+        "Cache-Control": "public, max-age=3600, s-maxage=86400",
+    })
+
+
+@router.get("/inventory/catalog")
+async def inventory_catalog():
+    """Все активные NFT (id, name, link, price): для показа в кейсах.
+    Картинка: BACKEND_URL + '/inventory/preview/' + id"""
+    return {"items": rpc("get_catalog", {}) or []}
 
 
 @router.post("/inventory/list")
