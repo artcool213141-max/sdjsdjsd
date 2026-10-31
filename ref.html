@@ -3,22 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Рефералы - FixStars</title>
+    <title>Рефералы - PandaGift</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
 
         :root {
-            --accent: #ffb347;
-            --orange: #f07a0a;
-            --text-soft: #ffd9a0;
-            --panel: rgba(30, 12, 3, 0.55);
-            --line: rgba(255, 179, 71, 0.3);
+            --bg-dark: #07173f;
+            --blue: #2f6bff;
+            --blue-light: #8fc2ff;
+            --blue-deep: #1d4ed8;
+            --accent: #8fc2ff;
+            --text-soft: #cfe0ff;
+            --glass: rgba(255, 255, 255, 0.12);
+            --glass-line: rgba(255, 255, 255, 0.18);
+            --line: rgba(255, 255, 255, 0.18);
         }
 
         body {
-            background: linear-gradient(180deg, #3a1a08 0%, #6b2f0c 55%, #a04a12 100%);
+            background:
+                radial-gradient(circle at 50% 10%, #4a86ff 0%, rgba(47,107,255,0.35) 26%, transparent 60%),
+                linear-gradient(180deg, #1f55d6 0%, #133ea6 42%, #08205f 100%);
             background-attachment: fixed;
             color: white;
             font-family: 'Inter', sans-serif;
@@ -30,37 +36,20 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Искры на фоне */
+        /* Пузырьки на фоне */
         #sparks { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
         .spark {
             position: absolute; bottom: -10px; border-radius: 50%;
-            background: #ffb347; opacity: 0;
+            background: #bcd8ff; opacity: 0;
             animation: rise linear infinite;
         }
         @keyframes rise {
             0%   { transform: translateY(0) translateX(0); opacity: 0; }
-            15%  { opacity: 0.9; }
+            15%  { opacity: 0.7; }
             100% { transform: translateY(-105vh) translateX(var(--drift, 20px)); opacity: 0; }
         }
-
-        /* Паутина и паук */
-        .web {
-            position: fixed; top: 0; right: 0; width: 150px; height: 150px;
-            pointer-events: none; z-index: 1;
-        }
-        .spider-wrap {
-            position: fixed; top: 0; right: 22px; z-index: 1; pointer-events: none;
-            display: flex; flex-direction: column; align-items: center;
-            animation: hang 4s ease-in-out infinite;
-            transform-origin: top center;
-        }
-        .spider-thread { width: 1px; height: 96px; background: #000; }
-        @keyframes hang {
-            0%, 100% { transform: rotate(-3deg); }
-            50%      { transform: rotate(3deg); }
-        }
         @media (prefers-reduced-motion: reduce) {
-            .spark, .spider-wrap { animation: none; }
+            .spark { animation: none; }
         }
 
         .main-wrapper {
@@ -78,23 +67,25 @@
 
         .balance-chip {
             display: flex; align-items: center; gap: 6px;
-            background: rgba(0, 0, 0, 0.55);
-            border: 1px solid var(--line);
-            padding: 8px 14px; border-radius: 16px;
-            font-weight: 900; font-size: 16px; color: var(--accent);
+            background: var(--glass);
+            border: 1px solid #000;
+            backdrop-filter: blur(10px);
+            padding: 8px 14px; border-radius: 999px;
+            font-weight: 900; font-size: 16px; color: #fff;
         }
-        .balance-chip img { width: 18px; height: 18px; }
+        .balance-chip img { width: 18px; height: 18px; object-fit: contain; }
 
         .card {
-            background: var(--panel);
-            border: 1px solid var(--line);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%);
+            border: 1px solid var(--glass-line);
+            backdrop-filter: blur(10px);
             border-radius: 28px;
             padding: 20px;
         }
 
         .link-box {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px dashed var(--accent);
+            background: rgba(3, 14, 60, 0.4);
+            border: 1px dashed var(--blue-light);
             color: var(--text-soft);
             padding: 10px 12px;
             border-radius: 12px;
@@ -105,7 +96,7 @@
 
         .stat {
             flex: 1; text-align: center;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(3, 14, 60, 0.35);
             border-radius: 18px; padding: 12px 6px;
         }
         .stat .num { font-size: 22px; font-weight: 900; line-height: 1.1; }
@@ -114,9 +105,9 @@
         .info-btn {
             display: flex; align-items: center; justify-content: center;
             width: 26px; height: 26px; border-radius: 50%;
-            border: 1px solid var(--line);
-            background: rgba(0, 0, 0, 0.35);
-            color: var(--accent);
+            border: 1px solid var(--glass-line);
+            background: var(--glass);
+            color: #fff;
             font-weight: 900; font-size: 14px; font-style: italic; font-family: Georgia, serif;
             transition: transform 0.15s;
         }
@@ -124,133 +115,115 @@
 
         .friend-row {
             display: flex; align-items: center; gap: 12px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 179, 71, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-line);
             border-radius: 20px; padding: 12px 14px; margin-bottom: 10px;
         }
         .friend-ava {
             width: 42px; height: 42px; border-radius: 14px; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            font-weight: 900; font-size: 16px; color: #2a1000;
-            background: linear-gradient(145deg, #ffa53a, #d86200);
+            font-weight: 900; font-size: 16px; color: #fff;
+            background: linear-gradient(145deg, #5b94ff, #1d4ed8);
         }
-        .friend-ava.prem { background: linear-gradient(145deg, #fff2a8, #f5c518); }
+        .friend-ava.prem { background: linear-gradient(145deg, #fff2a8, #f5c518); color: #3a2a00; }
         .friend-name { font-weight: 800; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .friend-sub { font-size: 10px; font-weight: 700; color: #d9b98c; margin-top: 2px; }
+        .friend-sub { font-size: 10px; font-weight: 700; color: #b5cdf5; margin-top: 2px; }
         .tag-prem { color: #ffd24a; }
 
-        /* Оранжевые кнопки с бликом */
+        /* Синие кнопки с бликом */
         .btn-main, .claim-btn {
             position: relative; overflow: hidden;
-            background: linear-gradient(180deg, #ffa53a 0%, #f07a0a 55%, #d86200 100%);
-            border: 1px solid #ffc878;
-            color: #2a1000;
+            background: linear-gradient(180deg, #4f8cff, #1d4ed8);
+            border: none;
+            color: #fff;
             font-weight: 900; font-style: italic; text-transform: uppercase;
-            box-shadow: 0 3px 0 #8f3f00;
-            transition: transform 0.15s, box-shadow 0.15s;
+            box-shadow: 0 0 20px rgba(47, 107, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+            transition: transform 0.15s;
         }
-        .btn-main::before, .claim-btn::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 48%;
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0));
-            pointer-events: none;
+        .btn-main::after, .claim-btn::after {
+            content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+            transform: skewX(-20deg); animation: shine 3s infinite; pointer-events: none;
         }
-        .btn-main:active, .claim-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #8f3f00; }
+        @keyframes shine { 0% { left: -60%; } 60%, 100% { left: 130%; } }
+        .btn-main:active, .claim-btn:active { transform: scale(0.97); }
 
         /* Неактивная кнопка: тёмная и приглушённая */
         .btn-main:disabled, .claim-btn:disabled {
-            background: #2a1a10; border-color: #3d2a1c; color: #7a5a40;
+            background: rgba(3, 14, 60, 0.55); border: 1px solid var(--glass-line); color: #8fb0f0;
             box-shadow: none; transform: none;
         }
-        .btn-main:disabled::before, .claim-btn:disabled::before { display: none; }
+        .btn-main:disabled::after, .claim-btn:disabled::after { display: none; }
 
-        .btn-main { width: 100%; padding: 14px; border-radius: 16px; font-size: 14px; }
+        .btn-main { width: 100%; padding: 14px; border-radius: 999px; font-size: 14px; }
         .claim-btn {
             margin-left: auto; flex-shrink: 0;
-            font-size: 12px; padding: 10px 14px; border-radius: 14px;
+            font-size: 12px; padding: 10px 14px; border-radius: 999px;
         }
         .done-pill {
             margin-left: auto; flex-shrink: 0;
             font-weight: 800; font-size: 11px; text-transform: uppercase;
-            color: #8a6a4e; background: rgba(0, 0, 0, 0.3);
-            padding: 9px 12px; border-radius: 14px;
+            color: #b5cdf5; background: rgba(3, 14, 60, 0.35);
+            padding: 9px 12px; border-radius: 999px;
         }
         .btn-ghost {
-            width: 52px; flex-shrink: 0; border-radius: 16px;
-            border: 1px solid var(--line); color: var(--accent);
-            background: rgba(0, 0, 0, 0.35);
+            width: 52px; flex-shrink: 0; border-radius: 999px;
+            border: 1px solid var(--glass-line); color: #fff;
+            background: var(--glass);
             display: flex; align-items: center; justify-content: center;
         }
         .btn-ghost:active { transform: scale(0.92); }
 
         .toast {
             position: fixed; left: 50%; bottom: 120px; transform: translate(-50%, 20px);
-            background: #1a0b03; border: 1px solid var(--accent);
+            background: #0a2468; border: 1px solid var(--blue-light);
             color: white; font-weight: 800; font-size: 13px;
-            padding: 12px 18px; border-radius: 16px; z-index: 3000;
+            padding: 12px 18px; border-radius: 999px; z-index: 3000;
             opacity: 0; pointer-events: none; transition: all 0.25s;
         }
         .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
         .modal-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+            position: fixed; inset: 0; background: rgba(2, 10, 40, 0.8); backdrop-filter: blur(6px);
             z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 24px;
             opacity: 0; pointer-events: none; transition: opacity 0.25s;
         }
         .modal-overlay.open { opacity: 1; pointer-events: auto; }
         .modal-card {
             width: 100%; max-width: 360px;
-            background: linear-gradient(160deg, #4a2108 0%, #1f0d03 100%);
-            border: 1px solid var(--accent); border-radius: 28px;
+            background: linear-gradient(180deg, #1c4bc4 0%, #0a2468 100%);
+            border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 28px;
+            box-shadow: 0 0 40px rgba(47, 107, 255, 0.5);
             padding: 24px 20px 20px;
             transform: translateY(20px) scale(0.96); transition: transform 0.25s;
         }
         .modal-overlay.open .modal-card { transform: translateY(0) scale(1); }
         .rule-row {
             display: flex; align-items: center; gap: 12px;
-            background: rgba(0, 0, 0, 0.3); border-radius: 16px;
+            background: rgba(3, 14, 60, 0.35); border-radius: 16px;
             padding: 12px 14px; margin-bottom: 10px; text-align: left;
         }
         .rule-reward { min-width: 52px; text-align: center; font-weight: 900; font-size: 15px; color: var(--accent); }
         .rule-reward.premium { color: #ffd24a; }
-        .rule-text { font-size: 12px; line-height: 1.35; color: #e8d3b8; font-weight: 600; }
+        .rule-text { font-size: 12px; line-height: 1.35; color: #dbe8ff; font-weight: 600; }
         .rule-text b { color: white; }
 
-        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(26, 11, 3, 0.96); border-top: 1px solid var(--line); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; height: 95px; }
-        .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #8a6a4e; flex: 1; }
-        .dock-btn.active { color: var(--accent); }
-        .dock-center { color: var(--text-soft); }
+        .dock-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(8, 28, 92, 0.92); border-top: 1px solid var(--glass-line); display: flex; justify-content: space-around; padding: 12px 10px 34px 10px; z-index: 1000; backdrop-filter: blur(25px); height: 95px; }
+        .dock-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #8fb0f0; flex: 1; }
+        .dock-btn.active { color: #fff; }
+        .dock-center { color: #e3eeff; }
         .dock-center .ico {
             width: 54px; height: 54px; margin: -13px 0; transform: translateY(-16px); border-radius: 20px;
             display: flex; align-items: center; justify-content: center;
-            background: linear-gradient(180deg, #ffa53a 0%, #d86200 100%); color: #2a1000;
-            border: 1px solid #ffc878;
-            box-shadow: 0 3px 0 #8f3f00, inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            background: linear-gradient(145deg, #5b94ff, #1d4ed8); color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 6px 16px rgba(5, 25, 100, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35);
         }
     </style>
 </head>
 <body>
 
     <div id="sparks"></div>
-
-    <!-- Паутина в правом верхнем углу -->
-    <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round">
-        <path d="M150 0 L0 0 M150 0 L150 150 M150 0 L20 100 M150 0 L60 140 M150 0 L105 150 M150 0 L5 45"/>
-        <path d="M150 28 Q122 30 118 0"/>
-        <path d="M150 58 Q104 62 92 0"/>
-        <path d="M150 92 Q86 96 62 0"/>
-        <path d="M150 128 Q70 132 34 0"/>
-    </svg>
-
-    <!-- Паук на нитке -->
-    <div class="spider-wrap">
-        <div class="spider-thread"></div>
-        <svg width="26" height="24" viewBox="0 0 26 24" fill="none" stroke="#000" stroke-width="1.6" stroke-linecap="round">
-            <path d="M8 10 L1 5 M8 12 L0 12 M8 14 L1 19 M9 16 L4 23"/>
-            <path d="M18 10 L25 5 M18 12 L26 12 M18 14 L25 19 M17 16 L22 23"/>
-            <ellipse cx="13" cy="14" rx="6" ry="7" fill="#000"/>
-            <circle cx="13" cy="7" r="3.5" fill="#000"/>
-        </svg>
-    </div>
 
     <div class="main-wrapper">
         <div class="scrollable-content">
@@ -270,7 +243,7 @@
 
             <!-- Приглашение -->
             <div class="card">
-                <p class="text-[10px] font-black uppercase mb-2" style="color:#d9b98c">Твоя реферальная ссылка</p>
+                <p class="text-[10px] font-black uppercase mb-2" style="color:#b5cdf5">Твоя реферальная ссылка</p>
                 <div id="ref-link" class="link-box">...</div>
 
                 <div class="flex gap-2 mt-3">
@@ -300,7 +273,7 @@
         <!-- ТУЛБАР -->
         <div class="dock-bar">
             <div onclick="location.href='index.html'" class="dock-btn">
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
                 <span class="text-[10px] font-black uppercase italic">Главная</span>
             </div>
             <div class="dock-btn dock-center active">
@@ -323,7 +296,7 @@
         <div class="modal-card">
             <div class="text-center mb-5">
                 <h3 class="text-lg font-black italic uppercase tracking-tight">Кого мы засчитываем</h3>
-                <p class="text-[11px] font-semibold mt-1" style="color:#d9b98c">Нажми «Забрать» рядом с другом, и звёзды упадут на баланс</p>
+                <p class="text-[11px] font-semibold mt-1" style="color:#b5cdf5">Нажми «Забрать» рядом с другом, и звёзды упадут на баланс</p>
             </div>
 
             <div class="rule-row">
@@ -336,8 +309,8 @@
                 <div class="rule-text"><b>Друг с Telegram Premium:</b> награда в три раза больше</div>
             </div>
 
-            <div class="rule-row" style="background: rgba(239,68,68,0.1);">
-                <div class="rule-reward" style="color:#f87171;">✕</div>
+            <div class="rule-row" style="background: rgba(239,68,68,0.15);">
+                <div class="rule-reward" style="color:#ff8a8a;">✕</div>
                 <div class="rule-text"><b>Не считаются:</b> ты сам, те, кто уже заходил в приложение раньше, и повторные заходы</div>
             </div>
 
@@ -424,7 +397,7 @@
             list.innerHTML = `
                 <div class="text-center py-10 px-6 opacity-80">
                     <div class="font-black uppercase italic text-sm">Пока никого нет</div>
-                    <div class="text-[11px] font-semibold mt-1" style="color:#d9b98c">Отправь ссылку друзьям: за обычного +1 ⭐, за Premium +3 ⭐</div>
+                    <div class="text-[11px] font-semibold mt-1" style="color:#b5cdf5">Отправь ссылку друзьям: за обычного +1 ⭐, за Premium +3 ⭐</div>
                 </div>`;
             return;
         }
@@ -452,7 +425,7 @@
     async function loadReferrals() {
         if (!user || !tg.initData) {
             document.getElementById('friends').innerHTML =
-                `<div class="text-center py-10 text-sm font-bold" style="color:#d9b98c">Открой приложение через Telegram</div>`;
+                `<div class="text-center py-10 text-sm font-bold" style="color:#b5cdf5">Открой приложение через Telegram</div>`;
             return;
         }
         try {
@@ -460,7 +433,7 @@
         } catch (e) {
             console.error(e);
             document.getElementById('friends').innerHTML =
-                `<div class="text-center py-10 text-red-400 text-sm font-bold">Не удалось загрузить список. Потяни вниз и открой заново.</div>`;
+                `<div class="text-center py-10 text-red-300 text-sm font-bold">Не удалось загрузить список. Потяни вниз и открой заново.</div>`;
         }
     }
 
@@ -503,7 +476,7 @@
         if (!REF_LINK) return;
 
         const fallback = () => {
-            const text = '⭐️ Зарабатывай Telegram Stars без вложений в FixStars!\nПростые задания: подписки, просмотры, приглашение друзей. Быстрые выплаты прямо в Telegram!\n👇 Начни зарабатывать прямо сейчас';
+            const text = '⭐️ Зарабатывай Telegram Stars без вложений в PandaGift!\nПростые задания: подписки, просмотры, приглашение друзей. Быстрые выплаты прямо в Telegram!\n👇 Начни зарабатывать прямо сейчас';
             tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(REF_LINK)}&text=${encodeURIComponent(text)}`);
         };
 
@@ -542,7 +515,7 @@
         else fallback();
     }
 
-    // Поднимающиеся искры (только оформление)
+    // Поднимающиеся пузырьки (только оформление)
     (function makeSparks() {
         const box = document.getElementById('sparks');
         for (let i = 0; i < 22; i++) {
@@ -559,7 +532,11 @@
     })();
 
     function initPage() {
-        try { tg.expand(); tg.ready(); } catch (_) {}
+        try {
+            tg.expand(); tg.ready();
+            tg.headerColor = '#1f55d6';
+            tg.backgroundColor = '#08205f';
+        } catch (_) {}
         document.getElementById('ref-link').innerText = REF_LINK || 'Открой приложение через Telegram';
         loadReferrals();
     }
