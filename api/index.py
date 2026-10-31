@@ -46,10 +46,13 @@ def read_root():
 def tonconnect_manifest():
     # Манифест для TonConnect. url и иконка указывают на мини-апку (WEBAPP_URL).
     webapp = os.environ.get("WEBAPP_URL", "https://sdjsdjsd.vercel.app").rstrip("/")
+    # TON_APP_URL — адрес, который кошелёк покажет пользователю (например свой домен).
+    # Если не задан, показывается адрес мини-апки.
+    shown = os.environ.get("TON_APP_URL", webapp).rstrip("/")
     return {
-        "url": webapp,
-        "name": "FixStars",
-        "iconUrl": f"{webapp}/img/star.png",
+        "url": shown,
+        "name": os.environ.get("TON_APP_NAME", "GiftPanda"),
+        "iconUrl": f"{webapp}/img/star.png",   # иконка остаётся с фронта, где она реально лежит
     }
 
 
