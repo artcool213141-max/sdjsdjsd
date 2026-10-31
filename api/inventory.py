@@ -117,6 +117,6 @@ async def inventory_withdraw(req: ItemReq):
     if not res.get("success"):
         raise HTTPException(400, ERRORS.get(res.get("error"), "Не удалось создать заявку"))
 
-    # Заявка в БД (withdraw_requests) + сообщение в группу с кнопками
-    # «Вывести / Выполнено / Отклонить». Логика — в withdraw.py.
-    return await create_withdraw_request(user, res, req.nft_id, WITHDRAW_FEE)
+    # Если база вернула success, значит заявка УЖЕ создана в таблице withdraw_requests.
+    # Мы просто возвращаем успех, чтобы фронтенд показал "Заявка создана".
+    return {"success": True, "request_id": res.get("request_id")}
