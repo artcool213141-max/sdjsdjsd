@@ -64,21 +64,14 @@ async def create_withdraw_request(user: dict, res: dict, nft_id: int, fee: float
     if not request_id:
         raise HTTPException(500, "withdraw_item did not return request_id")
 
-    row = {
-        "id": int(request_id),
-        "user_id": str(user["id"]),
-        "username": user.get("username"),
-        "first_name": user.get("first_name"),
-        "nft_id": int(nft_id),
-        "name": res.get("name"),
-        "price_stars": float(res.get("price_stars") or 0),
-        "price_ton": float(res.get("price_ton") or 0),
-        "fee_stars": float(fee or 0),
-        "status": "pending",
-        "group_chat_id": WITHDRAW_GROUP_ID,
-    }
-    supabase.table("withdraw_requests").upsert(row, on_conflict="id").execute()
+    # Мы НЕ делаем insert/upsert, потому что база уже создала заявку.
+    # Мы просто берем её из базы.
+    row = _req_row(int(request_id))
+    
+    if not row:
+        raise HTTPException(500, "Заявка не найдена в базе после создания")
 
+    # Отправляем в группу
     sent = await notify_group(row)
     if sent.get("ok"):
         msg_id = (sent.get("result") or {}).get("message_id")
