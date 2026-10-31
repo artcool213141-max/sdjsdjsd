@@ -131,15 +131,6 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
     </div>
 
     <section class="card">
-        <div class="card-title italic-title">Ваш баланс</div>
-        <div class="bal-row">
-            <div class="bal-pill"><img src="img/star.png" alt="Stars"><span id="bal-stars">0.00</span></div>
-            <div class="bal-pill"><img src="img/ton.png" alt="TON"><span id="bal-ton">0.00</span></div>
-        </div>
-        <button class="btn wide" style="margin-top:12px" onclick="openTopup()">Пополнить</button>
-    </section>
-
-    <section class="card">
         <div class="card-title italic-title">Промокод</div>
         <div class="card-desc">Введите код и получите бонус</div>
         <div class="promo-row">
@@ -180,47 +171,6 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
         <span>Профиль</span>
     </div>
 </nav>
-</div>
-
-<div id="topup-modal" onclick="closeTopup()">
-    <div class="tp-box" onclick="event.stopPropagation()">
-        <div class="tp-head">
-            <div class="tp-title italic-title">Пополнение баланса</div>
-            <button class="tp-x" onclick="closeTopup()">✕</button>
-        </div>
-        <div class="tp-tabs">
-            <button class="tp-tab active" id="tab-stars" onclick="switchTab('stars')"><img src="img/star.png" alt="">Stars</button>
-            <button class="tp-tab" id="tab-ton" onclick="switchTab('ton')"><img src="img/ton.png" alt="">TON</button>
-        </div>
-
-        <div class="tp-pane active" id="pane-stars">
-            <div class="tp-presets" id="stars-presets">
-                <div class="tp-chip" data-v="50">50</div>
-                <div class="tp-chip sel" data-v="100">100</div>
-                <div class="tp-chip" data-v="250">250</div>
-                <div class="tp-chip" data-v="500">500</div>
-            </div>
-            <input id="stars-amount" class="tp-input" type="number" inputmode="numeric" min="1" step="1" placeholder="Своя сумма (Stars)" value="100">
-            <div class="tp-note">Оплата через Telegram Stars. Баланс пополнится сразу после оплаты: 1 Telegram Star = 1 Star.</div>
-            <button class="btn wide" id="stars-pay-btn" onclick="()">Пополнить Stars</button>
-        </div>
-
-        <div class="tp-pane" id="pane-ton">
-            <div class="tp-presets" id="ton-presets">
-                <div class="tp-chip" data-v="0.5">0.5</div>
-                <div class="tp-chip sel" data-v="1">1</div>
-                <div class="tp-chip" data-v="2">2</div>
-                <div class="tp-chip" data-v="5">5</div>
-            </div>
-            <input id="ton-amount" class="tp-input" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Своя сумма (TON)" value="1">
-            <div class="tp-note" id="ton-note"></div>
-            <div id="ton-wallet-actions" style="display:none;gap:8px;margin-bottom:12px">
-                <button class="tp-sec" onclick="changeWallet()">Сменить кошелёк</button>
-                <button class="tp-sec" onclick="unlinkWallet()">Отвязать кошелёк</button>
-            </div>
-            <button class="btn wide" id="ton-pay-btn" onclick="payTon()">Оплатить TON</button>
-        </div>
-    </div>
 </div>
 
 <div id="item-modal" onclick="closeItem()">
