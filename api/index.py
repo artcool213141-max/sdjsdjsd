@@ -1,20 +1,35 @@
 import os
+import sys
+import importlib
+import traceback
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 
-try:
-    from ref import router as ref_router
-    from tasks import router as tasks_router
-    from bot import router as bot_router
-    from event_api import router as event_router
-    from topup import router as topup_router
-except ImportError:
-    from api.ref import router as ref_router
-    from api.tasks import router as tasks_router
-    from api.bot import router as bot_router
-    from api.event_api import router as event_router
-    from api.topup import router as topup_router
+# Папка api/ и корень проекта должны быть в путях поиска модулей,
+# иначе `from ref import ...` на Vercel не находит соседние файлы.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+for _p in (BASE_DIR, os.path.dirname(BASE_DIR)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
+
+def load_router(name: str):
+    """Импортирует router из api/<name>.py (пробует `name`, затем `api.name`).
+    Если не получилось, пишет причину в логи Vercel и возвращает None,
+    чтобы остальные роуты продолжали работать."""
+    errors = []
+    for full in (name, f"api.{name}"):
+        try:
+            return importlib.import_module(full).router
+        except Exception:
+            errors.append((full, traceback.format_exc()))
+    print(f"[index] НЕ УДАЛОСЬ подключить модуль '{name}':")
+    for full, tb in errors:
+        print(f"--- {full} ---\n{tb}")
+    return None
+
 
 app = FastAPI()
 
@@ -26,11 +41,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(ref_router)
-app.include_router(tasks_router)
-app.include_router(bot_router)
-app.include_router(event_router)
-app.include_router(topup_router)
+for _name in ("ref", "tasks", "bot", "event_api", "topup"):
+    _router = load_router(_name)
+    if _router is not None:
+        app.include_router(_router)
 
 _url = os.environ.get("SUPABASE_URL")
 _key = os.environ.get("SUPABASE_SERVICE_KEY")
