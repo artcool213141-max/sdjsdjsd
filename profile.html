@@ -394,8 +394,8 @@ function openItem(it) {
     document.getElementById('item-name').innerText = it.name;
     document.getElementById('item-p-stars').innerText = fmt(it.price_stars);
     document.getElementById('item-p-ton').innerText = fmt(it.price_ton);
-    document.getElementById('item-sell').innerText = 'Продать за ' + fmt(it.price_stars) + ' Stars';
-    document.getElementById('item-sell-ton').innerText = 'Продать за ' + fmt(it.price_ton) + ' TON';
+    document.getElementById('item-sell').innerHTML = 'Продать <img src="img/star.png" alt="" style="width:16px;height:16px;vertical-align:middle;margin-left:4px;">';
+    document.getElementById('item-sell-ton').innerHTML = 'Продать <img src="img/ton.png" alt="" style="width:16px;height:16px;vertical-align:middle;margin-left:4px;">';
     document.getElementById('item-withdraw').innerText = withdrawFee > 0 ? `Вывести (${withdrawFee} Stars)` : 'Вывести';
     document.getElementById('item-modal').classList.add('show');
 }
