@@ -172,22 +172,28 @@ async def ton_check(req: dict):
         supabase.table("topups").update({"status": "expired"}).eq("id", topup_id).eq("status", "pending").execute()
         return {"status": "expired"}
 
-    headers = {"X-API-Key": TONCENTER_KEY} if TONCENTER_KEY else {}
+    # Запрос напрямую к публичному Toncenter API v2 без каких-либо ключей и заголовочных токенов
     try:
         async with httpx.AsyncClient(timeout=15) as c:
-            r = (await c.get("https://toncenter.com/api/v3/transactions",
-                             params={"account": TON_WALLET, "limit": 50, "sort": "desc"},
-                             headers=headers)).json()
+            r = (await c.get("https://toncenter.com/api/v2/getTransactions",
+                             params={"address": TON_WALLET, "limit": 20, "archival": "true"})).json()
     except Exception as e:
         print("ton_check error:", repr(e))
         return {"status": "pending"}
 
     need = int(round(float(row["amount"]) * 1e9))
-    for tx in r.get("transactions", []):
-        m = tx.get("in_msg") or {}
-        comment = ((m.get("message_content") or {}).get("decoded") or {}).get("comment")
-        aborted = (tx.get("description") or {}).get("aborted")
-        if comment == topup_id and int(m.get("value") or 0) >= need and not aborted:
-            supabase.rpc("credit_topup", {"p_id": topup_id, "p_hash": tx["hash"]}).execute()
+    
+    # В v2 API структура транзакций немного отличается, парсим её безопасно
+    for tx in r.get("result", []):
+        in_msg = tx.get("in_msg") or {}
+        message_data = in_msg.get("message") or ""
+        
+        # Проверяем комментарий, сумму и что транзакция не отменена
+        aborted = (tx.get("description") or {}).get("aborted", False)
+        
+        if topup_id in message_data and int(in_msg.get("value") or 0) >= need and not aborted:
+            tx_hash = (tx.get("transaction_id") or {}).get("hash", "")
+            supabase.rpc("credit_topup", {"p_id": topup_id, "p_hash": tx_hash}).execute()
             return {"status": "paid"}
+            
     return {"status": "pending"}
