@@ -17,7 +17,6 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
 .scrollable-content::-webkit-scrollbar{display:none}
 .italic-title{font-weight:900;font-style:italic;text-transform:uppercase}
 
-/* шапка профиля */
 .profile-head{text-align:center;margin:10px 0 22px}
 .avatar-wrap{position:relative;width:96px;margin:0 auto}
 .avatar-wrap::before{content:'';position:absolute;left:50%;top:50%;width:170px;height:170px;margin:-85px 0 0 -85px;border-radius:50%;background:radial-gradient(circle,rgba(190,220,255,.5) 0%,rgba(120,170,255,.15) 45%,transparent 70%);animation:glow 4s ease-in-out infinite}
@@ -27,13 +26,11 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
 #u-name{font-size:22px;margin:16px 0 0;letter-spacing:-.3px;text-shadow:0 4px 18px rgba(0,20,100,.55)}
 #u-id{font-size:11px;font-weight:700;color:#cfe0ff;margin-top:4px;opacity:.85}
 
-/* карточки */
 .card{background:linear-gradient(135deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.06) 100%);border:1px solid var(--glass-line);border-radius:24px;padding:18px;margin-bottom:12px;backdrop-filter:blur(10px)}
 .card-title{font-size:16px;line-height:1;letter-spacing:-.3px;display:flex;align-items:center;gap:10px}
 .card-title img{width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,20,90,.4))}
 .card-desc{font-size:10px;font-weight:700;color:#cfe0ff;text-transform:uppercase;margin-top:8px}
 
-/* баланс */
 .bal-row{display:flex;gap:8px;margin-top:14px}
 .bal-pill{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:8px 12px 8px 10px;border-radius:999px;background:var(--glass);border:1px solid #000;backdrop-filter:blur(10px)}
 .bal-pill img{width:20px;height:20px;object-fit:contain}
@@ -70,19 +67,16 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
 .item-actions{display:flex;flex-direction:column;gap:10px}
 .btn.wide{width:100%;display:block;text-align:center;text-decoration:none;padding:16px;font-size:14px}
 
-/* промокод */
 .promo-row{display:flex;gap:8px;margin-top:14px}
 .promo-row input{flex:1;min-width:0;padding:14px;border-radius:16px;border:1px solid var(--glass-line);background:rgba(3,14,60,.45);color:#fff;font:800 14px 'Inter',sans-serif;text-transform:uppercase;outline:none;user-select:text}
 .promo-row input:focus{border-color:var(--blue-light)}
 .promo-row input::placeholder{color:#8fb0f0}
 
-/* рефералы */
 .friends-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
 .ref-count{display:flex;align-items:baseline;gap:8px}
 .ref-count b{font-size:38px;font-weight:900;font-style:italic;line-height:1}
 .ref-count span{font-size:12px;font-weight:700;color:#cfe0ff}
 
-/* нижняя панель */
 .dock-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(8,28,92,.92);border-top:1px solid var(--glass-line);display:flex;justify-content:space-around;padding:12px 10px 34px;z-index:1000;backdrop-filter:blur(25px);height:95px}
 .dock-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#8fb0f0;flex:1;cursor:pointer}
 .dock-btn.active{color:#fff}
@@ -91,7 +85,6 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
 .dock-center{color:#e3eeff}
 .dock-center .ico{width:54px;height:54px;margin:-13px 0;transform:translateY(-16px);border-radius:20px;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#5b94ff,#1d4ed8);color:#fff;border:1px solid rgba(255,255,255,.4);box-shadow:0 6px 16px rgba(5,25,100,.6),inset 0 1px 0 rgba(255,255,255,.35)}
 
-/* модалка пополнения */
 #topup-modal{position:fixed;inset:0;z-index:100001;display:none;align-items:flex-end;justify-content:center;background:rgba(2,10,40,.75);backdrop-filter:blur(6px);opacity:0;transition:opacity .25s}
 #topup-modal.show{display:flex}
 #topup-modal.vis{opacity:1}
@@ -114,7 +107,6 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
 .tp-note{font-size:11px;color:#cfe0ff;line-height:1.4;margin-bottom:14px;text-align:center}
 .tp-sec{flex:1;padding:11px 8px;border-radius:999px;border:1px solid var(--glass-line);background:var(--glass);color:#e3eeff;font-weight:800;font-size:12px;cursor:pointer}
 
-/* загрузка */
 #loader{position:fixed;inset:0;background:var(--bg-dark);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .25s}
 #loader.hidden{opacity:0;pointer-events:none}
 .ring{width:50px;height:50px;border:3px solid #12308a;border-left-color:var(--blue-light);border-radius:50%;animation:spin 1s linear infinite}
@@ -203,7 +195,6 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
 </nav>
 </div>
 
-<!-- пополнение -->
 <div id="topup-modal" onclick="closeTopup()">
     <div class="tp-box" onclick="event.stopPropagation()">
         <div class="tp-head">
@@ -245,7 +236,6 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
     </div>
 </div>
 
-<!-- предмет из инвентаря -->
 <div id="item-modal" onclick="closeItem()">
     <div class="item-box" onclick="event.stopPropagation()">
         <div class="nft-img big"><img id="item-img" src="" alt=""></div>
@@ -257,6 +247,8 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
         <div class="item-actions">
             <button class="btn wide" id="item-withdraw" onclick="withdrawItem()">Вывести</button>
             <button class="btn wide ghost" id="item-sell" onclick="sellItem()">Продать</button>
+            <button class="btn wide ghost" id="item-sell-ton" onclick="sellItemTon()">Продать за TON</button>
+            <button class="btn wide" id="item-upgrade" onclick="upgradeItem()">Улучшить</button>
             <button class="btn link" onclick="closeItem()">Закрыть</button>
         </div>
     </div>
@@ -265,7 +257,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
 <script>
 const tg = window.Telegram.WebApp;
 const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
-const BOT_LINK = 'https://t.me/FixStarsBot'; // куда вернуть пользователя после оплаты в кошельке
+const BOT_LINK = 'https://t.me/FixStarsBot';
 
 const tgUser = tg.initDataUnsafe?.user;
 const user = (tgUser && tgUser.id) ? tgUser : { id: '12345', first_name: 'Тестер' };
@@ -285,7 +277,6 @@ async function api(path, body) {
     return data;
 }
 
-/* ---------- данные профиля ---------- */
 async function syncData() {
     try {
         const username = user.username || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Player';
@@ -330,7 +321,6 @@ async function handlePromo() {
     }
 }
 
-/* ---------- инвентарь NFT ---------- */
 let inventory = [];
 let withdrawFee = 0;
 let selectedItem = null;
@@ -405,6 +395,7 @@ function openItem(it) {
     document.getElementById('item-p-stars').innerText = fmt(it.price_stars);
     document.getElementById('item-p-ton').innerText = fmt(it.price_ton);
     document.getElementById('item-sell').innerText = 'Продать за ' + fmt(it.price_stars) + ' Stars';
+    document.getElementById('item-sell-ton').innerText = 'Продать за ' + fmt(it.price_ton) + ' TON';
     document.getElementById('item-withdraw').innerText = withdrawFee > 0 ? `Вывести (${withdrawFee} Stars)` : 'Вывести';
     document.getElementById('item-modal').classList.add('show');
 }
@@ -436,6 +427,36 @@ async function sellItem() {
             loadInventory();
         }
     });
+}
+
+async function sellItemTon() {
+    if (!selectedItem || invBusy) return;
+    const it = selectedItem;
+    const priceTon = Number(it.price_ton) || 0;
+    if (priceTon <= 0) { notify('У предмета нет цены в TON'); return; }
+    confirmAction(`Продать «${it.name}» за ${priceTon} TON?`, async () => {
+        invBusy = true;
+        closeItem();
+        try {
+            await api('/inventory/sell_ton', { nft_id: it.nft_id });
+            haptic('notificationOccurred', 'success');
+            notify(`Предмет продан: +${priceTon} TON`);
+        } catch (e) {
+            haptic('notificationOccurred', 'error');
+            notify(e.message);
+        } finally {
+            invBusy = false;
+            syncData();
+            loadInventory();
+        }
+    });
+}
+
+function upgradeItem() {
+    if (!selectedItem) return;
+    const id = selectedItem.nft_id;
+    closeItem();
+    tg.openLink(`${BACKEND_URL}/update.html?nft_id=${id}`);
 }
 
 async function withdrawItem() {
@@ -629,7 +650,7 @@ async function payTon() {
     }
 }
 
-/* ---------- фон: светлые пузырьки как на главной ---------- */
+/* ---------- фон: пузырьки ---------- */
 const canvas = document.getElementById('stars-canvas');
 const ctx = canvas.getContext('2d');
 let bubbles = [];
