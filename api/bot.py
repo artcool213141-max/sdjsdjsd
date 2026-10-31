@@ -90,7 +90,7 @@ def sub_keyboard(missing, payload: str):
 
 def open_keyboard(payload: str):
     return {"inline_keyboard": [[
-        {"text": "🚀 Открыть FixStars", "web_app": {"url": webapp_link(payload)}}
+        {"text": "🚀 Открыть PandaGift", "web_app": {"url": webapp_link(payload)}}
     ]]}
 
 
