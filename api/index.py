@@ -42,6 +42,17 @@ def read_root():
     return {"status": "ok", "message": "FixStars API is Running"}
 
 
+@app.get("/tonconnect-manifest.json")
+def tonconnect_manifest():
+    # Манифест для TonConnect. url и иконка указывают на мини-апку (WEBAPP_URL).
+    webapp = os.environ.get("WEBAPP_URL", "https://sdjsdjsd.vercel.app").rstrip("/")
+    return {
+        "url": webapp,
+        "name": "FixStars",
+        "iconUrl": f"{webapp}/img/star.png",
+    }
+
+
 @app.get("/get_balance/{user_id}")
 async def get_balance(user_id: str, username: str = "Unknown"):
     if supabase is None:
