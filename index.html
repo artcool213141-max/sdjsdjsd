@@ -687,67 +687,68 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
         return false;
     }
 
-    async function payStars() {
-        const amount = parseInt(document.getElementById('stars-amount').value, 10);
-        if (!amount || amount < 1 || amount > 10000) { notify('Введите сумму от 1 до 10000 Stars'); return; }
+async function payStars() {
+    const amount = parseInt(document.getElementById('stars-amount').value, 10);
+    if (!amount || amount < 1 || amount > 10000) { notify('Введите сумму от 1 до 10000 Stars'); return; }
 
-        const btn = document.getElementById('stars-pay-btn');
-        btn.disabled = true;
-        const oldText = btn.innerText;
-        btn.innerText = 'Создаём счёт...';
-        
-        // Защита от вечной загрузки (если сервер тупит)
-        let isTimeout = false;
-        const timer = setTimeout(() => {
-            isTimeout = true;
+    const btn = document.getElementById('stars-pay-btn');
+    btn.disabled = true;
+    const oldText = btn.innerText;
+    btn.innerText = 'Создаём счёт...';
+    
+    try {
+        const before = (await syncData()) || 0;
+        const data = await api('/topup/stars_invoice', { amount });
+        if (!data.link) throw new Error('Не получили ссылку');
+
+        btn.innerText = 'Ожидание оплаты...';
+
+        // --- ФИКС: Если открыто не в мобильном Телеграме, показываем ссылку ---
+        if (!tg.initData) {
             btn.disabled = false;
             btn.innerText = oldText;
-            notify('Ошибка: Сервер не отвечает. Проверьте интернет.');
-        }, 10000);
-
-        try {
-            const before = (await syncData()) || 0;
-            const data = await api('/topup/stars_invoice', { amount });
-            clearTimeout(timer);
-            if (isTimeout) return;
-            if (!data.link) throw new Error('Не получили ссылку на оплату');
-
-            tg.openInvoice(data.link, async (status) => {
-                // Сразу возвращаем кнопку, чтобы она не висела
-                btn.disabled = false;
-                btn.innerText = oldText;
-
-                if (status === 'paid') {
-                    try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
-                    notify('Оплата прошла! Ждем зачисления...');
-                    
-                    let ok = false;
-                    for (let i = 0; i < 10; i++) {
-                        const now = await syncData();
-                        if (now !== null && now > before) { ok = true; break; }
-                        await new Promise(r => setTimeout(r, 1500));
-                    }
-                    
-                    if (ok) {
-                        notify(`Баланс пополнен на ${amount} Stars`);
-                        closeTopup();
-                    } else {
-                        notify('Оплата прошла! Баланс обновится в течение минуты.');
-                    }
-                } else if (status === 'failed') {
-                    notify('Не удалось оплатить. Попробуйте ещё раз.');
-                } else {
-                    notify('Оплата отменена.');
-                }
-            });
-        } catch (e) {
-            clearTimeout(timer);
-            if (isTimeout) return;
-            notify('Ошибка: ' + e.message);
-            btn.disabled = false;
-            btn.innerText = oldText;
+            tg.showAlert('Ошибка: Откройте приложение через мобильный Telegram.\n\nСсылка для оплаты (на ПК не работает):\n' + data.link);
+            return;
         }
+
+        let opened = false;
+        try {
+            if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openInvoice === 'function') {
+                window.Telegram.WebApp.openInvoice(data.link, async (status) => {
+                    btn.disabled = false;
+                    btn.innerText = oldText;
+                    if (status === 'paid') {
+                        notify('Оплата прошла! Ждем начисления...');
+                        let ok = false;
+                        for (let i = 0; i < 10; i++) {
+                            const now = await syncData();
+                            if (now !== null && now > before) { ok = true; break; }
+                            await new Promise(r => setTimeout(r, 1500));
+                        }
+                        notify(ok ? `Баланс пополнен!` : 'Баланс обновится в течение минуты.');
+                        if(ok) closeTopup();
+                    } else if (status === 'failed') {
+                        notify('Не удалось оплатить.');
+                    } else {
+                        notify('Оплата отменена.');
+                    }
+                });
+                opened = true;
+            }
+        } catch (e) { console.error(e); }
+
+        if (!opened) {
+            btn.disabled = false;
+            btn.innerText = oldText;
+            tg.showAlert('Окно оплаты не открылось.\n\nСсылка для оплаты:\n' + data.link);
+        }
+
+    } catch (e) {
+        notify('Ошибка: ' + e.message);
+        btn.disabled = false;
+        btn.innerText = oldText;
     }
+}
 
     // --- TON (TonConnect) ---
     let tonUI = null;
