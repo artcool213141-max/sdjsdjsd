@@ -384,7 +384,7 @@
                 </div>
                 <input id="stars-amount" class="tp-input" type="number" inputmode="numeric" min="1" step="1" placeholder="Своя сумма (Stars)" value="100">
                 <div class="tp-note">Оплата через Telegram Stars. Баланс пополнится сразу после оплаты: 1 Telegram Star = 1 Star.</div>
-                <button class="tp-pay" id="stars-pay-btn" onclick="()">Пополнить Stars</button>
+                <button class="tp-pay" id="stars-pay-btn" onclick="payStars()">Пополнить Stars</button>
             </div>
 
             <!-- TON -->
@@ -696,13 +696,24 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
         const oldText = btn.innerText;
         btn.innerText = 'Создаём счёт...';
         
+        // Защита от вечной загрузки (если сервер тупит)
+        let isTimeout = false;
+        const timer = setTimeout(() => {
+            isTimeout = true;
+            btn.disabled = false;
+            btn.innerText = oldText;
+            notify('Ошибка: Сервер не отвечает. Проверьте интернет.');
+        }, 10000);
+
         try {
             const before = (await syncData()) || 0;
             const data = await api('/topup/stars_invoice', { amount });
+            clearTimeout(timer);
+            if (isTimeout) return;
             if (!data.link) throw new Error('Не получили ссылку на оплату');
 
             tg.openInvoice(data.link, async (status) => {
-                // Сразу возвращаем кнопку в исходное состояние, чтобы она не висела
+                // Сразу возвращаем кнопку, чтобы она не висела
                 btn.disabled = false;
                 btn.innerText = oldText;
 
@@ -710,7 +721,6 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
                     try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
                     notify('Оплата прошла! Ждем зачисления...');
                     
-                    // Ждем до 15 секунд, пока вебхук начислит баланс
                     let ok = false;
                     for (let i = 0; i < 10; i++) {
                         const now = await syncData();
@@ -726,9 +736,13 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
                     }
                 } else if (status === 'failed') {
                     notify('Не удалось оплатить. Попробуйте ещё раз.');
+                } else {
+                    notify('Оплата отменена.');
                 }
             });
         } catch (e) {
+            clearTimeout(timer);
+            if (isTimeout) return;
             notify('Ошибка: ' + e.message);
             btn.disabled = false;
             btn.innerText = oldText;
