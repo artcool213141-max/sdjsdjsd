@@ -3,26 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>FixStars - Daily Bonus</title>
+    <title>PandaGift - Daily Bonus</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         :root {
-            --orange: #ff7a1a;
-            --orange-light: #ffb347;
-            --line: rgba(255, 150, 60, 0.35);
+            --bg-dark: #07173f;
+            --blue: #2f6bff;
+            --blue-light: #8fc2ff;
+            --blue-deep: #1d4ed8;
+            --glass: rgba(255, 255, 255, 0.12);
+            --glass-line: rgba(255, 255, 255, 0.18);
         }
 
         * { -webkit-tap-highlight-color: transparent; user-select: none; box-sizing: border-box; }
 
         body {
             background:
-                radial-gradient(circle at 50% 38%, rgba(255, 122, 26, 0.7) 0%, rgba(255, 122, 26, 0.18) 30%, transparent 58%),
-                linear-gradient(180deg, #5a1e00 0%, #2a0d00 45%, #120500 100%);
+                radial-gradient(circle at 50% 38%, #4a86ff 0%, rgba(47,107,255,0.35) 28%, transparent 62%),
+                linear-gradient(180deg, #1f55d6 0%, #133ea6 42%, #08205f 100%);
             background-attachment: fixed;
             color: white; font-family: 'Inter', sans-serif;
             margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column;
@@ -31,54 +32,53 @@
         #stars-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
         .layer { position: relative; z-index: 1; }
 
-        /* паутина и паук */
-        .web { position: fixed; top: 0; right: 0; width: 100px; height: 100px; z-index: 0; pointer-events: none; opacity: 0.8; }
-        .spider-wrap { position: fixed; top: 0; left: 68%; z-index: 2; pointer-events: none; animation: spiderDrop 5s ease-in-out infinite; }
-        .spider-wrap .thread { width: 2px; height: 60px; background: #000; margin: 0 auto; }
-        .spider-wrap .sp { font-size: 26px; line-height: 1; margin-left: -12px; margin-top: -3px; filter: brightness(0); }
-        @keyframes spiderDrop { 0%,100% { transform: translateY(-28px); } 50% { transform: translateY(6px); } }
-
         .header-panel {
-            padding: 12px 20px; background: rgba(20, 6, 0, 0.45); border-bottom: 1px solid var(--line);
+            padding: 12px 20px; background: rgba(8, 28, 92, 0.55); border-bottom: 1px solid var(--glass-line);
+            backdrop-filter: blur(20px);
             padding-top: calc(12px + var(--tg-safe-area-inset-top, 0px));
         }
-        .back-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 12px; background: rgba(20, 6, 0, 0.8); border: 1px solid var(--line); }
+        .back-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 12px; background: var(--glass); border: 1px solid var(--glass-line); }
         .back-btn:active { transform: scale(0.9); }
-        .bal-pill { display: flex; align-items: center; gap: 8px; background: rgba(20, 6, 0, 0.8); padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); color: var(--orange-light); }
+        .bal-pill { display: flex; align-items: center; gap: 8px; background: var(--glass); padding: 8px 16px; border-radius: 999px; border: 1px solid #000; color: #fff; backdrop-filter: blur(10px); }
 
         .bonus-container {
             flex-grow: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px;
         }
 
-        .gift-box { width: 170px; height: 170px; animation: float 3s ease-in-out infinite; filter: drop-shadow(0 0 24px rgba(255, 140, 30, 0.7)); }
+        .gift-box { position: relative; width: 170px; height: 170px; animation: float 3s ease-in-out infinite; }
+        .gift-box::before {
+            content: ''; position: absolute; left: 50%; top: 50%; width: 240px; height: 240px; margin: -120px 0 0 -120px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(190, 220, 255, 0.55) 0%, rgba(120, 170, 255, 0.18) 45%, transparent 70%);
+        }
+        .gift-box img { position: relative; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 10px 12px rgba(0, 20, 90, 0.4)); }
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
         }
 
-        .timer-box { background: rgba(20, 6, 0, 0.75); border: 1px solid var(--line); }
-        .timer-ready { color: var(--orange-light); border-color: rgba(255, 179, 71, 0.6); box-shadow: 0 0 20px rgba(255, 122, 26, 0.35); }
+        .timer-box { background: rgba(8, 28, 92, 0.6); border: 1px solid var(--glass-line); backdrop-filter: blur(10px); }
+        .timer-ready { color: var(--blue-light); border-color: rgba(143, 194, 255, 0.7); box-shadow: 0 0 20px rgba(47, 107, 255, 0.5); }
 
-        .bottom-panel { padding: 24px; padding-bottom: calc(24px + var(--tg-safe-area-inset-bottom, 0px)); background: rgba(20, 6, 0, 0.55); border-top: 1px solid var(--line); }
+        .bottom-panel { padding: 24px; padding-bottom: calc(24px + var(--tg-safe-area-inset-bottom, 0px)); background: rgba(8, 28, 92, 0.7); border-top: 1px solid var(--glass-line); backdrop-filter: blur(20px); }
         .btn-main {
             position: relative; overflow: hidden;
-            background: linear-gradient(135deg, #ffa13a, #e2570a 60%, #c2410c); color: white; font-weight: 900; border-radius: 18px;
-            transition: 0.2s; box-shadow: 0 0 25px rgba(255, 122, 26, 0.5), inset 0 -3px 0 rgba(120, 30, 0, 0.45);
+            background: linear-gradient(180deg, #4f8cff, #1d4ed8); color: white; font-weight: 900; border-radius: 999px;
+            transition: 0.2s; box-shadow: 0 0 25px rgba(47, 107, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35);
         }
         .btn-main::after { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent); transform: skewX(-20deg); animation: shine 3s infinite; }
         @keyframes shine { 0% { left: -60%; } 60%, 100% { left: 130%; } }
         .btn-main:active { transform: scale(0.97); }
-        .btn-main:disabled { background: rgba(0, 0, 0, 0.45); color: #b58a6a; box-shadow: none; border: 1px solid rgba(255, 150, 60, 0.15); }
+        .btn-main:disabled { background: rgba(3, 14, 60, 0.55); color: #8fb0f0; box-shadow: none; border: 1px solid var(--glass-line); }
         .btn-main:disabled::after { display: none; }
 
-        #win-modal { display: none; position: fixed; inset: 0; z-index: 999; background: rgba(10, 3, 0, 0.92); backdrop-filter: blur(10px); align-items: center; justify-content: center; }
+        #win-modal { display: none; position: fixed; inset: 0; z-index: 999; background: rgba(2, 10, 40, 0.85); backdrop-filter: blur(10px); align-items: center; justify-content: center; }
         .modal-box {
-            background: radial-gradient(circle at 50% 0%, #6b2400 0%, #1c0900 70%);
-            border: 1px solid rgba(255, 170, 80, 0.7); box-shadow: 0 0 40px rgba(255, 122, 26, 0.5);
+            background: linear-gradient(180deg, #1c4bc4 0%, #0a2468 100%);
+            border: 1px solid rgba(255, 255, 255, 0.35); box-shadow: 0 0 40px rgba(47, 107, 255, 0.5);
             border-radius: 28px; width: 85%; max-width: 340px; padding: 28px 24px 24px; text-align: center; animation: pop 0.3s ease;
         }
         @keyframes pop { from { transform: scale(0.88); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .m-btn { position: relative; overflow: hidden; width: 100%; padding: 15px; border-radius: 16px; font-weight: 900; font-style: italic; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #fff; background: linear-gradient(135deg, #ffa13a, #e2570a 60%, #c2410c); box-shadow: 0 0 22px rgba(255, 122, 26, 0.55), inset 0 -3px 0 rgba(120, 30, 0, 0.45); }
+        .m-btn { position: relative; overflow: hidden; width: 100%; padding: 15px; border-radius: 999px; font-weight: 900; font-style: italic; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #fff; background: linear-gradient(180deg, #4f8cff, #1d4ed8); box-shadow: 0 0 22px rgba(47, 107, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
         .m-btn::after { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent); transform: skewX(-20deg); animation: shine 3s infinite; }
         .m-btn:active { transform: scale(0.96); }
 
@@ -89,21 +89,14 @@
 
     <canvas id="stars-canvas"></canvas>
 
-    <!-- паутина в углу и паук -->
-    <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#000" stroke-width="1">
-        <path d="M150 0 L0 0 M150 0 L150 150 M150 0 L0 110 M150 0 L40 150 M150 0 L90 150 M150 0 L0 50"/>
-        <path d="M120 0 Q115 25 150 30 M85 0 Q80 45 150 60 M50 0 Q45 70 150 95 M15 0 Q10 100 150 130"/>
-    </svg>
-    <div class="spider-wrap"><div class="thread"></div><div class="sp">🕷️</div></div>
-
     <header class="header-panel layer flex justify-between items-center">
         <div class="flex items-center gap-3">
             <button onclick="goHome()" class="back-btn">
-                <svg class="w-4 h-4 text-orange-200" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                 </svg>
             </button>
-            <div class="font-black italic text-lg tracking-tighter">Fix<span style="color:#ffb347">Stars</span></div>
+            <div class="font-black italic text-lg tracking-tighter">Panda<span style="color:#8fc2ff">Gift</span></div>
         </div>
         <div class="bal-pill">
             <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
@@ -112,13 +105,15 @@
     </header>
 
     <div class="bonus-container layer">
-        <div class="gift-box" id="gift-icon"></div>
-        <h1 class="text-xs uppercase font-black tracking-widest" style="color:#ffd2a0">До следующего бонуса</h1>
+        <div class="gift-box" id="gift-icon">
+            <img src="hero.png" alt="PandaGift" onerror="this.style.display='none'; this.parentNode.insertAdjacentHTML('beforeend','<div style=&quot;font-size:100px;line-height:170px;text-align:center;position:relative&quot;>🎁</div>')">
+        </div>
+        <h1 class="text-xs uppercase font-black tracking-widest" style="color:#cfe0ff">До следующего бонуса</h1>
         <div id="countdown-timer" class="timer-box text-3xl font-black italic tracking-tight text-white px-6 py-2 rounded-2xl">
             --:--:--
         </div>
-        <p class="text-[11px] text-center max-w-[240px] px-4 mt-2" style="color:#e2c4a8">
-            Заходи каждые 24 часа и забирай случайный призовой дроп от <span style="color:#ffb347" class="font-bold">0.05</span> до <span style="color:#ffb347" class="font-bold">0.50</span> ★
+        <p class="text-[11px] text-center max-w-[240px] px-4 mt-2" style="color:#cfe0ff">
+            Заходи каждые 24 часа и забирай случайный призовой дроп от <span style="color:#8fc2ff" class="font-bold">0.05</span> до <span style="color:#8fc2ff" class="font-bold">0.50</span> ★
         </p>
     </div>
 
@@ -128,10 +123,10 @@
 
     <div id="win-modal">
         <div class="modal-box">
-            <h2 class="text-lg font-black italic uppercase tracking-tight" style="color:#ffb347">Бонус получен!</h2>
-            <div class="py-4 rounded-2xl my-5 flex flex-col items-center justify-center" style="background: rgba(255,122,26,0.12); border: 1px solid rgba(255,150,60,0.3);">
-                <img src="img/star.png" class="w-12 h-12 mb-2" style="filter: drop-shadow(0 0 14px rgba(255,150,40,0.8))" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
-                <p id="bonus-gain-text" class="text-2xl font-black" style="color:#ffb347">+0.00 ★</p>
+            <h2 class="text-lg font-black italic uppercase tracking-tight" style="color:#8fc2ff">Бонус получен!</h2>
+            <div class="py-4 rounded-2xl my-5 flex flex-col items-center justify-center" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22);">
+                <img src="img/star.png" class="w-12 h-12 mb-2" style="filter: drop-shadow(0 0 14px rgba(143,194,255,0.8))" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
+                <p id="bonus-gain-text" class="text-2xl font-black" style="color:#fff">+0.00 ★</p>
             </div>
             <button onclick="confirmAndReload()" class="m-btn">Отлично</button>
         </div>
@@ -147,8 +142,8 @@
         tg.expand();
         tg.enableClosingConfirmation();
         try {
-            tg.headerColor = '#5a1e00';
-            tg.backgroundColor = '#1a0a00';
+            tg.headerColor = '#1f55d6';
+            tg.backgroundColor = '#08205f';
         } catch (_) {}
 
         let user = null;
@@ -275,47 +270,29 @@
 
         checkAuth();
 
-        // тыква из tikva.tgs (gzip-нутый lottie json), крутится по кругу
-        fetch('tikva.tgs')
-            .then(r => r.arrayBuffer())
-            .then(buf => {
-                const json = JSON.parse(pako.inflate(new Uint8Array(buf), { to: 'string' }));
-                lottie.loadAnimation({
-                    container: document.getElementById('gift-icon'),
-                    renderer: 'svg',
-                    loop: true,
-                    autoplay: true,
-                    animationData: json
-                });
-            })
-            .catch(e => {
-                console.warn('tgs не загрузился', e);
-                document.getElementById('gift-icon').innerHTML = '<div style="font-size:100px;line-height:170px;text-align:center">🎃</div>';
-            });
-
-        // искры на фоне
+        // лёгкие светлые пузырьки на фоне (как на главной)
         const canvas = document.getElementById('stars-canvas');
         const ctx = canvas.getContext('2d');
-        let embers = [];
+        let bubbles = [];
         function initStars() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            embers = Array.from({ length: 30 }, () => ({
+            bubbles = Array.from({ length: 30 }, () => ({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                size: Math.random() * 2 + 0.5,
-                speed: Math.random() * 0.4 + 0.12,
-                drift: (Math.random() - 0.5) * 0.3,
-                opacity: Math.random() * 0.6 + 0.2,
-                yellow: Math.random() < 0.4
+                size: Math.random() * 2.2 + 0.6,
+                speed: Math.random() * 0.35 + 0.1,
+                drift: (Math.random() - 0.5) * 0.25,
+                opacity: Math.random() * 0.45 + 0.15,
+                bright: Math.random() < 0.4
             }));
         }
         function animateStars() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            embers.forEach(s => {
+            bubbles.forEach(s => {
                 ctx.beginPath();
                 ctx.globalAlpha = s.opacity;
-                ctx.fillStyle = s.yellow ? '#ffd27a' : '#ff8a2a';
+                ctx.fillStyle = s.bright ? '#ffffff' : '#9cc4ff';
                 ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
                 ctx.fill();
                 s.y -= s.speed;
