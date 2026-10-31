@@ -384,7 +384,7 @@
                 </div>
                 <input id="stars-amount" class="tp-input" type="number" inputmode="numeric" min="1" step="1" placeholder="Своя сумма (Stars)" value="100">
                 <div class="tp-note">Оплата через Telegram Stars. Баланс пополнится сразу после оплаты: 1 Telegram Star = 1 Star.</div>
-                <button class="tp-pay" id="stars-pay-btn" onclick="payStars()">Пополнить Stars</button>
+                <button class="tp-pay" id="stars-pay-btn" onclick="()">Пополнить Stars</button>
             </div>
 
             <!-- TON -->
@@ -687,7 +687,6 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
         return false;
     }
 
-    // --- Telegram Stars (инвойс) ---
     async function payStars() {
         const amount = parseInt(document.getElementById('stars-amount').value, 10);
         if (!amount || amount < 1 || amount > 10000) { notify('Введите сумму от 1 до 10000 Stars'); return; }
@@ -696,23 +695,38 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
         btn.disabled = true;
         const oldText = btn.innerText;
         btn.innerText = 'Создаём счёт...';
+        
         try {
             const before = (await syncData()) || 0;
             const data = await api('/topup/stars_invoice', { amount });
             if (!data.link) throw new Error('Не получили ссылку на оплату');
 
             tg.openInvoice(data.link, async (status) => {
+                // Сразу возвращаем кнопку в исходное состояние, чтобы она не висела
+                btn.disabled = false;
+                btn.innerText = oldText;
+
                 if (status === 'paid') {
                     try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
-                    btn.innerText = 'Зачисляем...';
-                    const ok = await waitStarsCredit(before);
-                    notify(ok ? `Баланс пополнен на ${amount} Stars` : 'Оплата прошла. Баланс обновится в течение минуты.');
-                    if (ok) closeTopup();
+                    notify('Оплата прошла! Ждем зачисления...');
+                    
+                    // Ждем до 15 секунд, пока вебхук начислит баланс
+                    let ok = false;
+                    for (let i = 0; i < 10; i++) {
+                        const now = await syncData();
+                        if (now !== null && now > before) { ok = true; break; }
+                        await new Promise(r => setTimeout(r, 1500));
+                    }
+                    
+                    if (ok) {
+                        notify(`Баланс пополнен на ${amount} Stars`);
+                        closeTopup();
+                    } else {
+                        notify('Оплата прошла! Баланс обновится в течение минуты.');
+                    }
                 } else if (status === 'failed') {
                     notify('Не удалось оплатить. Попробуйте ещё раз.');
                 }
-                btn.disabled = false;
-                btn.innerText = oldText;
             });
         } catch (e) {
             notify('Ошибка: ' + e.message);
