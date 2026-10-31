@@ -19,6 +19,7 @@ WITHDRAW_FEE = float(os.environ.get("WITHDRAW_FEE", "30"))
 ERRORS = {
     "not_found": "Предмет не найден или уже продан",
     "insufficient": "Недостаточно Stars для вывода",
+    "user_not_found": "Пользователь не найден",
 }
 
 
@@ -43,15 +44,15 @@ class InitReq(BaseModel):
 
 class ItemReq(BaseModel):
     init_data: str
-    item_id: int
+    nft_id: int   # id NFT из таблицы nft_catalog
 
 
-def grant_item(user_id, nft_id: int, source: str = "case"):
+def grant_item(user_id, nft_id: int):
     """Выдать NFT пользователю. Вызывай из роута кейсов, когда предмет выпал:
         from inventory import grant_item
         grant_item(user["id"], 3)   # 3 = id строки в таблице nft_catalog
     """
-    res = rpc("grant_item", {"p_user_id": str(user_id), "p_nft_id": int(nft_id), "p_source": source})
+    res = rpc("grant_item", {"p_user_id": str(user_id), "p_nft_id": int(nft_id)})
     if isinstance(res, list):
         res = res[0] if res else {}
     return res or {}
@@ -99,7 +100,7 @@ async def inventory_list(req: InitReq):
 @router.post("/inventory/sell")
 async def inventory_sell(req: ItemReq):
     user = validate_init_data(req.init_data)
-    res = rpc("sell_item", {"p_user_id": str(user["id"]), "p_item_id": req.item_id}) or {}
+    res = rpc("sell_item", {"p_user_id": str(user["id"]), "p_nft_id": req.nft_id}) or {}
     if not res.get("success"):
         raise HTTPException(400, ERRORS.get(res.get("error"), "Не удалось продать предмет"))
     return res
@@ -110,7 +111,7 @@ async def inventory_withdraw(req: ItemReq):
     user = validate_init_data(req.init_data)
     res = rpc("withdraw_item", {
         "p_user_id": str(user["id"]),
-        "p_item_id": req.item_id,
+        "p_nft_id": req.nft_id,
         "p_fee": WITHDRAW_FEE,
     }) or {}
     if not res.get("success"):
@@ -122,7 +123,8 @@ async def inventory_withdraw(req: ItemReq):
         f"🆔 Telegram ID: {user['id']}\n"
         f"🔗 Username: @{user.get('username') or 'отсутствует'}\n"
         f"🏷 Предмет: {res.get('name')}\n"
-        f"🔢 ID предмета: {req.item_id}"
+        f"🔢 NFT ID: {req.nft_id}\n"
+        f"📋 Заявка №{res.get('request_id')}"
     )
     try:
         async with httpx.AsyncClient(timeout=10) as client:
