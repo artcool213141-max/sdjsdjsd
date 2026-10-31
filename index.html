@@ -692,7 +692,7 @@ async function payStars() {
     if (!amount || amount < 1 || amount > 10000) { notify('Введите сумму от 1 до 10000 Stars'); return; }
 
     const btn = document.getElementById('stars-pay-btn');
-    if (btn.disabled) return; // Защита от повторного нажатия
+    if (btn.disabled) return;
     
     btn.disabled = true;
     const oldText = btn.innerText;
@@ -702,19 +702,30 @@ async function payStars() {
         const data = await api('/topup/stars_invoice', { amount });
         if (!data.link) throw new Error('Не получили ссылку');
 
-        btn.innerText = 'Ожидание оплаты...';
+        btn.innerText = 'Оплата...';
 
         if (window.Telegram && window.Telegram.WebApp && typeof window.Telegram.WebApp.openInvoice === 'function') {
             window.Telegram.WebApp.openInvoice(data.link, async (status) => {
-                btn.disabled = false;
-                btn.innerText = oldText;
                 if (status === 'paid') {
-                    notify('Оплата прошла!');
+                    btn.innerText = 'Проверяем зачисление...';
+                    // Опрашиваем сервер несколько раз, пока баланс не обновится
+                    let success = false;
+                    for (let i = 0; i < 10; i++) {
+                        await new Promise(r => setTimeout(r, 1500));
+                        const newBal = await syncData();
+                        // Если вебхук сработал и баланс вырос — ура
+                        if (newBal !== null) {
+                            success = true;
+                            break;
+                        }
+                    }
+                    notify('Оплата прошла успешно!');
                     closeTopup();
-                    await syncData();
                 } else {
                     notify('Оплата отменена.');
                 }
+                btn.disabled = false;
+                btn.innerText = oldText;
             });
         } else {
             btn.disabled = false;
