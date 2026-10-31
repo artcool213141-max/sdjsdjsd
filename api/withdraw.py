@@ -1,20 +1,17 @@
 import os
 import httpx
-from fastapi import HTTPException
+from fastapi import HTTPException, APIRouter
 
 try:
     from ref import BOT_TOKEN, supabase
 except ImportError:
     from api.ref import BOT_TOKEN, supabase
 
+# Создаем роутер, чтобы index.py мог его подключить
+router = APIRouter()
+
 # Группа, куда уходят заявки
 WITHDRAW_GROUP_ID = os.environ.get("WITHDRAW_GROUP_ID", "-5372143983")
-
-ERRORS = {
-    "not_found": "Предмет не найден или уже продан",
-    "insufficient": "Недостаточно Stars для вывода",
-    "user_not_found": "Пользователь не найден",
-}
 
 
 def _req_row(req_id: int):
@@ -36,7 +33,6 @@ def _req_text(r: dict) -> str:
 
 
 def _kb(r: dict):
-    # Кнопка "Вывести" открывает личку с юзером, "Выполнено" и "Отклонить" — callback
     return {"inline_keyboard": [[
         {"text": "💬 Вывести", "url": f"tg://user?id={r['user_id']}"},
         {"text": "✅ Выполнено", "callback_data": f"wd_done:{r['id']}"},
@@ -51,17 +47,19 @@ async def notify_group(r: dict, reply_markup=None) -> dict:
         "parse_mode": "HTML",
         "reply_markup": reply_markup or _kb(r),
     }
-    async with httpx.AsyncClient(timeout=10) as c:
-        resp = await c.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json=payload)
-    return resp.json() if resp else {"ok": False}
+    try:
+        async with httpx.AsyncClient(timeout=10) as c:
+            resp = await c.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json=payload)
+            data = resp.json()
+            if not data.get("ok"):
+                print("TG ERROR ПРИ ОТПРАВКЕ В ГРУППУ:", data)
+            return data
+    except Exception as e:
+        print("notify_group exception:", repr(e))
+        return {"ok": False}
 
 
 async def create_withdraw_request(user: dict, res: dict, nft_id: int, fee: float):
-    """
-    res — ответ rpc('withdraw_item') из inventory.py, должен содержать:
-      request_id, name, price_stars, price_ton
-    Здесь записываем заявку в БД и отправляем в группу.
-    """
     request_id = res.get("request_id")
     if not request_id:
         raise HTTPException(500, "withdraw_item did not return request_id")
@@ -93,7 +91,6 @@ async def create_withdraw_request(user: dict, res: dict, nft_id: int, fee: float
 
 
 async def set_status(req_id: int, status: str, cq: dict):
-    """Вызывается из bot.py по callback wd_done/wd_reject."""
     if status not in ("done", "rejected"):
         return {"ok": False}
     row = _req_row(req_id)
@@ -109,15 +106,18 @@ async def set_status(req_id: int, status: str, cq: dict):
     chat_id = (msg.get("chat") or {}).get("id")
     message_id = msg.get("message_id")
     if chat_id and message_id:
-        async with httpx.AsyncClient(timeout=10) as c:
-            await c.post(
-                f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText",
-                json={
-                    "chat_id": chat_id,
-                    "message_id": message_id,
-                    "text": _req_text(row),
-                    "parse_mode": "HTML",
-                    "reply_markup": {"inline_keyboard": []},  # убираем кнопки
-                },
-            )
+        try:
+            async with httpx.AsyncClient(timeout=10) as c:
+                await c.post(
+                    f"https://api.telegram.org/bot{BOT_TOKEN}/editMessageText",
+                    json={
+                        "chat_id": chat_id,
+                        "message_id": message_id,
+                        "text": _req_text(row),
+                        "parse_mode": "HTML",
+                        "reply_markup": {"inline_keyboard": []},
+                    },
+                )
+        except Exception as e:
+            print("editMessageText error:", repr(e))
     return {"ok": True, "status": status}
