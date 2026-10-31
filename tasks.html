@@ -58,6 +58,25 @@
         .btn-verify { background: linear-gradient(180deg, #4f8cff, #1d4ed8); color: #fff; box-shadow: 0 0 20px rgba(47, 107, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
         .btn-skip { background: rgba(3, 14, 60, 0.45); color: #8fb0f0; border: 1px solid var(--glass-line); }
 
+        /* Кнопка "Заработать на TikTok" */
+        .tiktok-cta {
+            position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 18px 16px; border-radius: 22px; cursor: pointer;
+            background: linear-gradient(135deg, #5b94ff, #2f6bff 60%, #1d4ed8);
+            border: 1px solid #a8c8ff; color: #fff;
+            font-weight: 900; font-style: italic; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;
+            box-shadow: 0 0 26px rgba(47, 107, 255, 0.55), inset 0 -3px 0 rgba(10, 30, 100, 0.45);
+            transition: transform 0.15s;
+        }
+        .tiktok-cta:active { transform: scale(0.97); }
+        .tiktok-cta::after {
+            content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+            transform: skewX(-20deg); animation: shine 3s infinite;
+        }
+        @keyframes shine { 0% { left: -60%; } 60%, 100% { left: 130%; } }
+        .tiktok-cta svg { width: 22px; height: 22px; flex-shrink: 0; }
+
         .star-ico { display: inline-block; vertical-align: middle; object-fit: contain; }
         .search-box { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 48px 16px; gap: 16px; }
         .spinner { width: 44px; height: 44px; border: 3px solid #12308a; border-left-color: var(--blue-light); border-radius: 50%; animation: spin 1s linear infinite; }
@@ -105,6 +124,14 @@
     </div>
 
     <div class="tasks-container layer" id="tasks-list"></div>
+
+    <!-- кнопка "Заработать на TikTok" -->
+    <div class="layer" style="padding: 0 20px calc(20px + env(safe-area-inset-bottom, 0px));">
+        <button class="tiktok-cta" onclick="goTiktok()">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.3 1.8 1.5 3.2 3.5 3.5v2.6c-1.3 0-2.5-.4-3.5-1.1v5.8c0 3.1-2.5 5.6-5.6 5.6S5.3 16.9 5.3 13.8 7.8 8.2 10.9 8.2c.3 0 .6 0 .9.1v2.7c-.3-.1-.6-.2-.9-.2-1.6 0-2.9 1.3-2.9 2.9s1.3 2.9 2.9 2.9 2.9-1.3 2.9-2.9V3h2.7z"/></svg>
+            Заработать на TikTok
+        </button>
+    </div>
 
     <!-- модалка: звёзды заработаны -->
     <div id="success-modal" class="modal">
@@ -175,6 +202,12 @@
         function setBalance(v) { document.getElementById('val-stars').innerText = Number(v || 0).toFixed(2); }
         function haptic(t) { try { tg.HapticFeedback && tg.HapticFeedback.impactOccurred(t || 'light'); } catch (_) {} }
         function goHome() { haptic(); window.location.href = 'index.html'; }
+
+        // переход на страницу TikTok
+        function goTiktok() {
+            haptic('medium');
+            window.location.href = 'Tiktok.html';
+        }
 
         async function api(path, body) {
             const res = await fetch(BACKEND_URL + path, {
