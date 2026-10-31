@@ -235,7 +235,7 @@ async def share_ref(req: InitReq):
         "thumbnail_url": REF_IMAGE_URL,
         "caption": REF_CAPTION,
         "parse_mode": "HTML",
-        "reply_markup": {"inline_keyboard": [[{"text": "Забрать добычу🎃", "url": link}]]},
+        "reply_markup": {"inline_keyboard": [[{"text": "Бесплатный кейс", "url": link}]]},
     }
     try:
         async with httpx.AsyncClient(timeout=10) as c:
