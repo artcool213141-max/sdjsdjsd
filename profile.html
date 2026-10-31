@@ -72,11 +72,6 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
 .promo-row input:focus{border-color:var(--blue-light)}
 .promo-row input::placeholder{color:#8fb0f0}
 
-.friends-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
-.ref-count{display:flex;align-items:baseline;gap:8px}
-.ref-count b{font-size:38px;font-weight:900;font-style:italic;line-height:1}
-.ref-count span{font-size:12px;font-weight:700;color:#cfe0ff}
-
 .dock-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(8,28,92,.92);border-top:1px solid var(--glass-line);display:flex;justify-content:space-around;padding:12px 10px 34px;z-index:1000;backdrop-filter:blur(25px);height:95px}
 .dock-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#8fb0f0;flex:1;cursor:pointer}
 .dock-btn.active{color:#fff}
@@ -167,14 +162,6 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
         <div id="inv-empty" class="inv-empty">Пока пусто. Открывайте <a href="case.html">кейсы</a>, и NFT появятся здесь.</div>
     </section>
 
-    <section class="card">
-        <div class="card-title italic-title">Друзья</div>
-        <div class="friends-row">
-            <div class="ref-count"><b id="ref-count">0</b><span>приглашено</span></div>
-            <a href="ref.html" class="btn" style="text-decoration:none">Пригласить</a>
-        </div>
-    </section>
-
 </div>
 
 <nav class="dock-bar">
@@ -245,7 +232,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:
             <div class="price-pill"><img src="img/ton.png" alt="TON"><span id="item-p-ton">0</span></div>
         </div>
         <div class="item-actions">
-            <button class="btn wide" id="item-withdraw" onclick="()">Вывести</button>
+            <button class="btn wide" id="item-withdraw" onclick="withdrawItem()">Вывести</button>
             <button class="btn wide ghost" id="item-sell" onclick="sellItem()">Продать</button>
             <button class="btn wide ghost" id="item-sell-ton" onclick="sellItemTon()">Продать за TON</button>
             <button class="btn wide" id="item-upgrade" onclick="upgradeItem()">Улучшить</button>
@@ -291,14 +278,6 @@ async function syncData() {
         console.warn('Не удалось обновить баланс:', e);
         return null;
     }
-}
-
-async function loadRefs() {
-    try {
-        const list = await api('/get_referrals', {});
-        const arr = Array.isArray(list) ? list : (Array.isArray(list?.referrals) ? list.referrals : []);
-        document.getElementById('ref-count').innerText = arr.length;
-    } catch (e) { console.warn('Рефералы не загружены:', e); }
 }
 
 async function handlePromo() {
@@ -697,7 +676,7 @@ window.onload = async () => {
     document.getElementById('u-avatar').src = user.photo_url ||
         `https://ui-avatars.com/api/?background=1d4ed8&color=fff&name=${encodeURIComponent(user.first_name || 'T')}`;
 
-    await Promise.all([syncData(), loadRefs(), loadInventory()]);
+    await Promise.all([syncData(), loadInventory()]);
     document.getElementById('loader').classList.add('hidden');
 };
 setTimeout(() => document.getElementById('loader').classList.add('hidden'), 3500);
