@@ -14,7 +14,6 @@ router = APIRouter()
 
 # Твои личные каналы для обязательной подписки при первом входе (через @username или ID)
 MANDATORY_CHANNELS = [
-    {"id": "@froxwart_shop", "name": "Канал №1"},
     {"id": "@St1fix_free", "name": "Канал №2"},
 ]
 
