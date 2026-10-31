@@ -708,16 +708,10 @@ async function payStars() {
             window.Telegram.WebApp.openInvoice(data.link, async (status) => {
                 if (status === 'paid') {
                     btn.innerText = 'Проверяем зачисление...';
-                    // Опрашиваем сервер несколько раз, пока баланс не обновится
-                    let success = false;
-                    for (let i = 0; i < 10; i++) {
+                    // Опрашиваем баланс, пока сервер не зачислит звёзды
+                    for (let i = 0; i < 8; i++) {
                         await new Promise(r => setTimeout(r, 1500));
-                        const newBal = await syncData();
-                        // Если вебхук сработал и баланс вырос — ура
-                        if (newBal !== null) {
-                            success = true;
-                            break;
-                        }
+                        await syncData();
                     }
                     notify('Оплата прошла успешно!');
                     closeTopup();
