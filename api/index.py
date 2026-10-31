@@ -1,194 +1,83 @@
-"""
-Пополнение баланса FixStars: Telegram Stars (инвойс) + TON (TonConnect).
-Роутер FastAPI под вашу структуру (supabase, api/*.py).
-
-Эндпоинты:
-  POST /topup/stars_invoice  {init_data, amount}  -> {link, id}
-  POST /topup/ton_create     {init_data, amount}  -> {id, address, nano, payload}
-  POST /topup/ton_check      {init_data, id}      -> {status}
-
-Из api/bot.py (вебхук) нужно вызывать:  await handle_update(update)
-
-Переменные окружения: BOT_TOKEN, SUPABASE_URL, SUPABASE_SERVICE_KEY,
-TON_WALLET, TON_PER_STAR (по умолчанию 150), TONCENTER_KEY (необязательно)
-"""
 import os
-import hmac
-import json
-import time
-import base64
-import hashlib
-import secrets
-from urllib.parse import parse_qsl
-
-import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 
-router = APIRouter()
+try:
+    from ref import router as ref_router
+    from tasks import router as tasks_router
+    from bot import router as bot_router
+    from event_api import router as event_router
+    from topup import router as topup_router
+except ImportError:
+    from api.ref import router as ref_router
+    from api.tasks import router as tasks_router
+    from api.bot import router as bot_router
+    from api.event_api import router as event_router
+    from api.topup import router as topup_router
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
-TON_WALLET = os.environ.get("TON_WALLET", "")
-TON_PER_STAR = float(os.environ.get("TON_PER_STAR", "150"))   # 1 TON = 150 Stars
-TONCENTER_KEY = os.environ.get("TONCENTER_KEY", "")
-TG_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(ref_router)
+app.include_router(tasks_router)
+app.include_router(bot_router)
+app.include_router(event_router)
+app.include_router(topup_router)
 
 _url = os.environ.get("SUPABASE_URL")
 _key = os.environ.get("SUPABASE_SERVICE_KEY")
 supabase: Client = create_client(_url, _key) if _url and _key else None
 
 
-# ---------- проверка подписи Telegram WebApp ----------
-def verify_init_data(init_data: str):
-    try:
-        data = dict(parse_qsl(init_data, strict_parsing=True))
-        got = data.pop("hash")
-        check = "\n".join(f"{k}={v}" for k, v in sorted(data.items()))
-        secret = hmac.new(b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256).digest()
-        calc = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(calc, got):
-            return None
-        if time.time() - int(data.get("auth_date", 0)) > 86400:
-            return None
-        return json.loads(data["user"])
-    except Exception:
-        return None
+@app.get("/")
+def read_root():
+    return {"status": "ok", "message": "FixStars API is Running"}
 
 
-def auth(req: dict) -> dict:
-    u = verify_init_data(req.get("init_data", ""))
-    if not u:
-        raise HTTPException(status_code=401, detail="bad init_data")
+@app.get("/get_balance/{user_id}")
+async def get_balance(user_id: str, username: str = "Unknown"):
     if supabase is None:
-        raise HTTPException(status_code=500, detail="supabase env missing")
-    return u
-
-
-# ---------- Stars ----------
-@router.post("/topup/stars_invoice")
-async def stars_invoice(req: dict):
-    u = auth(req)
+        return {"error": "supabase env missing", "balance": 0}
     try:
-        amount = int(req.get("amount"))
-    except Exception:
-        raise HTTPException(status_code=400, detail="bad amount")
-    if not 1 <= amount <= 10000:
-        raise HTTPException(status_code=400, detail="amount 1..10000")
+        result = supabase.table("users").select("balance").eq("id", user_id).execute()
+        if result.data:
+            return {"balance": result.data[0]["balance"] or 0}
 
-    topup_id = secrets.token_hex(8)
-    supabase.table("topups").insert({
-        "id": topup_id, "user_id": str(u["id"]), "method": "stars",
-        "amount": amount, "credited": amount, "status": "pending",
-    }).execute()
-
-    async with httpx.AsyncClient(timeout=15) as c:
-        r = (await c.post(f"{TG_API}/createInvoiceLink", json={
-            "title": "Пополнение FixStars",
-            "description": f"Пополнение баланса на {amount} Stars",
-            "payload": topup_id,
-            "provider_token": "",
-            "currency": "XTR",
-            "prices": [{"label": "Stars", "amount": amount}],
-        })).json()
-    if not r.get("ok"):
-        raise HTTPException(status_code=500, detail=r.get("description", "telegram error"))
-    return {"link": r["result"], "id": topup_id}
-
-
-async def handle_update(update: dict):
-    """Вызывайте из api/bot.py для каждого апдейта вебхука."""
-    if supabase is None:
-        return
-
-    # 1) Telegram спрашивает, можно ли принять платёж (ответить надо за 10 сек)
-    pcq = update.get("pre_checkout_query")
-    if pcq:
-        res = supabase.table("topups").select("status").eq("id", pcq.get("invoice_payload", "")).execute()
-        ok = bool(res.data and res.data[0]["status"] == "pending")
-        payload = {"pre_checkout_query_id": pcq["id"], "ok": ok}
-        if not ok:
-            payload["error_message"] = "Счёт недействителен"
-        async with httpx.AsyncClient(timeout=10) as c:
-            await c.post(f"{TG_API}/answerPreCheckoutQuery", json=payload)
-        return
-
-    # 2) Оплата прошла: запись в БД + начисление баланса (атомарно, один раз)
-    sp = (update.get("message") or {}).get("successful_payment")
-    if sp and sp.get("currency") == "XTR":
-        supabase.rpc("credit_topup", {
-            "p_id": sp["invoice_payload"],
-            "p_charge": sp["telegram_payment_charge_id"],
-        }).execute()
-
-
-# ---------- TON ----------
-def comment_payload(text: str) -> str:
-    """BOC (base64) одной ячейки с текстовым комментарием: 32 нулевых бита + utf8."""
-    data = b"\x00\x00\x00\x00" + text.encode()
-    cell = bytes([0, len(data) * 2]) + data                # d1=0 (нет ссылок), d2=2*len
-    boc = (b"\xb5\xee\x9c\x72"                              # magic
-           + bytes([0x01, 0x01, 0x01, 0x01, 0x00,          # size=1, off=1, cells=1, roots=1, absent=0
-                    len(cell), 0x00])                       # tot_cells_size, root index
-           + cell)
-    return base64.b64encode(boc).decode()
-
-
-@router.post("/topup/ton_create")
-async def ton_create(req: dict):
-    u = auth(req)
-    if not TON_WALLET:
-        raise HTTPException(status_code=500, detail="TON_WALLET not set")
-    try:
-        amount = float(req.get("amount"))
-    except Exception:
-        raise HTTPException(status_code=400, detail="bad amount")
-    if not 0.1 <= amount <= 1000:
-        raise HTTPException(status_code=400, detail="amount 0.1..1000")
-
-    topup_id = "fs" + secrets.token_hex(6)                  # он же комментарий к переводу
-    credited = round(amount * TON_PER_STAR, 2)
-    supabase.table("topups").insert({
-        "id": topup_id, "user_id": str(u["id"]), "method": "ton",
-        "amount": amount, "credited": credited, "status": "pending",
-    }).execute()
-    return {"id": topup_id, "address": TON_WALLET, "nano": int(round(amount * 1e9)),
-            "payload": comment_payload(topup_id), "credited": credited}
-
-
-@router.post("/topup/ton_check")
-async def ton_check(req: dict):
-    u = auth(req)
-    topup_id = str(req.get("id", ""))
-    res = supabase.table("topups").select("*").eq("id", topup_id).eq("method", "ton").execute()
-    if not res.data or res.data[0]["user_id"] != str(u["id"]):
-        raise HTTPException(status_code=404, detail="not found")
-    row = res.data[0]
-    if row["status"] == "paid":
-        return {"status": "paid"}
-
-    # старше часа и не оплачен — просрочен
-    from datetime import datetime, timezone
-    created = datetime.fromisoformat(row["created_at"].replace("Z", "+00:00"))
-    if (datetime.now(timezone.utc) - created).total_seconds() > 3600:
-        supabase.table("topups").update({"status": "expired"}).eq("id", topup_id).eq("status", "pending").execute()
-        return {"status": "expired"}
-
-    headers = {"X-API-Key": TONCENTER_KEY} if TONCENTER_KEY else {}
-    try:
-        async with httpx.AsyncClient(timeout=15) as c:
-            r = (await c.get("https://toncenter.com/api/v3/transactions",
-                             params={"account": TON_WALLET, "limit": 50, "sort": "desc"},
-                             headers=headers)).json()
+        supabase.table("users").upsert(
+            {"id": user_id, "balance": 0, "username": username},
+            on_conflict="id",
+            ignore_duplicates=True,
+        ).execute()
+        return {"balance": 0}
     except Exception as e:
-        print("ton_check error:", repr(e))
-        return {"status": "pending"}
+        print("get_balance error:", repr(e))
+        return {"error": str(e), "balance": 0}
 
-    need = int(round(float(row["amount"]) * 1e9))
-    for tx in r.get("transactions", []):
-        m = tx.get("in_msg") or {}
-        comment = ((m.get("message_content") or {}).get("decoded") or {}).get("comment")
-        aborted = (tx.get("description") or {}).get("aborted")
-        if comment == topup_id and int(m.get("value") or 0) >= need and not aborted:
-            supabase.rpc("credit_topup", {"p_id": topup_id, "p_hash": tx["hash"]}).execute()
-            return {"status": "paid"}
-    return {"status": "pending"}
+
+@app.get("/get_completed_tasks/{user_id}")
+async def get_completed_tasks(user_id: str):
+    if supabase is None:
+        return {"completed": []}
+    try:
+        res = supabase.table("completed_tasks").select("task_id").eq("user_id", user_id).execute()
+        return {"completed": [r["task_id"] for r in (res.data or [])]}
+    except Exception as e:
+        print("get_completed_tasks error:", repr(e))
+        return {"completed": []}
+
+
+@app.post("/complete_task")
+async def complete_task(req: dict):
+    # ОТКЛЮЧЕНО: раньше писало в completed_tasks без всякой проверки, и любой мог
+    # накрутить себе задания. Теперь задания засчитывает только api/tasks.py
+    # (проверка подписки / BotoHub на сервере). Роут оставлен, чтобы старые
+    # страницы не получали 404.
+    return {"success": True}
