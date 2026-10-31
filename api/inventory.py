@@ -117,22 +117,6 @@ async def inventory_withdraw(req: ItemReq):
     if not res.get("success"):
         raise HTTPException(400, ERRORS.get(res.get("error"), "Не удалось создать заявку"))
 
-    text = (
-        "🎁 НОВАЯ ЗАЯВКА НА ВЫВОД NFT\n\n"
-        f"👤 Пользователь: {user.get('first_name', 'Без имени')}\n"
-        f"🆔 Telegram ID: {user['id']}\n"
-        f"🔗 Username: @{user.get('username') or 'отсутствует'}\n"
-        f"🏷 Предмет: {res.get('name')}\n"
-        f"🔢 NFT ID: {req.nft_id}\n"
-        f"📋 Заявка №{res.get('request_id')}"
-    )
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            await client.post(
-                f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
-                json={"chat_id": ADMIN_ID, "text": text},
-            )
-    except Exception as e:
-        print("notify admin error:", repr(e))
-
-    return res
+    # Заявка в БД (withdraw_requests) + сообщение в группу с кнопками
+    # «Вывести / Выполнено / Отклонить». Логика — в withdraw.py.
+    return await create_withdraw_request(user, res, req.nft_id, WITHDRAW_FEE)
