@@ -465,6 +465,7 @@ async def handle_withdraw_callback(cq: dict):
 
 
 async def handle_update(update: dict):
+    # Ловим оплату Stars
     if update.get("pre_checkout_query") or (update.get("message") or {}).get("successful_payment"):
         await topup_update(update)
         return
