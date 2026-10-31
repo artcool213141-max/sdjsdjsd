@@ -85,7 +85,7 @@ async def inventory_preview(nft_id: int):
 
 @router.get("/inventory/catalog")
 async def inventory_catalog():
-    """Все активные NFT (id, name, link, price): для показа в кейсах.
+    """Все активные NFT (id, name, link, price_stars, price_ton): для показа в кейсах.
     Картинка: BACKEND_URL + '/inventory/preview/' + id"""
     return {"items": rpc("get_catalog", {}) or []}
 
