@@ -466,9 +466,10 @@ async def handle_update(update: dict):
         await handle_rass_callback(cq)
 
 
-@router.post("/bot/webhook")
+# Сделайте так:
+@router.post("/")
 async def bot_webhook(request: Request,
-                      x_telegram_bot_api_secret_token: Optional[str] = Header(None)):
+                     x_telegram_bot_api_secret_token: Optional[str] = Header(None)):
     if WEBHOOK_SECRET and x_telegram_bot_api_secret_token != WEBHOOK_SECRET:
         raise HTTPException(403, "forbidden")
     try:
