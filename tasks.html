@@ -3,475 +3,234 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PandaGift - Tasks</title>
+    <title>PandaGift - TikTok</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
         :root {
-            --bg-dark: #07173f;
-            --blue: #2f6bff;
-            --blue-light: #8fc2ff;
-            --blue-deep: #1d4ed8;
-            --glass: rgba(255, 255, 255, 0.12);
-            --glass-line: rgba(255, 255, 255, 0.18);
+            --or: #2f6bff;
+            --or2: #8fc2ff;
+            --soft: #cfe0ff;
+            --muted: #9db6ee;
+            --line: rgba(120, 170, 255, 0.35);
+            --panel: rgba(3, 14, 60, 0.72);
         }
-        * { -webkit-tap-highlight-color: transparent; user-select: none; box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
+            margin: 0; min-height: 100vh; color: #fff; font-family: 'Inter', sans-serif;
             background:
-                radial-gradient(circle at 50% 12%, #4a86ff 0%, rgba(47,107,255,0.35) 26%, transparent 60%),
-                linear-gradient(180deg, #1f55d6 0%, #133ea6 42%, #08205f 100%);
+                radial-gradient(circle at 50% 6%, rgba(47, 107, 255, 0.7) 0%, rgba(47, 107, 255, 0.18) 30%, transparent 56%),
+                linear-gradient(180deg, #1f55d6 0%, #133ea6 45%, #07173f 100%);
             background-attachment: fixed;
-            color: white; font-family: 'Inter', sans-serif; margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column;
+            overflow-x: hidden;
+        }
+        #sparks { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+        .web { position: fixed; top: 0; right: 0; width: 100px; height: 100px; z-index: 1; pointer-events: none; opacity: 0.8; }
+
+        .page {
+            position: relative; z-index: 2; max-width: 560px; margin: 0 auto;
+            padding: calc(14px + var(--tg-safe-area-inset-top, 0px)) 18px 130px;
         }
 
-        #stars-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
-        .layer { position: relative; z-index: 1; }
-
-        .header-panel { padding: 12px 20px; background: rgba(8, 28, 92, 0.55); border-bottom: 1px solid var(--glass-line); backdrop-filter: blur(20px); padding-top: calc(12px + var(--tg-safe-area-inset-top, 0px)); }
-        .back-btn { display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 12px; background: var(--glass); border: 1px solid var(--glass-line); }
-        .back-btn:active { transform: scale(0.9); }
-        .bal-pill { display: flex; align-items: center; gap: 8px; background: var(--glass); padding: 8px 16px; border-radius: 999px; border: 1px solid #000; color: #fff; backdrop-filter: blur(10px); }
-
-        .sub-panel { padding: 14px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
-
-        .tasks-container { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; scrollbar-width: none; }
-        .tasks-container::-webkit-scrollbar { display: none; }
-
-        .task-card {
-            position: relative; overflow: hidden;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%);
-            border: 1px solid var(--glass-line); border-radius: 28px; padding: 24px; backdrop-filter: blur(10px);
-            display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px;
-            box-shadow: 0 10px 30px rgba(0, 20, 90, 0.35);
+        .top { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+        .back {
+            width: 36px; height: 36px; border-radius: 12px; flex-shrink: 0;
+            background: rgba(3, 14, 60, 0.8); border: 1px solid var(--line); color: var(--soft);
+            display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; cursor: pointer;
         }
-        .task-hero { width: 104px; height: 104px; object-fit: contain; filter: drop-shadow(0 8px 12px rgba(0, 20, 90, 0.45)); animation: float 3.5s ease-in-out infinite; }
-        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .back:active { transform: scale(0.9); }
+        .brand { font-weight: 900; font-style: italic; font-size: 18px; letter-spacing: -0.3px; }
+        .brand span { color: var(--or2); }
 
-        .reward-pill { color: #fff; background: rgba(47, 107, 255, 0.35); border: 1px solid rgba(143, 194, 255, 0.45); }
+        /* герой */
+        .hero { text-align: center; padding: 6px 0 4px; }
+        .hero img.pic {
+            width: 118px; height: 118px; object-fit: contain;
+            filter: drop-shadow(0 0 22px rgba(80, 140, 255, 0.65)); animation: float 3.5s ease-in-out infinite;
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .hero h1 {
+            margin: 10px 0 4px; font-size: 30px; font-weight: 900; font-style: italic; text-transform: uppercase;
+            letter-spacing: -0.5px; line-height: 1.02; text-shadow: 0 0 22px rgba(80, 140, 255, 0.6);
+        }
+        .hero h1 span { color: var(--or2); }
+        .hero p { margin: 0 auto; max-width: 290px; color: var(--muted); font-size: 13px; font-weight: 600; line-height: 1.45; }
 
-        .btn-row { display: flex; width: 100%; gap: 8px; margin-top: 6px; }
-        .btn-action { flex: 1; text-align: center; font-weight: 900; font-size: 11px; padding: 14px 4px; border-radius: 999px; text-transform: uppercase; transition: all 0.2s ease; }
-        .btn-action:active { transform: scale(0.95); }
-        .btn-action:disabled { opacity: 0.4; }
-        .btn-go { background: var(--glass); color: #fff; border: 1px solid var(--glass-line); }
-        .btn-verify { background: linear-gradient(180deg, #4f8cff, #1d4ed8); color: #fff; box-shadow: 0 0 20px rgba(47, 107, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
-        .btn-skip { background: rgba(3, 14, 60, 0.45); color: #8fb0f0; border: 1px solid var(--glass-line); }
+        /* путь */
+        .flow { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 18px 0 6px; }
+        .flow b {
+            font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; color: var(--soft);
+            padding: 7px 12px; border-radius: 999px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--line);
+        }
+        .flow i { color: var(--or2); font-style: normal; font-weight: 900; }
 
-        /* Кнопка "Заработать на TikTok" */
-        .tiktok-cta {
-            position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 10px;
-            width: 100%; padding: 18px 16px; border-radius: 22px; cursor: pointer;
-            background: linear-gradient(135deg, #5b94ff, #2f6bff 60%, #1d4ed8);
-            border: 1px solid #a8c8ff; color: #fff;
-            font-weight: 900; font-style: italic; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em;
+        .label { margin: 22px 4px 10px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.14em; color: var(--soft); }
+
+        /* тарифы */
+        .tiers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .tier {
+            position: relative; overflow: hidden; border-radius: 22px; padding: 16px 14px; text-align: center;
+            background: linear-gradient(160deg, rgba(47, 107, 255, 0.24) 0%, rgba(3, 14, 60, 0.85) 100%);
+            border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+        .tier .views { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
+        .tier .views small { display: block; font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+        .tier .pay {
+            margin-top: 12px; padding: 8px 6px; border-radius: 14px; font-size: 17px; font-weight: 900; color: var(--or2);
+            background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(143, 194, 255, 0.25);
+        }
+        .tier.top {
+            grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; text-align: left; padding: 16px 18px;
+            border-color: var(--or2); background: linear-gradient(135deg, rgba(80, 140, 255, 0.38) 0%, rgba(3, 14, 60, 0.9) 100%);
+            box-shadow: 0 0 28px rgba(47, 107, 255, 0.35);
+        }
+        .tier.top .pay { margin: 0; font-size: 20px; padding: 10px 14px; }
+        .tier.top::after {
+            content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+            transform: skewX(-20deg); animation: shine 3.5s infinite;
+        }
+        @keyframes shine { 0% { left: -60%; } 60%, 100% { left: 130%; } }
+        .st { width: 1em; height: 1em; object-fit: contain; vertical-align: -0.12em; margin-left: 2px; filter: drop-shadow(0 0 5px rgba(47, 107, 255, 0.7)); }
+        .note { margin: 10px 4px 0; text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); }
+
+        /* условия */
+        .rules { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 6px 16px; }
+        .rule { display: flex; gap: 12px; align-items: flex-start; padding: 11px 0; font-size: 13px; font-weight: 600; line-height: 1.4; color: #e3eeff; }
+        .rule + .rule { border-top: 1px solid rgba(143, 194, 255, 0.12); }
+        .rule::before {
+            content: ''; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 6px;
+            background: var(--or2); box-shadow: 0 0 8px var(--or);
+        }
+        .rule a { color: var(--or2); font-weight: 800; text-decoration: none; border-bottom: 1px dashed rgba(143, 194, 255, 0.6); }
+        .rule.bad::before { background: #e86a5a; box-shadow: 0 0 8px #c0121f; }
+
+        .manager {
+            display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 12px 14px; border-radius: 20px;
+            background: rgba(0, 0, 0, 0.3); border: 1px solid var(--line); cursor: pointer;
+        }
+        .manager:active { transform: scale(0.98); }
+        .manager img { width: 40px; height: 40px; object-fit: contain; border-radius: 12px; background: rgba(47, 107, 255, 0.18); padding: 4px; }
+        .manager small { display: block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+        .manager b { font-size: 14px; font-weight: 800; color: var(--soft); }
+        .manager i { margin-left: auto; color: var(--or2); font-style: normal; font-weight: 900; font-size: 18px; }
+
+        /* кнопка снизу */
+        .cta-wrap {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; padding: 28px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+            background: linear-gradient(180deg, rgba(7, 23, 63, 0) 0%, rgba(7, 23, 63, 0.92) 45%);
+        }
+        .cta {
+            position: relative; overflow: hidden; display: block; width: 100%; max-width: 524px; margin: 0 auto; padding: 16px; border: 1px solid #a8c8ff; border-radius: 18px;
+            background: linear-gradient(135deg, #5b94ff, #2f6bff 60%, #1d4ed8); color: #fff;
+            font-family: inherit; font-size: 16px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: 0.04em; cursor: pointer;
             box-shadow: 0 0 26px rgba(47, 107, 255, 0.55), inset 0 -3px 0 rgba(10, 30, 100, 0.45);
-            transition: transform 0.15s;
         }
-        .tiktok-cta:active { transform: scale(0.97); }
-        .tiktok-cta::after {
+        .cta::after {
             content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
             transform: skewX(-20deg); animation: shine 3s infinite;
         }
-        @keyframes shine { 0% { left: -60%; } 60%, 100% { left: 130%; } }
-        .tiktok-cta svg { width: 22px; height: 22px; flex-shrink: 0; }
-
-        .star-ico { display: inline-block; vertical-align: middle; object-fit: contain; }
-        .search-box { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 48px 16px; gap: 16px; }
-        .spinner { width: 44px; height: 44px; border: 3px solid #12308a; border-left-color: var(--blue-light); border-radius: 50%; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .fade-text { animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-
-        .empty-box { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 32px; margin-top: 24px; border-radius: 28px; background: linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05)); border: 1px solid var(--glass-line); backdrop-filter: blur(10px); }
-
-        /* общие модалки */
-        .modal { display: none; position: fixed; inset: 0; z-index: 999; background: rgba(2, 10, 40, 0.85); backdrop-filter: blur(12px); align-items: center; justify-content: center; }
-        .modal-box { position: relative; overflow: hidden; width: 85%; max-width: 340px; padding: 30px 24px 24px; border-radius: 28px; text-align: center; animation: pop 0.3s ease; background: linear-gradient(180deg, #1c4bc4 0%, #0a2468 100%); border: 1px solid rgba(255, 255, 255, 0.35); box-shadow: 0 0 40px rgba(47, 107, 255, 0.5); }
-        @keyframes pop { from { transform: scale(0.88); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-        .m-btn { position: relative; overflow: hidden; width: 100%; padding: 15px; border-radius: 999px; font-weight: 900; font-style: italic; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #fff; }
-        .m-btn:active { transform: scale(0.96); }
-        .m-blue { background: linear-gradient(180deg, #4f8cff, #1d4ed8); box-shadow: 0 0 22px rgba(47, 107, 255, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
-        .m-blue::after { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent); transform: skewX(-20deg); animation: shine 3s infinite; }
-        @keyframes shine { 0% { left: -60%; } 60%, 100% { left: 130%; } }
-
-        /* модалка "не подписан" */
-        .m-dark { background: var(--glass); border: 1px solid var(--glass-line); }
+        .cta:active { transform: scale(0.97); }
     </style>
 </head>
 <body>
+    <canvas id="sparks"></canvas>
+    <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#000" stroke-width="1">
+        <path d="M150 0 L0 0 M150 0 L150 150 M150 0 L0 110 M150 0 L40 150 M150 0 L90 150 M150 0 L0 50"/>
+        <path d="M120 0 Q115 25 150 30 M85 0 Q80 45 150 60 M50 0 Q45 70 150 95 M15 0 Q10 100 150 130"/>
+    </svg>
 
-    <canvas id="stars-canvas"></canvas>
-
-    <header class="header-panel layer flex justify-between items-center">
-        <div class="flex items-center gap-3">
-            <button onclick="goHome()" class="back-btn">
-                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-            </button>
-            <div class="font-black italic text-lg tracking-tighter">Panda<span style="color:#8fc2ff">Gift</span></div>
+    <div class="page">
+        <div class="top">
+            <div class="back" onclick="goBack()" aria-label="Назад">‹</div>
+            <div class="brand">Panda<span>Gift</span></div>
         </div>
-        <div class="bal-pill">
-            <img src="img/star.png" class="w-4 h-4" onerror="this.style.display='none'">
-            <span id="val-stars" class="font-black text-sm">0.00</span>
+
+        <div class="hero">
+            <img class="pic" src="img/kypok.png" alt="" onerror="this.style.display='none'">
+            <h1>Платим за <span>TikTok</span></h1>
+            <p>Снимай ролики про PandaGift и Telegram Gifts, а мы платим за просмотры</p>
         </div>
-    </header>
 
-    <div class="sub-panel layer">
-        <h2 class="text-xs uppercase font-black tracking-widest" style="color:#8fc2ff">Доступные задания</h2>
-        <p class="text-[11px] mt-0.5" style="color:#cfe0ff">Выполняй задания спонсоров и получай звёзды на счёт</p>
-    </div>
+        <div class="flow"><b>Снимай</b><i>›</i><b>Набирай</b><i>›</i><b>Получай</b></div>
 
-    <div class="tasks-container layer" id="tasks-list"></div>
-
-    <!-- кнопка "Заработать на TikTok" -->
-    <div class="layer" style="padding: 0 20px calc(20px + env(safe-area-inset-bottom, 0px));">
-        <button class="tiktok-cta" onclick="goTiktok()">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c.3 1.8 1.5 3.2 3.5 3.5v2.6c-1.3 0-2.5-.4-3.5-1.1v5.8c0 3.1-2.5 5.6-5.6 5.6S5.3 16.9 5.3 13.8 7.8 8.2 10.9 8.2c.3 0 .6 0 .9.1v2.7c-.3-.1-.6-.2-.9-.2-1.6 0-2.9 1.3-2.9 2.9s1.3 2.9 2.9 2.9 2.9-1.3 2.9-2.9V3h2.7z"/></svg>
-            Заработать на TikTok
-        </button>
-    </div>
-
-    <!-- модалка: звёзды заработаны -->
-    <div id="success-modal" class="modal">
-        <div class="modal-box">
-            <img src="img/star.png" class="w-20 h-20 mx-auto mb-3 object-contain animate-bounce" style="filter: drop-shadow(0 0 18px rgba(143,194,255,0.8))" alt="">
-            <h2 class="text-xl font-black uppercase italic tracking-tight" style="color:#8fc2ff">Задание выполнено!</h2>
-            <div class="py-4 rounded-2xl my-5" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.22);">
-                <p id="reward-text" class="text-3xl font-black" style="color:#fff">+0.00</p>
-            </div>
-            <button onclick="closeModal()" class="m-btn m-blue">Получить</button>
+        <div class="label">Оплата</div>
+        <div class="tiers">
+            <div class="tier"><div class="views">5 000<small>просмотров</small></div><div class="pay">500 <img class="st" src="img/star.png" alt="" onerror="this.style.display='none'"></div></div>
+            <div class="tier"><div class="views">10 000<small>просмотров</small></div><div class="pay">850 <img class="st" src="img/star.png" alt="" onerror="this.style.display='none'"></div></div>
+            <div class="tier"><div class="views">100 000<small>просмотров</small></div><div class="pay">5 500 <img class="st" src="img/star.png" alt="" onerror="this.style.display='none'"></div></div>
+            <div class="tier"><div class="views">500 000<small>просмотров</small></div><div class="pay">15 000 <img class="st" src="img/star.png" alt="" onerror="this.style.display='none'"></div></div>
         </div>
-    </div>
+        <div class="note">По желанию можно получить в крипте</div>
 
-    <!-- модалка: не подписан / задание не выполнено -->
-    <div id="fail-modal" class="modal">
-        <div class="modal-box">
-            <div class="text-6xl mb-3">🙈</div>
-            <h2 id="fail-title" class="text-xl font-black uppercase italic tracking-tight" style="color:#ff8a8a">Вы не подписаны</h2>
-            <p id="fail-text" class="text-xs my-4 leading-relaxed" style="color:#cfe0ff">Подпишитесь на канал и нажмите «Проверить» ещё раз.</p>
-            <button onclick="closeFail()" class="m-btn m-dark">Понятно</button>
+        <div class="label">Условия</div>
+        <div class="rules">
+            <div class="rule">В ролике чётко виден баннер PandaGift. <a onclick="openLink('https://t.me/c/3962122770/6')">Взять баннер</a></div>
+            <div class="rule">Контент связан с Telegram Gifts / PandaGift</div>
+            <div class="rule">Только оригинальные ролики, без перезаливов</div>
+            <div class="rule">Ролик публичный минимум 3 дня, комментарии открыты</div>
+            <div class="rule">Один ролик оплачивается только один раз</div>
+            <div class="rule">Просмотры проверяем по статистике TikTok</div>
+            <div class="rule bad">Накрутка, боты и продвижение от самого TikTok запрещены</div>
+            <div class="rule bad">Лимит: 500 000 просмотров на ролик. Всё свыше не оплачивается</div>
+        </div>
+
+        <div class="manager" onclick="openLink('https://t.me/St1fix_Support')">
+            <img src="img/pepe.png" alt="" onerror="this.style.display='none'">
+            <div><small>Менеджер по TikTok</small><b>@St1fix_Support</b></div>
+            <i>›</i>
         </div>
     </div>
 
-    <script src="music.js"></script>
+    <div class="cta-wrap">
+        <button class="cta" onclick="openLink('https://t.me/+mKEV01QJJpNlMDAy')">Начать</button>
+    </div>
+
     <script>
         const tg = window.Telegram.WebApp;
-        const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
 
-        const IMAGES = ["pepe.png", "chassiki.png", "cccccerce.png", "mixail.png", "rozka.png", "pidarynok.png", "totik.png", "buket.png", "raketa.png", "kypok.png", "kolechko.png", "alik.png"];
-
-        let own = [];
-        let skipped = new Set();
-        const SRC = {
-            bh: { path: '/tasks/bh', link: null, loaded: false, error: false, reward: 0.3 },
-            fl: { path: '/tasks/fl', link: null, loaded: false, error: false, reward: 0.3 }
-        };
-        let cur = null;
-        let busy = false;
-        let searchTimer = null;
-
-        const listEl = () => document.getElementById('tasks-list');
-
-        // звуки (лежат рядом с tasks.html)
-        const sndEarn = new Audio('earn.mp3');
-        const sndFail = new Audio('skip.mp3');
-        sndEarn.preload = 'auto';
-        sndFail.preload = 'auto';
-        function playSnd(a) {
-            try {
-                a.currentTime = 0;
-                const p = a.play();
-                if (p && p.catch) p.catch(e => console.warn('звук не играет', e));
-            } catch (_) {}
-        }
-
-        function esc(s) {
-            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        }
-        function starImg(size) {
-            const s = size || 16;
-            return `<img src="img/star.png" class="star-ico" style="width:${s}px;height:${s}px" alt="" onerror="this.style.display='none'">`;
-        }
-        function pickImg(key) {
-            let h = 0;
-            for (const c of String(key)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-            return 'img/' + IMAGES[h % IMAGES.length];
-        }
-        function setBalance(v) { document.getElementById('val-stars').innerText = Number(v || 0).toFixed(2); }
         function haptic(t) { try { tg.HapticFeedback && tg.HapticFeedback.impactOccurred(t || 'light'); } catch (_) {} }
-        function goHome() { haptic(); window.location.href = 'index.html'; }
-
-        // переход на страницу TikTok
-        function goTiktok() {
+        function openLink(url) {
             haptic('medium');
-            window.location.href = 'Tiktok.html';
+            if (/^https?:\/\/(t|telegram)\.me\//i.test(url) && tg.openTelegramLink) tg.openTelegramLink(url);
+            else if (tg.openLink) tg.openLink(url);
+            else window.open(url, '_blank');
+        }
+        function goBack() {
+            haptic();
+            if (history.length > 1) history.back(); else location.href = 'index.html';
         }
 
-        async function api(path, body) {
-            const res = await fetch(BACKEND_URL + path, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ init_data: tg.initData, ...(body || {}) })
-            });
-            let data = {};
-            try { data = await res.json(); } catch (_) {}
-            if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
-            return data;
-        }
+        try { tg.expand(); tg.ready(); tg.headerColor = '#1f55d6'; tg.backgroundColor = '#07173f'; } catch (_) {}
 
-        // ---- Модалка успеха (+ звук earn.mp3) ----
-        function showModal(reward) {
-            document.getElementById('reward-text').innerHTML = `+${Number(reward).toFixed(2)} ${starImg(28)}`;
-            document.getElementById('success-modal').style.display = 'flex';
-            playSnd(sndEarn);
-            try { tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success'); } catch (_) {}
-        }
-        function closeModal() { document.getElementById('success-modal').style.display = 'none'; }
-
-        // ---- Модалка "не подписан" (+ звук skip.mp3) ----
-        function showFail(title, text) {
-            document.getElementById('fail-title').innerText = title;
-            document.getElementById('fail-text').innerText = text;
-            document.getElementById('fail-modal').style.display = 'flex';
-            playSnd(sndFail);
-            try { tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('error'); } catch (_) {}
-        }
-        function closeFail() { document.getElementById('fail-modal').style.display = 'none'; }
-
-        // ---- Экран поиска: сначала "Ищем задания...", через пару секунд "Это займёт меньше минуты" ----
-        function stopSearching() {
-            if (searchTimer) { clearTimeout(searchTimer); searchTimer = null; }
-        }
-        function showSearching() {
-            stopSearching();
-            listEl().innerHTML = `
-                <div class="search-box">
-                    <div class="spinner"></div>
-                    <div id="search-text" class="text-sm font-black uppercase tracking-wider" style="color:#cfe0ff">Ищем задания...</div>
-                </div>`;
-            searchTimer = setTimeout(() => {
-                const el = document.getElementById('search-text');
-                if (el) {
-                    el.classList.remove('fade-text');
-                    void el.offsetWidth;
-                    el.classList.add('fade-text');
-                    el.innerText = 'Это займёт меньше минуты';
-                }
-            }, 2500);
-        }
-
-        // ---- Внешние источники (BotoHub / Flowly) ----
-        async function srcCall(name, action) {
-            const s = SRC[name];
-            const prev = s.link;
-            const d = await api(s.path, { action });
-            s.loaded = true;
-            if (d.ok === false) { s.error = true; s.link = null; return { ok: false, prev }; }
-            s.error = false;
-            s.link = d.link || null;
-            if (d.rewarded > 0) {
-                if (d.new_balance !== null && d.new_balance !== undefined) setBalance(d.new_balance);
-                showModal(d.rewarded);
+        // искры на фоне
+        (function () {
+            const c = document.getElementById('sparks');
+            const ctx = c.getContext('2d');
+            let p = [];
+            function init() {
+                c.width = innerWidth; c.height = innerHeight;
+                p = Array.from({ length: 30 }, () => ({
+                    x: Math.random() * c.width, y: Math.random() * c.height,
+                    s: Math.random() * 2 + 0.5, v: Math.random() * 0.4 + 0.12,
+                    d: (Math.random() - 0.5) * 0.3, o: Math.random() * 0.6 + 0.2, y2: Math.random() < 0.4
+                }));
             }
-            return { ok: true, prev, link: d.link, rewarded: d.rewarded };
-        }
-
-        async function ensureSrc(name) {
-            const s = SRC[name];
-            if (s.loaded) return;
-            try { await srcCall(name, 'get'); } catch (e) { s.loaded = true; s.error = true; s.link = null; }
-        }
-
-        // ---- Отрисовка ----
-        async function render() {
-            const t = own.find(x => !skipped.has(x.id));
-            if (t) {
-                return drawCard({
-                    kind: 'own', id: t.id, key: 'own' + t.id, link: t.link,
-                    title: t.title,
-                    desc: t.desc_text || 'Подпишись на канал и нажми «Проверить»',
-                    reward: t.reward
+            function loop() {
+                ctx.clearRect(0, 0, c.width, c.height);
+                p.forEach(a => {
+                    ctx.beginPath(); ctx.globalAlpha = a.o; ctx.fillStyle = a.y2 ? '#8fc2ff' : '#4f8cff';
+                    ctx.arc(a.x, a.y, a.s, 0, Math.PI * 2); ctx.fill();
+                    a.y -= a.v; a.x += a.d;
+                    if (a.y < -5) { a.y = c.height + 5; a.x = Math.random() * c.width; }
                 });
+                requestAnimationFrame(loop);
             }
-
-            const need = ['bh', 'fl'].some(n => !SRC[n].loaded);
-            if (need) showSearching();
-
-            for (const name of ['bh', 'fl']) {
-                await ensureSrc(name);
-                if (SRC[name].link) {
-                    return drawCard({
-                        kind: name, key: name + SRC[name].link, link: SRC[name].link,
-                        title: 'Задание',
-                        desc: 'Перейди по ссылке, подпишись или запусти бота и нажми «Проверить»',
-                        reward: SRC[name].reward
-                    });
-                }
-            }
-            drawEmpty();
-        }
-
-        function drawCard(t) {
-            stopSearching();
-            cur = t;
-            listEl().innerHTML = `
-                <div class="task-card">
-                    <img class="task-hero" src="${pickImg(t.key)}" alt="" onerror="this.style.display='none'">
-                    <div>
-                        <h3 class="text-base font-black tracking-tight text-white">${esc(t.title)}</h3>
-                        <p class="text-xs mt-1 max-w-[260px] mx-auto" style="color:#cfe0ff">${esc(t.desc)}</p>
-                        <p class="reward-pill text-xs font-black mt-3 px-3 py-1 rounded-full inline-flex items-center gap-1">+${Number(t.reward).toFixed(2)} ${starImg(14)}</p>
-                    </div>
-                    <div class="btn-row">
-                        <button onclick="goToLink()" class="btn-action btn-go">Перейти</button>
-                        <button id="btn-check" onclick="checkTask()" class="btn-action btn-verify">Проверить</button>
-                        <button id="btn-skip" onclick="skipTask()" class="btn-action btn-skip">Пропустить</button>
-                    </div>
-                </div>`;
-        }
-
-        function drawEmpty() {
-            stopSearching();
-            cur = null;
-            const bothErr = SRC.bh.error && SRC.fl.error;
-            const msg = bothErr
-                ? ['😴', 'Задания временно недоступны', 'Попробуй открыть раздел чуть позже.']
-                : ['🐼', 'Пока заданий нет', 'Новые задания появляются регулярно. Загляни позже!'];
-            listEl().innerHTML = `
-                <div class="empty-box">
-                    <div class="text-5xl mb-4">${msg[0]}</div>
-                    <h3 class="text-sm font-black uppercase tracking-wider" style="color:#fff">${msg[1]}</h3>
-                    <p class="text-[11px] mt-2 max-w-[220px] leading-relaxed" style="color:#cfe0ff">${msg[2]}</p>
-                </div>`;
-        }
-
-        // ---- Действия ----
-        function goToLink() {
-            if (!cur) return;
-            haptic();
-            if (/^https?:\/\/(t|telegram)\.me\//i.test(cur.link) && tg.openTelegramLink) tg.openTelegramLink(cur.link);
-            else tg.openLink(cur.link);
-        }
-
-        function setBusy(v) {
-            busy = v;
-            ['btn-check', 'btn-skip'].forEach(id => { const b = document.getElementById(id); if (b) b.disabled = v; });
-        }
-
-        async function checkTask() {
-            if (!cur || busy) return;
-            setBusy(true);
-            try {
-                if (cur.kind === 'own') {
-                    const d = await api('/tasks/check_own', { task_id: cur.id });
-                    if (d.success) {
-                        own = own.filter(x => x.id !== cur.id);
-                        setBalance(d.new_balance);
-                        showModal(d.reward);
-                    } else if (d.reason === 'not_subscribed') {
-                        showFail('Вы не подписаны', 'Вы не подписаны на канал. Подпишитесь и нажмите «Проверить» ещё раз.');
-                        setBusy(false); return;
-                    } else if (d.reason === 'already_done' || d.reason === 'not_found') {
-                        own = own.filter(x => x.id !== cur.id);
-                    } else {
-                        tg.showAlert('Не удалось проверить задание. Попробуй позже.');
-                        setBusy(false); return;
-                    }
-                } else {
-                    const r = await srcCall(cur.kind, 'check');
-                    if (!r.ok) {
-                        tg.showAlert('Не удалось проверить задание. Попробуй позже.');
-                        setBusy(false); return;
-                    }
-                    if (!(r.rewarded > 0) && r.link && r.link === r.prev) {
-                        showFail('Не выполнено', 'Вы не подписаны на канал или не выполнили задание. Сделайте это по ссылке и нажмите «Проверить» снова.');
-                        setBusy(false); return;
-                    }
-                }
-            } catch (e) {
-                tg.showAlert('Ошибка сети. Попробуй ещё раз.');
-                setBusy(false); return;
-            }
-            setBusy(false);
-            render();
-        }
-
-        // пропуск без звука
-        async function skipTask() {
-            if (!cur || busy) return;
-            haptic();
-            if (cur.kind === 'own') {
-                skipped.add(cur.id);
-                return render();
-            }
-            setBusy(true);
-            showSearching();
-            try { await srcCall(cur.kind, 'skip'); } catch (e) { tg.showAlert('Ошибка сети. Попробуй ещё раз.'); }
-            setBusy(false);
-            render();
-        }
-
-        // ---- Старт ----
-        window.onload = async () => {
-            try {
-                tg.expand(); tg.ready();
-                tg.headerColor = '#1f55d6';
-                tg.backgroundColor = '#08205f';
-            } catch (_) {}
-            if (!tg.initData) {
-                listEl().innerHTML = `<div class="text-center text-sm font-bold py-12" style="color:#cfe0ff">Открой приложение через Telegram</div>`;
-                return;
-            }
-            showSearching();
-            try {
-                const d = await api('/tasks/list');
-                own = d.own || [];
-                SRC.bh.reward = 0.5;
-                SRC.fl.reward = 0.5;
-                setBalance(d.balance);
-                render();
-            } catch (e) {
-                console.error(e);
-                stopSearching();
-                listEl().innerHTML = `<div class="text-center text-red-300 text-xs py-12 font-bold">Не удалось загрузить задания. Перезапусти приложение.</div>`;
-            }
-        };
-
-        // лёгкие светлые пузырьки на фоне (как на главной)
-        const canvas = document.getElementById('stars-canvas');
-        const ctx = canvas.getContext('2d');
-        let bubbles = [];
-        function initStars() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            bubbles = Array.from({ length: 30 }, () => ({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: Math.random() * 2.2 + 0.6,
-                speed: Math.random() * 0.35 + 0.1,
-                drift: (Math.random() - 0.5) * 0.25,
-                opacity: Math.random() * 0.45 + 0.15,
-                bright: Math.random() < 0.4
-            }));
-        }
-        function animateStars() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            bubbles.forEach(s => {
-                ctx.beginPath();
-                ctx.globalAlpha = s.opacity;
-                ctx.fillStyle = s.bright ? '#ffffff' : '#9cc4ff';
-                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
-                ctx.fill();
-                s.y -= s.speed;
-                s.x += s.drift;
-                if (s.y < -5) { s.y = canvas.height + 5; s.x = Math.random() * canvas.width; }
-            });
-            requestAnimationFrame(animateStars);
-        }
-        initStars(); animateStars();
-        window.addEventListener('resize', initStars);
+            init(); loop();
+            addEventListener('resize', init);
+        })();
     </script>
 </body>
 </html>
