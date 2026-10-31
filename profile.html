@@ -375,7 +375,7 @@ async function sellItem() {
         invBusy = true;
         closeItem();
         try {
-            await api('/inventory/sell', { item_id: it.id });
+            await api('/inventory/sell', { nft_id: it.nft_id });
             haptic('notificationOccurred', 'success');
             notify(`Предмет продан: +${Number(it.price)} Stars`);
         } catch (e) {
@@ -397,7 +397,7 @@ async function withdrawItem() {
         invBusy = true;
         closeItem();
         try {
-            await api('/inventory/withdraw', { item_id: it.id });
+            await api('/inventory/withdraw', { nft_id: it.nft_id });
             haptic('notificationOccurred', 'success');
             notify('Заявка на вывод создана. Подарок придёт в течение 24 часов.');
         } catch (e) {
