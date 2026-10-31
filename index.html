@@ -7,6 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@2.0.9/dist/tonconnect-ui.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
@@ -69,10 +70,26 @@
         #tikva.shake { animation: shake 0.5s ease; }
         @keyframes shake { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-6deg); } 40% { transform: rotate(5deg); } 60% { transform: rotate(-4deg); } 80% { transform: rotate(3deg); } }
 
+        /* подсказка возле тыквы */
+        .tikva-wrap { position: relative; width: 150px; margin: 0 auto; }
+        .tap-hint {
+            position: absolute; left: calc(100% + 2px); top: 46px; z-index: 4;
+            display: flex; align-items: center; pointer-events: none;
+            animation: nudge 1.1s ease-in-out infinite;
+        }
+        .tap-hint .arrow { font-size: 22px; color: #ffb347; filter: drop-shadow(0 0 6px rgba(255,122,26,0.9)); margin-right: -2px; }
+        .tap-hint .bubble {
+            background: linear-gradient(135deg, #ffa13a, #c2410c);
+            color: #fff; font-weight: 900; font-style: italic; text-transform: uppercase;
+            font-size: 12px; line-height: 1.1; padding: 7px 10px; border-radius: 12px; white-space: nowrap;
+            box-shadow: 0 0 16px rgba(255, 122, 26, 0.7);
+        }
+        @keyframes nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-7px); } }
+
         /* кнопка ивента: чёрная, в крови */
         .event-card { background: #000 !important; border: 1px solid #000; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7); }
         .event-card:active { background: #000 !important; border-color: #3a0000; }
-                .event-card .card-title { color: #fff; text-shadow: 0 0 10px rgba(255, 0, 0, 0.6); }
+        .event-card .card-title { color: #fff; text-shadow: 0 0 10px rgba(255, 0, 0, 0.6); }
         .event-card .card-desc { color: #e6e6e6; opacity: 1; }
         .event-card img { filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.55)); }
 
@@ -95,6 +112,31 @@
         @keyframes wob { 0%, 100% { transform: rotate(-10deg); } 50% { transform: rotate(10deg); } }
         .ev-close { background: none; border: none; color: #777; font-size: 12px; padding: 8px; cursor: pointer; }
 
+        /* модалка пополнения */
+        #topup-modal { position: fixed; inset: 0; z-index: 100001; display: none; align-items: flex-end; justify-content: center; background: rgba(0,0,0,0.75); backdrop-filter: blur(6px); opacity: 0; transition: opacity 0.25s; }
+        #topup-modal.show { display: flex; }
+        #topup-modal.vis { opacity: 1; }
+        .tp-box { width: 100%; max-width: 480px; max-height: 92vh; overflow-y: auto; padding: 22px 20px 34px; border-radius: 28px 28px 0 0; background: linear-gradient(180deg, #3a1300 0%, #1a0a00 100%); border: 1px solid var(--line); border-bottom: none; box-shadow: 0 -10px 40px rgba(255,122,26,0.25); transform: translateY(40px); transition: transform 0.25s; }
+        #topup-modal.vis .tp-box { transform: translateY(0); }
+        .tp-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .tp-title { font-size: 20px; font-weight: 900; font-style: italic; text-transform: uppercase; }
+        .tp-x { background: rgba(255,255,255,0.08); border: none; color: #fff; width: 32px; height: 32px; border-radius: 50%; font-size: 16px; cursor: pointer; }
+        .tp-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+        .tp-tab { flex: 1; padding: 12px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,122,26,0.08); color: #d6b9a0; font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 13px; cursor: pointer; }
+        .tp-tab.active { background: linear-gradient(135deg, #ffa13a, #c2410c); color: #fff; border-color: rgba(255,190,110,0.7); box-shadow: 0 0 18px rgba(255,122,26,0.5); }
+        .tp-pane { display: none; }
+        .tp-pane.active { display: block; }
+        .tp-presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
+        .tp-chip { padding: 12px 0; text-align: center; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,122,26,0.08); font-weight: 900; font-size: 14px; cursor: pointer; }
+        .tp-chip.sel { border-color: var(--orange-light); background: rgba(255,122,26,0.35); }
+        .tp-input { width: 100%; padding: 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(0,0,0,0.4); color: #fff; font-size: 16px; font-weight: 700; outline: none; margin-bottom: 12px; user-select: text; }
+        .tp-input:focus { border-color: var(--orange-light); }
+        .tp-note { font-size: 11px; color: #d6b9a0; line-height: 1.4; margin-bottom: 14px; text-align: center; }
+        .tp-pay { width: 100%; padding: 16px; border: none; border-radius: 16px; background: linear-gradient(135deg, #ffa13a, #c2410c); color: #fff; font-size: 15px; font-weight: 900; font-style: italic; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 22px rgba(255,122,26,0.5); }
+        .tp-pay:disabled { opacity: 0.6; }
+        .tp-pay:active { transform: scale(0.98); }
+        #ton-connect-btn { display: flex; justify-content: center; margin-bottom: 12px; }
+
         .scrollable-content {
             position: relative;
             z-index: 1;
@@ -112,6 +154,7 @@
         }
         .balance-item-v2 { display: flex; align-items: center; justify-content: flex-end; gap: 8px; cursor: pointer; color: var(--orange-light); }
         .balance-item-v2 img { width: 20px; height: 20px; object-fit: contain; filter: drop-shadow(0 0 5px var(--orange)); }
+        .bal-plus { width: 22px; height: 22px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; line-height: 1; color: #fff; background: linear-gradient(145deg, #ffa13a, #c2410c); box-shadow: 0 0 10px rgba(255,122,26,0.6); }
 
         .hero-zone { position: relative; text-align: center; margin: 30px 0 10px; }
         #tikva { width: 150px; height: 150px; margin: 0 auto; }
@@ -171,8 +214,6 @@
 
     <canvas id="stars-canvas"></canvas>
 
-    <!-- Хэллоуин-декор -->
-
     <div class="main-wrapper">
         <svg class="web" viewBox="0 0 150 150" fill="none" stroke="#000" stroke-width="1">
             <path d="M150 0 L0 0 M150 0 L150 150 M150 0 L0 110 M150 0 L40 150 M150 0 L90 150 M150 0 L0 50"/>
@@ -192,17 +233,21 @@
                         <div id="display-id" class="text-[10px] font-bold opacity-80" style="color:#ffb347">ID: 00000000</div>
                     </div>
                 </div>
-                <div class="balance-container-v2" onclick="openBalance()">
+                <div class="balance-container-v2" onclick="openTopup()">
                     <div class="balance-item-v2">
                         <span id="bal-stars" class="font-black text-xl">0.00</span>
                         <img src="img/star.png" alt="STAR">
+                        <div class="bal-plus">+</div>
                     </div>
                 </div>
             </div>
 
             <!-- ЗАГОЛОВОК -->
             <div class="hero-zone">
-                <div id="tikva"></div>
+                <div class="tikva-wrap">
+                    <div id="tikva"></div>
+                    <div class="tap-hint"><span class="arrow">◀</span><span class="bubble">Жми жми!</span></div>
+                </div>
                 <h1 class="text-5xl font-black italic mt-2 uppercase tracking-tighter title-glow">Fix<span style="color:#ffb347">Stars</span></h1>
                 <div class="h-1 w-14 rounded-full mx-auto mt-3" style="background:#ffb347"></div>
             </div>
@@ -304,6 +349,48 @@
         </div>
     </div>
 
+    <!-- модалка пополнения -->
+    <div id="topup-modal" onclick="closeTopup()">
+        <div class="tp-box" onclick="event.stopPropagation()">
+            <div class="tp-head">
+                <div class="tp-title">Пополнение баланса</div>
+                <button class="tp-x" onclick="closeTopup()">✕</button>
+            </div>
+
+            <div class="tp-tabs">
+                <button class="tp-tab active" id="tab-stars" onclick="switchTab('stars')">⭐ Stars</button>
+                <button class="tp-tab" id="tab-ton" onclick="switchTab('ton')">💎 TON</button>
+            </div>
+
+            <!-- Telegram Stars -->
+            <div class="tp-pane active" id="pane-stars">
+                <div class="tp-presets" id="stars-presets">
+                    <div class="tp-chip" data-v="50">50</div>
+                    <div class="tp-chip sel" data-v="100">100</div>
+                    <div class="tp-chip" data-v="250">250</div>
+                    <div class="tp-chip" data-v="500">500</div>
+                </div>
+                <input id="stars-amount" class="tp-input" type="number" inputmode="numeric" min="1" step="1" placeholder="Своя сумма (Stars)" value="100">
+                <div class="tp-note">Оплата через Telegram Stars. Баланс пополнится сразу после оплаты: 1 ⭐ = 1 Star.</div>
+                <button class="tp-pay" id="stars-pay-btn" onclick="payStars()">Пополнить Stars</button>
+            </div>
+
+            <!-- TON -->
+            <div class="tp-pane" id="pane-ton">
+                <div class="tp-presets" id="ton-presets">
+                    <div class="tp-chip" data-v="0.5">0.5</div>
+                    <div class="tp-chip sel" data-v="1">1</div>
+                    <div class="tp-chip" data-v="2">2</div>
+                    <div class="tp-chip" data-v="5">5</div>
+                </div>
+                <input id="ton-amount" class="tp-input" type="number" inputmode="decimal" min="0.1" step="0.1" placeholder="Своя сумма (TON)" value="1">
+                <div id="ton-connect-btn"></div>
+                <div class="tp-note" id="ton-note">Подключите кошелёк через TonConnect и подтвердите перевод. Зачисление после подтверждения в сети (обычно до минуты).</div>
+                <button class="tp-pay" id="ton-pay-btn" onclick="payTon()">Оплатить TON</button>
+            </div>
+        </div>
+    </div>
+
 <script src="music.js"></script>
 <script>
 const tg = window.Telegram.WebApp;
@@ -314,6 +401,8 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
 
     const tgUser = tg.initDataUnsafe?.user;
     const user = (tgUser && tgUser.id) ? tgUser : { id: '12345', username: 'TestUser', first_name: 'Тестер' };
+
+    function notify(msg) { if (tg.showAlert) tg.showAlert(msg); else alert(msg); }
 
     async function syncData() {
         try {
@@ -329,8 +418,10 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
             if (starsElem) {
                 starsElem.innerText = starsVal.toFixed(2);
             }
+            return starsVal;
         } catch (e) {
             console.warn("Не удалось обновить баланс:", e);
+            return null;
         }
     }
 
@@ -460,8 +551,7 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
                 syncData();
             } else if (result.status === 'need') {
                 showSubscriptionModal(result.channels);
-                const msg = 'Вы подписались ещё не на все каналы!';
-                if (tg.showAlert) tg.showAlert(msg); else alert(msg);
+                notify('Вы подписались ещё не на все каналы!');
             } else {
                 showSubscriptionModal([], 'Не удалось проверить подписку. Попробуйте ещё раз.');
             }
@@ -545,15 +635,13 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
     }
 
     // ивент
-// ивент
-function openEvent() {
-    playSnd(sndEvent);
-    try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
-    
-    setTimeout(() => {
-        window.location.href = 'event.html?v=' + Date.now();
-    }, 200);
-}
+    function openEvent() {
+        playSnd(sndEvent);
+        try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
+        setTimeout(() => {
+            window.location.href = 'event.html?v=' + Date.now();
+        }, 200);
+    }
     function closeEvent() {
         const m = document.getElementById('event-modal');
         m.classList.remove('vis');
@@ -565,28 +653,174 @@ function openEvent() {
         else window.open(url, '_blank');
     }
 
-    // тап по балансу: на время беты ивент открывается только тем, кого пускает сервер (ADMIN_IDS).
-    // Остальные видят прежнее сообщение.
-    async function openBalance() {
-        try {
-            const res = await fetch(`${BACKEND_URL}/event/profile`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ init_data: tg.initData })
-            });
-            if (res.ok) { location.href = 'event.html'; return; }
-        } catch (e) {}
-        tg.showAlert('Пополнение доступно в разделе STARS');
+    // ===================== ПОПОЛНЕНИЕ =====================
+    async function api(path, body) {
+        const res = await fetch(`${BACKEND_URL}${path}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ init_data: tg.initData, ...body })
+        });
+        let data = {};
+        try { data = await res.json(); } catch (e) {}
+        if (!res.ok) throw new Error(data.error || data.detail || ('HTTP ' + res.status));
+        return data;
     }
 
-    // тап по тыкве
+    function openTopup() {
+        const m = document.getElementById('topup-modal');
+        m.classList.add('show');
+        requestAnimationFrame(() => m.classList.add('vis'));
+        initTon();
+    }
+    function closeTopup() {
+        const m = document.getElementById('topup-modal');
+        m.classList.remove('vis');
+        setTimeout(() => m.classList.remove('show'), 250);
+    }
+    function switchTab(name) {
+        ['stars', 'ton'].forEach(n => {
+            document.getElementById('tab-' + n).classList.toggle('active', n === name);
+            document.getElementById('pane-' + n).classList.toggle('active', n === name);
+        });
+    }
+
+    // чипы с суммой
+    function bindPresets(boxId, inputId) {
+        const box = document.getElementById(boxId);
+        const input = document.getElementById(inputId);
+        box.querySelectorAll('.tp-chip').forEach(chip => {
+            chip.onclick = () => {
+                box.querySelectorAll('.tp-chip').forEach(c => c.classList.remove('sel'));
+                chip.classList.add('sel');
+                input.value = chip.dataset.v;
+            };
+        });
+        input.addEventListener('input', () => {
+            box.querySelectorAll('.tp-chip').forEach(c => c.classList.toggle('sel', c.dataset.v === input.value));
+        });
+    }
+    bindPresets('stars-presets', 'stars-amount');
+    bindPresets('ton-presets', 'ton-amount');
+
+    // дожидаемся зачисления: баланс обновляется webhook-ом бота, поэтому опрашиваем
+    async function waitStarsCredit(before) {
+        for (let i = 0; i < 12; i++) {
+            const now = await syncData();
+            if (now !== null && now > before) return true;
+            await new Promise(r => setTimeout(r, 1500));
+        }
+        return false;
+    }
+
+    // --- Telegram Stars (инвойс) ---
+    async function payStars() {
+        const amount = parseInt(document.getElementById('stars-amount').value, 10);
+        if (!amount || amount < 1 || amount > 10000) { notify('Введите сумму от 1 до 10000 Stars'); return; }
+
+        const btn = document.getElementById('stars-pay-btn');
+        btn.disabled = true;
+        const oldText = btn.innerText;
+        btn.innerText = 'Создаём счёт...';
+        try {
+            const before = (await syncData()) || 0;
+            const data = await api('/topup/stars_invoice', { amount });
+            if (!data.link) throw new Error('Не получили ссылку на оплату');
+
+            tg.openInvoice(data.link, async (status) => {
+                if (status === 'paid') {
+                    try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
+                    btn.innerText = 'Зачисляем...';
+                    const ok = await waitStarsCredit(before);
+                    notify(ok ? `Баланс пополнен на ${amount} ⭐` : 'Оплата прошла. Баланс обновится в течение минуты.');
+                    if (ok) closeTopup();
+                } else if (status === 'failed') {
+                    notify('Не удалось оплатить. Попробуйте ещё раз.');
+                }
+                btn.disabled = false;
+                btn.innerText = oldText;
+            });
+        } catch (e) {
+            notify('Ошибка: ' + e.message);
+            btn.disabled = false;
+            btn.innerText = oldText;
+        }
+    }
+
+    // --- TON (TonConnect) ---
+    let tonUI = null;
+    function initTon() {
+        if (tonUI || !window.TON_CONNECT_UI) return;
+        try {
+            tonUI = new TON_CONNECT_UI.TonConnectUI({
+                // файл должен лежать по публичному HTTPS-адресу рядом с index.html
+                manifestUrl: location.origin + '/tonconnect-manifest.json',
+                buttonRootId: 'ton-connect-btn'
+            });
+        } catch (e) { console.warn('TonConnect не запустился', e); }
+    }
+
+    async function payTon() {
+        const amount = parseFloat(document.getElementById('ton-amount').value);
+        if (!amount || amount < 0.1 || amount > 1000) { notify('Введите сумму от 0.1 до 1000 TON'); return; }
+
+        initTon();
+        if (!tonUI) { notify('TonConnect не загрузился. Проверьте интернет.'); return; }
+        if (!tonUI.connected) { tonUI.openModal(); return; }
+
+        const btn = document.getElementById('ton-pay-btn');
+        btn.disabled = true;
+        const oldText = btn.innerText;
+        btn.innerText = 'Готовим платёж...';
+        try {
+            // сервер создаёт запись платежа в БД со статусом pending и уникальным комментарием
+            const inv = await api('/topup/ton_create', { amount });
+
+            btn.innerText = 'Подтвердите в кошельке...';
+            await tonUI.sendTransaction({
+                validUntil: Math.floor(Date.now() / 1000) + 600,
+                messages: [{ address: inv.address, amount: String(inv.nano), payload: inv.payload }]
+            });
+
+            // ждём подтверждения в сети (сервер сам ищет транзакцию с нужным комментарием)
+            btn.innerText = 'Ждём подтверждение...';
+            let paid = false;
+            for (let i = 0; i < 40; i++) {
+                await new Promise(r => setTimeout(r, 3000));
+                try {
+                    const st = await api('/topup/ton_check', { id: inv.id });
+                    if (st.status === 'paid') { paid = true; break; }
+                    if (st.status === 'expired') break;
+                } catch (e) {}
+            }
+            await syncData();
+            if (paid) {
+                try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
+                notify('Баланс пополнен ✅');
+                closeTopup();
+            } else {
+                notify('Платёж ещё не подтверждён. Если TON списались, баланс обновится автоматически.');
+            }
+        } catch (e) {
+            const msg = String(e && e.message || e);
+            if (!/reject|cancel|declin/i.test(msg)) notify('Ошибка: ' + msg);
+        } finally {
+            btn.disabled = false;
+            btn.innerText = oldText;
+        }
+    }
+
+    // тап по тыкве: тряска, звук и переход на колесо
     const tikvaEl = document.getElementById('tikva');
+    let tikvaGoing = false;
     tikvaEl.addEventListener('click', () => {
+        if (tikvaGoing) return;
+        tikvaGoing = true;
         playSnd(sndWitch);
         try { tg.HapticFeedback.impactOccurred('medium'); } catch (e) {}
         tikvaEl.classList.remove('shake');
         void tikvaEl.offsetWidth; // чтобы анимация перезапустилась
         tikvaEl.classList.add('shake');
+        setTimeout(() => { window.location.href = 'wheel.html'; }, 450);
     });
 
     // искры
