@@ -472,7 +472,8 @@ async function withdrawItem() {
             notify('Заявка на вывод создана. Подарок придёт в течение 24 часов.');
         } catch (e) {
             haptic('notificationOccurred', 'error');
-            notify(e.message);
+            notify('ОШИБКА ВЫВОДА: ' + e.message); // <--- Добавили текст
+            console.error('ПОЛНАЯ ОШИБКА ВЫВОДА:', e); // <--- Выведем в консоль
         } finally {
             invBusy = false;
             syncData();
