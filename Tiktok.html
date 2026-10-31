@@ -9,19 +9,19 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
 
         :root {
-            --or: #ff7a1a;
-            --or2: #ffb347;
-            --soft: #ffd9a0;
-            --muted: #d9b98c;
-            --line: rgba(255, 150, 60, 0.35);
-            --panel: rgba(30, 10, 0, 0.72);
+            --or: #2f6bff;
+            --or2: #8fc2ff;
+            --soft: #cfe0ff;
+            --muted: #9db6ee;
+            --line: rgba(120, 170, 255, 0.35);
+            --panel: rgba(3, 14, 60, 0.72);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             margin: 0; min-height: 100vh; color: #fff; font-family: 'Inter', sans-serif;
             background:
-                radial-gradient(circle at 50% 6%, rgba(255, 122, 26, 0.7) 0%, rgba(255, 122, 26, 0.18) 30%, transparent 56%),
-                linear-gradient(180deg, #5a1e00 0%, #2a0d00 45%, #120500 100%);
+                radial-gradient(circle at 50% 6%, rgba(47, 107, 255, 0.7) 0%, rgba(47, 107, 255, 0.18) 30%, transparent 56%),
+                linear-gradient(180deg, #1f55d6 0%, #133ea6 45%, #07173f 100%);
             background-attachment: fixed;
             overflow-x: hidden;
         }
@@ -36,7 +36,7 @@
         .top { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
         .back {
             width: 36px; height: 36px; border-radius: 12px; flex-shrink: 0;
-            background: rgba(20, 6, 0, 0.8); border: 1px solid var(--line); color: var(--soft);
+            background: rgba(3, 14, 60, 0.8); border: 1px solid var(--line); color: var(--soft);
             display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 900; cursor: pointer;
         }
         .back:active { transform: scale(0.9); }
@@ -47,12 +47,12 @@
         .hero { text-align: center; padding: 6px 0 4px; }
         .hero img.pic {
             width: 118px; height: 118px; object-fit: contain;
-            filter: drop-shadow(0 0 22px rgba(255, 140, 30, 0.65)); animation: float 3.5s ease-in-out infinite;
+            filter: drop-shadow(0 0 22px rgba(80, 140, 255, 0.65)); animation: float 3.5s ease-in-out infinite;
         }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
         .hero h1 {
             margin: 10px 0 4px; font-size: 30px; font-weight: 900; font-style: italic; text-transform: uppercase;
-            letter-spacing: -0.5px; line-height: 1.02; text-shadow: 0 0 22px rgba(255, 140, 30, 0.6);
+            letter-spacing: -0.5px; line-height: 1.02; text-shadow: 0 0 22px rgba(80, 140, 255, 0.6);
         }
         .hero h1 span { color: var(--or2); }
         .hero p { margin: 0 auto; max-width: 290px; color: var(--muted); font-size: 13px; font-weight: 600; line-height: 1.45; }
@@ -61,7 +61,7 @@
         .flow { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 18px 0 6px; }
         .flow b {
             font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; color: var(--soft);
-            padding: 7px 12px; border-radius: 999px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--line);
+            padding: 7px 12px; border-radius: 999px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--line);
         }
         .flow i { color: var(--or2); font-style: normal; font-weight: 900; }
 
@@ -71,19 +71,19 @@
         .tiers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .tier {
             position: relative; overflow: hidden; border-radius: 22px; padding: 16px 14px; text-align: center;
-            background: linear-gradient(160deg, rgba(255, 122, 26, 0.24) 0%, rgba(30, 10, 0, 0.85) 100%);
+            background: linear-gradient(160deg, rgba(47, 107, 255, 0.24) 0%, rgba(3, 14, 60, 0.85) 100%);
             border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }
         .tier .views { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
         .tier .views small { display: block; font-size: 10px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
         .tier .pay {
             margin-top: 12px; padding: 8px 6px; border-radius: 14px; font-size: 17px; font-weight: 900; color: var(--or2);
-            background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 179, 71, 0.25);
+            background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(143, 194, 255, 0.25);
         }
         .tier.top {
             grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; text-align: left; padding: 16px 18px;
-            border-color: var(--or2); background: linear-gradient(135deg, rgba(255, 150, 40, 0.38) 0%, rgba(40, 12, 0, 0.9) 100%);
-            box-shadow: 0 0 28px rgba(255, 122, 26, 0.35);
+            border-color: var(--or2); background: linear-gradient(135deg, rgba(80, 140, 255, 0.38) 0%, rgba(3, 14, 60, 0.9) 100%);
+            box-shadow: 0 0 28px rgba(47, 107, 255, 0.35);
         }
         .tier.top .pay { margin: 0; font-size: 20px; padding: 10px 14px; }
         .tier.top::after {
@@ -92,26 +92,26 @@
             transform: skewX(-20deg); animation: shine 3.5s infinite;
         }
         @keyframes shine { 0% { left: -60%; } 60%, 100% { left: 130%; } }
-        .st { width: 1em; height: 1em; object-fit: contain; vertical-align: -0.12em; margin-left: 2px; filter: drop-shadow(0 0 5px rgba(255, 122, 26, 0.7)); }
+        .st { width: 1em; height: 1em; object-fit: contain; vertical-align: -0.12em; margin-left: 2px; filter: drop-shadow(0 0 5px rgba(47, 107, 255, 0.7)); }
         .note { margin: 10px 4px 0; text-align: center; font-size: 11px; font-weight: 700; color: var(--muted); }
 
         /* условия */
         .rules { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 6px 16px; }
-        .rule { display: flex; gap: 12px; align-items: flex-start; padding: 11px 0; font-size: 13px; font-weight: 600; line-height: 1.4; color: #f0e0cc; }
-        .rule + .rule { border-top: 1px solid rgba(255, 179, 71, 0.12); }
+        .rule { display: flex; gap: 12px; align-items: flex-start; padding: 11px 0; font-size: 13px; font-weight: 600; line-height: 1.4; color: #e3eeff; }
+        .rule + .rule { border-top: 1px solid rgba(143, 194, 255, 0.12); }
         .rule::before {
             content: ''; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 6px;
             background: var(--or2); box-shadow: 0 0 8px var(--or);
         }
-        .rule a { color: var(--or2); font-weight: 800; text-decoration: none; border-bottom: 1px dashed rgba(255, 179, 71, 0.6); }
+        .rule a { color: var(--or2); font-weight: 800; text-decoration: none; border-bottom: 1px dashed rgba(143, 194, 255, 0.6); }
         .rule.bad::before { background: #e86a5a; box-shadow: 0 0 8px #c0121f; }
 
         .manager {
             display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 12px 14px; border-radius: 20px;
-            background: rgba(0, 0, 0, 0.4); border: 1px solid var(--line); cursor: pointer;
+            background: rgba(0, 0, 0, 0.3); border: 1px solid var(--line); cursor: pointer;
         }
         .manager:active { transform: scale(0.98); }
-        .manager img { width: 40px; height: 40px; object-fit: contain; border-radius: 12px; background: rgba(255, 122, 26, 0.18); padding: 4px; }
+        .manager img { width: 40px; height: 40px; object-fit: contain; border-radius: 12px; background: rgba(47, 107, 255, 0.18); padding: 4px; }
         .manager small { display: block; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
         .manager b { font-size: 14px; font-weight: 800; color: var(--soft); }
         .manager i { margin-left: auto; color: var(--or2); font-style: normal; font-weight: 900; font-size: 18px; }
@@ -119,13 +119,13 @@
         /* кнопка снизу */
         .cta-wrap {
             position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; padding: 28px 18px calc(18px + env(safe-area-inset-bottom, 0px));
-            background: linear-gradient(180deg, rgba(18, 5, 0, 0) 0%, rgba(18, 5, 0, 0.92) 45%);
+            background: linear-gradient(180deg, rgba(7, 23, 63, 0) 0%, rgba(7, 23, 63, 0.92) 45%);
         }
         .cta {
-            position: relative; overflow: hidden; display: block; width: 100%; max-width: 524px; margin: 0 auto; padding: 16px; border: 1px solid #ffc878; border-radius: 18px;
-            background: linear-gradient(135deg, #ffa13a, #e2570a 60%, #c2410c); color: #fff;
+            position: relative; overflow: hidden; display: block; width: 100%; max-width: 524px; margin: 0 auto; padding: 16px; border: 1px solid #a8c8ff; border-radius: 18px;
+            background: linear-gradient(135deg, #5b94ff, #2f6bff 60%, #1d4ed8); color: #fff;
             font-family: inherit; font-size: 16px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: 0.04em; cursor: pointer;
-            box-shadow: 0 0 26px rgba(255, 122, 26, 0.55), inset 0 -3px 0 rgba(120, 30, 0, 0.45);
+            box-shadow: 0 0 26px rgba(47, 107, 255, 0.55), inset 0 -3px 0 rgba(10, 30, 100, 0.45);
         }
         .cta::after {
             content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
@@ -203,7 +203,7 @@
             if (history.length > 1) history.back(); else location.href = 'index.html';
         }
 
-        try { tg.expand(); tg.ready(); tg.headerColor = '#5a1e00'; tg.backgroundColor = '#1a0a00'; } catch (_) {}
+        try { tg.expand(); tg.ready(); tg.headerColor = '#1f55d6'; tg.backgroundColor = '#07173f'; } catch (_) {}
 
         // искры на фоне
         (function () {
@@ -221,7 +221,7 @@
             function loop() {
                 ctx.clearRect(0, 0, c.width, c.height);
                 p.forEach(a => {
-                    ctx.beginPath(); ctx.globalAlpha = a.o; ctx.fillStyle = a.y2 ? '#ffd27a' : '#ff8a2a';
+                    ctx.beginPath(); ctx.globalAlpha = a.o; ctx.fillStyle = a.y2 ? '#8fc2ff' : '#4f8cff';
                     ctx.arc(a.x, a.y, a.s, 0, Math.PI * 2); ctx.fill();
                     a.y -= a.v; a.x += a.d;
                     if (a.y < -5) { a.y = c.height + 5; a.x = Math.random() * c.width; }
