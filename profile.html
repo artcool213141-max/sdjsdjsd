@@ -369,7 +369,7 @@ function upgradeItem() {
     if (!selectedItem) return;
     const id = selectedItem.nft_id;
     closeItem();
-    tg.openLink(`${BACKEND_URL}/update.html?nft_id=${id}`);
+    location.href = `update.html?nft_id=${id}`;
 }
 
 async function withdrawItem() {
