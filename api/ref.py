@@ -15,7 +15,7 @@ BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 ADMIN_ID = os.environ.get("ADMIN_ID", "")
 
 REF_IMAGE_URL = os.environ.get("REF_IMAGE_URL", "")
-BOT_USERNAME = os.environ.get("BOT_USERNAME", "FixStarsOfficial_bot")
+BOT_USERNAME = os.environ.get("BOT_USERNAME", "PandaGift_app")
 APP_SHORT_NAME = os.environ.get("APP_SHORT_NAME", "app")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY) if SUPABASE_URL and SUPABASE_SERVICE_KEY else None
