@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Апгрейд - PandaGift</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+        :root {
+            --blue: #2f6bff;
+            --blue-light: #8fc2ff;
+            --accent: #8fc2ff;
+            --text-soft: #cfe0ff;
+            --glass: rgba(255, 255, 255, 0.12);
+            --glass-line: rgba(255, 255, 255, 0.18);
+        }
+
+        body {
+            background:
+                radial-gradient(circle at 50% 10%, #4a86ff 0%, rgba(47,107,255,0.35) 26%, transparent 60%),
+                linear-gradient(180deg, #1f55d6 0%, #133ea6 42%, #08205f 100%);
+            background-attachment: fixed;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            width: 100vw;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Пузырьки на фоне */
+        #sparks { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+        .spark {
+            position: absolute; bottom: -10px; border-radius: 50%;
+            background: #bcd8ff; opacity: 0;
+            animation: rise linear infinite;
+        }
+        @keyframes rise {
+            0%   { transform: translateY(0) translateX(0); opacity: 0; }
+            15%  { opacity: 0.7; }
+            100% { transform: translateY(-105vh) translateX(var(--drift, 20px)); opacity: 0; }
+        }
+        @media (prefers-reduced-motion: reduce) { .spark { animation: none; } }
+
+        .page {
+            position: relative; z-index: 2;
+            padding: calc(20px + var(--tg-safe-area-inset-top, 0px)) 20px 130px 20px;
+        }
+
+        .back-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border-radius: 50%;
+            background: var(--glass); border: 1px solid var(--glass-line);
+            backdrop-filter: blur(10px); color: #fff; transition: transform 0.15s;
+        }
+        .back-btn:active { transform: scale(0.88); }
+
+        /* Колесо */
+        .wheel {
+            width: 200px; height: 200px; border-radius: 50%;
+            margin: 14px auto 10px; position: relative;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle, rgba(3,14,60,0.85) 0%, rgba(3,14,60,0.6) 100%);
+            border: 2px solid rgba(143, 194, 255, 0.35);
+            box-shadow: 0 0 34px rgba(47, 107, 255, 0.5), inset 0 0 24px rgba(47, 107, 255, 0.25);
+        }
+        #wheel-progress {
+            position: absolute; inset: 0; border-radius: 50%;
+            background: conic-gradient(var(--blue-light) 0deg, transparent 0deg);
+            opacity: 0.45; transition: background 0.4s ease;
+        }
+        #pointer-wrapper {
+            position: absolute; inset: -10px; z-index: 30;
+            transition: transform 3.5s cubic-bezier(0.15, 0, 0.15, 1);
+        }
+        #pointer {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 4px; height: 26px; background: #fff; border-radius: 10px;
+            box-shadow: 0 0 14px var(--blue-light), 0 0 4px #fff;
+        }
+        #center-ui { position: relative; z-index: 10; text-align: center; transition: opacity 0.3s; }
+        #res-msg {
+            position: absolute; inset: 0; z-index: 40; display: none;
+            align-items: center; justify-content: center; text-align: center;
+            font-size: 24px; font-weight: 900; font-style: italic; letter-spacing: 1px;
+            text-transform: uppercase; text-shadow: 0 0 18px rgba(0,0,0,0.6);
+        }
+
+        #info-chance {
+            text-align: center; color: var(--accent); font-weight: 900; font-size: 12px;
+            text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 16px; min-height: 16px;
+        }
+
+        .slot {
+            height: 78px; border-radius: 22px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 100%);
+            border: 1px solid var(--glass-line); backdrop-filter: blur(10px);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: 0.25s;
+        }
+        .slot.filled { border-color: var(--blue-light); box-shadow: 0 0 18px rgba(47,107,255,0.4); }
+        .slot-lbl { font-size: 9px; font-weight: 800; text-transform: uppercase; color: #b5cdf5; margin-top: 4px; }
+
+        .col-title { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; text-align: center; margin-bottom: 8px; }
+
+        .scroll-area {
+            height: 230px; overflow-y: auto; padding: 8px; border-radius: 22px;
+            background: rgba(3, 14, 60, 0.35); border: 1px solid var(--glass-line);
+        }
+        .scroll-area::-webkit-scrollbar { width: 3px; }
+        .scroll-area::-webkit-scrollbar-thumb { background: var(--blue-light); border-radius: 10px; }
+
+        .item-card {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px; margin-bottom: 6px; border-radius: 14px;
+            background: rgba(255,255,255,0.08); border: 1px solid transparent; transition: 0.2s;
+        }
+        .item-card:active { transform: scale(0.97); }
+        .item-card.active { border-color: var(--blue-light); background: rgba(143,194,255,0.2); }
+        .item-card img { width: 32px; height: 32px; object-fit: contain; flex-shrink: 0; }
+        .item-name { font-size: 10px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .item-price { font-size: 9px; font-weight: 700; color: #b5cdf5; margin-top: 1px; }
+        .empty-hint { text-align: center; font-size: 10px; font-weight: 700; color: #b5cdf5; padding: 20px 8px; line-height: 1.4; }
+
+        /* Кнопка */
+        .bottom-bar { position: fixed; left: 20px; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 50; }
+        .btn-main {
+            position: relative; overflow: hidden; width: 100%; padding: 16px; border-radius: 999px;
+            background: linear-gradient(180deg, #4f8cff, #1d4ed8); border: none; color: #fff;
+            font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 14px;
+            box-shadow: 0 0 20px rgba(47, 107, 255, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+            transition: transform 0.15s;
+        }
+        .btn-main::after {
+            content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+            transform: skewX(-20deg); animation: shine 3s infinite; pointer-events: none;
+        }
+        @keyframes shine { 0% { left: -60%; } 60%, 100% { left: 130%; } }
+        .btn-main:active { transform: scale(0.97); }
+        .btn-main:disabled {
+            background: rgba(3, 14, 60, 0.55); border: 1px solid var(--glass-line); color: #8fb0f0;
+            box-shadow: none; transform: none;
+        }
+        .btn-main:disabled::after { display: none; }
+
+        .toast {
+            position: fixed; left: 50%; bottom: 100px; transform: translate(-50%, 20px);
+            background: #0a2468; border: 1px solid var(--blue-light);
+            color: white; font-weight: 800; font-size: 13px;
+            padding: 12px 18px; border-radius: 999px; z-index: 3000;
+            opacity: 0; pointer-events: none; transition: all 0.25s;
+        }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    </style>
+</head>
+<body>
+
+    <div id="sparks"></div>
+
+    <div class="page">
+
+        <div class="flex items-center justify-between mb-2">
+            <a href="index.html" class="back-btn" aria-label="Назад">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </a>
+            <h1 class="text-2xl font-black italic uppercase tracking-tight">Апгрейд</h1>
+            <div style="width:36px"></div>
+        </div>
+
+        <div class="wheel">
+            <div id="wheel-progress"></div>
+            <div id="pointer-wrapper"><div id="pointer"></div></div>
+            <div id="res-msg"></div>
+            <div id="center-ui">
+                <img id="view-target" src="" alt="" class="w-20 h-20 object-contain hidden mx-auto" style="filter: drop-shadow(0 0 14px rgba(143,194,255,0.6))">
+                <div id="view-empty" class="text-5xl font-black" style="opacity:0.25">?</div>
+            </div>
+        </div>
+
+        <div id="info-chance">Загрузка...</div>
+
+        <div class="grid grid-cols-2 gap-4 mb-5">
+            <div class="slot" id="slot-1">
+                <img id="img-1" src="" alt="" class="w-10 h-10 object-contain hidden">
+                <div class="slot-lbl">Твой предмет</div>
+            </div>
+            <div class="slot" id="slot-2">
+                <img id="img-2" src="" alt="" class="w-10 h-10 object-contain hidden">
+                <div class="slot-lbl">Цель апгрейда</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <div class="col-title" style="color:#b5cdf5">Твой инвентарь</div>
+                <div id="mine-list" class="scroll-area"></div>
+            </div>
+            <div>
+                <div class="col-title" style="color:var(--accent)">Доступно</div>
+                <div id="target-list" class="scroll-area"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="bottom-bar">
+        <button id="upg-btn" onclick="startUpgrade()" class="btn-main" disabled>Запустить апгрейд</button>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
+
+    // Те же правила, что и на сервере (api/upgrade.py). Сервер считает шанс сам,
+    // здесь формула нужна только чтобы нарисовать колесо до броска.
+    const MAX_MULT = 7.5;   // цель не дороже чем в 7.5 раза
+    const EDGE = 0.8;       // коэффициент 0.8
+    const MIN_CH = 10;      // минимальный шанс, %
+    const MAX_CH = 85;      // максимальный шанс, %
+
+    let catalog = {};   // id -> {id, name, price}
+    let inv = [];       // [{id, name, price, count}]
+    let s1 = null, s2 = null, busy = false;
+
+    function esc(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function toast(text) {
+        const t = document.getElementById('toast');
+        t.innerText = text; t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2200);
+    }
+    function fmt(n) { return Number(n).toLocaleString('ru-RU'); }
+    function imgUrl(id) { return BACKEND_URL + '/inventory/preview/' + id; }
+    const IMG_FALLBACK = "this.onerror=null;this.src='img/star.png'";
+
+    function calcChance(from, to) {
+        const c = (from / to) * 100 * EDGE;
+        return Math.min(Math.max(c, MIN_CH), MAX_CH);
+    }
+
+    async function api(path, body) {
+        const res = await fetch(BACKEND_URL + path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ init_data: tg.initData, ...(body || {}) })
+        });
+        if (!res.ok) {
+            let d = {};
+            try { d = await res.json(); } catch (_) {}
+            throw new Error(d.detail || ('HTTP ' + res.status));
+        }
+        return res.json();
+    }
+
+    async function loadAll() {
+        const info = document.getElementById('info-chance');
+        if (!tg.initData) { info.innerText = 'Открой приложение через Telegram'; return; }
+        try {
+            const [cat, list] = await Promise.all([
+                fetch(BACKEND_URL + '/inventory/catalog').then(r => r.json()),
+                api('/inventory/list')
+            ]);
+            catalog = {};
+            (cat.items || []).forEach(c => {
+                catalog[Number(c.id)] = { id: Number(c.id), name: c.name, price: Number(c.price_stars) || 0 };
+            });
+            inv = (list.items || []).map(it => {
+                const id = Number(it.nft_id ?? it.id);
+                const c = catalog[id] || {};
+                return {
+                    id,
+                    name: c.name || it.name || ('NFT #' + id),
+                    price: Number(c.price ?? it.price_stars ?? 0),
+                    count: Number(it.count ?? it.qty ?? it.quantity ?? 1) || 1
+                };
+            }).filter(x => x.id);
+            // если выбранный предмет пропал (сломался), сбрасываем выбор
+            if (s1 && !inv.find(x => x.id === s1.id)) { s1 = null; s2 = null; }
+            info.innerText = inv.length ? 'Выбери свой предмет' : 'Инвентарь пуст';
+            renderAll();
+        } catch (e) {
+            console.error(e);
+            info.innerText = 'Не удалось загрузить данные';
+        }
+    }
+
+    function itemHtml(it, active, onclick, subHtml) {
+        return `
+            <div class="item-card ${active ? 'active' : ''}" onclick="${onclick}">
+                <img src="${imgUrl(it.id)}" alt="" onerror="${IMG_FALLBACK}">
+                <div class="min-w-0">
+                    <div class="item-name">${esc(it.name)}</div>
+                    <div class="item-price">${subHtml}</div>
+                </div>
+            </div>`;
+    }
+
+    function renderAll() {
+        const mList = document.getElementById('mine-list');
+        const tList = document.getElementById('target-list');
+
+        mList.innerHTML = inv.length
+            ? inv.map((it, i) => itemHtml(it, s1 && s1.id === it.id, `pickMine(${i})`,
+                `${fmt(it.price)} ⭐${it.count > 1 ? ' · ×' + it.count : ''}`)).join('')
+            : `<div class="empty-hint">Пока пусто. Выбей предметы в кейсах</div>`;
+
+        if (!s1) {
+            tList.innerHTML = `<div class="empty-hint">Сначала выбери свой предмет</div>`;
+            return;
+        }
+        const targets = Object.values(catalog)
+            .filter(c => c.price > s1.price && c.price <= s1.price * MAX_MULT)
+            .sort((a, b) => a.price - b.price);
+
+        tList.innerHTML = targets.length
+            ? targets.map(c => itemHtml(c, s2 && s2.id === c.id, `pickTarget(${c.id})`,
+                `<span style="color:var(--accent)">${fmt(c.price)} ⭐</span>`)).join('')
+            : `<div class="empty-hint">Для этого предмета нет целей дороже</div>`;
+    }
+
+    function setSlot(n, it) {
+        const el = document.getElementById('img-' + n);
+        const slot = document.getElementById('slot-' + n);
+        if (it) {
+            el.onerror = () => { el.onerror = null; el.src = 'img/star.png'; };
+            el.src = imgUrl(it.id); el.classList.remove('hidden'); slot.classList.add('filled');
+        } else {
+            el.classList.add('hidden'); slot.classList.remove('filled');
+        }
+    }
+
+    function setCenter(it) {
+        const vt = document.getElementById('view-target');
+        const empty = document.getElementById('view-empty');
+        if (it) {
+            vt.onerror = () => { vt.onerror = null; vt.src = 'img/star.png'; };
+            vt.src = imgUrl(it.id); vt.classList.remove('hidden'); empty.classList.add('hidden');
+        } else {
+            vt.classList.add('hidden'); empty.classList.remove('hidden');
+        }
+    }
+
+    function pickMine(i) {
+        if (busy) return;
+        s1 = inv[i]; s2 = null;
+        setSlot(1, s1); setSlot(2, null); setCenter(null);
+        updateUI(); renderAll();
+        tg.HapticFeedback?.impactOccurred('light');
+    }
+
+    function pickTarget(id) {
+        if (busy) return;
+        s2 = catalog[id];
+        setSlot(2, s2); setCenter(s2);
+        updateUI(); renderAll();
+        tg.HapticFeedback?.impactOccurred('light');
+    }
+
+    function updateUI() {
+        const btn = document.getElementById('upg-btn');
+        const info = document.getElementById('info-chance');
+        const wheel = document.getElementById('wheel-progress');
+        if (s1 && s2) {
+            const chance = calcChance(s1.price, s2.price);
+            info.innerText = `Шанс на успех: ${chance.toFixed(1)}%`;
+            wheel.style.background = `conic-gradient(#8fc2ff ${chance * 3.6}deg, transparent 0deg)`;
+            btn.disabled = false;
+        } else {
+            btn.disabled = true;
+            wheel.style.background = 'conic-gradient(#8fc2ff 0deg, transparent 0deg)';
+            info.innerText = s1 ? 'Выбери цель апгрейда' : (inv.length ? 'Выбери свой предмет' : 'Инвентарь пуст');
+        }
+    }
+
+    async function startUpgrade() {
+        if (!s1 || !s2 || busy) return;
+        busy = true;
+        const btn = document.getElementById('upg-btn');
+        btn.disabled = true;
+
+        // Бросок делает сервер. Фронт только крутит стрелку туда, куда сказал сервер.
+        let r;
+        try {
+            r = await api('/upgrade/run', { from_nft: s1.id, to_nft: s2.id });
+        } catch (e) {
+            busy = false;
+            updateUI();
+            tg.showAlert(e.message || 'Не удалось запустить апгрейд');
+            await loadAll();
+            return;
+        }
+
+        const winDeg = r.chance * 3.6;
+        const spins = 360 * 5;
+        const finalDeg = r.win
+            ? spins + Math.random() * (winDeg - 2)
+            : spins + winDeg + Math.random() * (358 - winDeg);
+
+        const pointer = document.getElementById('pointer-wrapper');
+        pointer.style.transform = `rotate(${finalDeg}deg)`;
+        tg.HapticFeedback?.impactOccurred('medium');
+
+        setTimeout(async () => {
+            document.getElementById('center-ui').style.opacity = '0';
+            const resMsg = document.getElementById('res-msg');
+            resMsg.style.display = 'flex';
+            if (r.win) {
+                resMsg.innerText = 'Успех';
+                resMsg.style.color = '#8fc2ff';
+                tg.HapticFeedback?.notificationOccurred('success');
+            } else {
+                resMsg.innerText = 'Сломался';
+                resMsg.style.color = '#ff8a8a';
+                tg.HapticFeedback?.notificationOccurred('error');
+            }
+
+            setTimeout(async () => {
+                // сброс колеса без перезагрузки страницы
+                resMsg.style.display = 'none';
+                document.getElementById('center-ui').style.opacity = '1';
+                pointer.style.transition = 'none';
+                pointer.style.transform = 'rotate(0deg)';
+                void pointer.offsetWidth;
+                pointer.style.transition = '';
+
+                s1 = null; s2 = null;
+                setSlot(1, null); setSlot(2, null); setCenter(null);
+                busy = false;
+                await loadAll();
+                updateUI();
+            }, 2400);
+        }, 3600);
+    }
+
+    // Пузырьки (только оформление)
+    (function makeSparks() {
+        const box = document.getElementById('sparks');
+        for (let i = 0; i < 22; i++) {
+            const s = document.createElement('div');
+            const size = 2 + Math.random() * 3;
+            s.className = 'spark';
+            s.style.width = s.style.height = size + 'px';
+            s.style.left = Math.random() * 100 + '%';
+            s.style.animationDuration = (6 + Math.random() * 8) + 's';
+            s.style.animationDelay = (-Math.random() * 12) + 's';
+            s.style.setProperty('--drift', (Math.random() * 60 - 30) + 'px');
+            box.appendChild(s);
+        }
+    })();
+
+    function initPage() {
+        try {
+            tg.expand(); tg.ready();
+            tg.headerColor = '#1f55d6';
+            tg.backgroundColor = '#08205f';
+        } catch (_) {}
+        loadAll();
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initPage);
+    else initPage();
+</script>
+<script src="music.js"></script>
+</body>
+</html>
