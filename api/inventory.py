@@ -105,6 +105,16 @@ async def inventory_sell(req: ItemReq):
         raise HTTPException(400, ERRORS.get(res.get("error"), "Не удалось продать предмет"))
     return res
 
+@router.post("/inventory/sell_ton")
+async def inventory_sell_ton(req: ItemReq):
+    user = validate_init_data(req.init_data)
+    res = rpc("sell_item_ton", {"p_user_id": str(user["id"]), "p_nft_id": req.nft_id}) or {}
+    if isinstance(res, list):
+        res = res[0] if res else {}
+    if not res.get("success"):
+        raise HTTPException(400, ERRORS.get(res.get("error"), "Не удалось продать предмет"))
+    return res
+
 
 @router.post("/inventory/withdraw")
 async def inventory_withdraw(req: ItemReq):
