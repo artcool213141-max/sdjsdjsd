@@ -121,14 +121,17 @@ async def handle_start(chat_id: int, user_id: int, payload: str):
 
 @router.get("/ensure_webhook")
 async def ensure_webhook():
-    webhook_url = "https://sdjsdjsd.vercel.app/" # Укажите ваш рабочий URL вебхука
+    webhook_url = "https://sdjsdjsd.vercel.app/"
+    payload = {
+        "url": webhook_url,
+        "allowed_updates": ["message", "callback_query", "pre_checkout_query"],
+    }
+    if WEBHOOK_SECRET:
+        payload["secret_token"] = WEBHOOK_SECRET
     async with httpx.AsyncClient(timeout=10) as client:
         r = await client.post(
             f"https://api.telegram.org/bot{BOT_TOKEN}/setWebhook",
-            json={
-                "url": webhook_url,
-                "allowed_updates": ["message", "pre_checkout_query"]
-            }
+            json=payload,
         )
         return r.json()
 
