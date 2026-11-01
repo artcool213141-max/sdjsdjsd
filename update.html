@@ -283,6 +283,13 @@
                     count: Number(it.count ?? it.qty ?? it.quantity ?? 1) || 1
                 };
             }).filter(x => x.id);
+            // одинаковые предметы склеиваем в один с количеством
+            const grouped = {};
+            inv.forEach(x => {
+                if (grouped[x.id]) grouped[x.id].count += x.count;
+                else grouped[x.id] = { ...x };
+            });
+            inv = Object.values(grouped);
             // если выбранный предмет пропал (сломался), сбрасываем выбор
             if (s1 && !inv.find(x => x.id === s1.id)) { s1 = null; s2 = null; }
             info.innerText = inv.length ? 'Выбери свой предмет' : 'Инвентарь пуст';
