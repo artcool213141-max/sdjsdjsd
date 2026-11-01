@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>PandaGift - Розыгрыши</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+:root{--bg-dark:#07173f;--blue:#2f6bff;--blue-light:#8fc2ff;--glass:rgba(255,255,255,.12);--glass-line:rgba(255,255,255,.18);--soft:#cfe0ff;--gold:#ffd24a;--green:#5be3a1}
+*{box-sizing:border-box}
+body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:0;height:100vh;width:100vw;overflow:hidden;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#stars-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.main-wrapper{background:radial-gradient(circle at 50% 10%,#4a86ff 0%,rgba(47,107,255,.35) 26%,transparent 60%),linear-gradient(180deg,#1f55d6 0%,#133ea6 42%,#08205f 100%);height:100vh;display:flex;flex-direction:column;position:relative;z-index:1}
+.scroll{flex:1;overflow-y:auto;padding:20px 18px 120px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.it{font-weight:900;font-style:italic;text-transform:uppercase}
+
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.top h1{font-size:24px;margin:0;letter-spacing:-.4px;text-shadow:0 4px 18px rgba(0,20,100,.55)}
+.chip{display:flex;align-items:center;gap:6px;background:var(--glass);border:1px solid #000;backdrop-filter:blur(10px);padding:8px 14px;border-radius:999px;font-weight:900;font-size:15px}
+.chip img{width:20px;height:20px;object-fit:contain}
+
+.tabs{display:flex;border-bottom:1px solid var(--glass-line);margin-bottom:14px}
+.tab{flex:1;text-align:center;padding:12px 0;font-weight:900;font-size:14px;color:#8fb0f0;cursor:pointer;position:relative}
+.tab.on{color:#fff}
+.tab.on::after{content:'';position:absolute;left:12%;right:12%;bottom:-1px;height:3px;border-radius:3px;background:var(--blue-light)}
+.tab b{display:inline-block;min-width:22px;padding:2px 7px;margin-left:6px;border-radius:999px;background:rgba(3,14,60,.5);font-size:11px}
+
+.filters{display:flex;justify-content:space-between;gap:10px;margin-bottom:14px}
+.seg{display:flex;padding:3px;border-radius:14px;background:rgba(3,14,60,.4);border:1px solid var(--glass-line)}
+.seg div{padding:8px 14px;border-radius:11px;font-size:12px;font-weight:800;color:var(--soft);cursor:pointer}
+.seg div.on{background:linear-gradient(180deg,#4f8cff,#1d4ed8);color:#fff}
+
+.card{background:linear-gradient(135deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.06) 100%);border:1px solid var(--glass-line);border-radius:26px;padding:16px;margin-bottom:14px;backdrop-filter:blur(10px)}
+.card-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.card-head .ttl{font-weight:900;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.badge{min-width:26px;height:24px;padding:0 9px;border-radius:999px;background:rgba(3,14,60,.5);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900}
+.badge.mine{background:var(--blue)}
+.gifts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.gift{text-align:center;min-width:0}
+.gimg{position:relative;aspect-ratio:1/1;border-radius:18px;overflow:hidden;background:rgba(255,255,255,.08)}
+.gimg img{width:100%;height:100%;object-fit:cover;display:block}
+.gimg::after{content:'';position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.gimg .more{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;background:rgba(3,14,60,.65);font-weight:900;font-size:20px}
+.gname{font-weight:800;font-size:12px;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gnum{font-size:10px;font-weight:700;color:#9fbbf0}
+
+.stats2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.stat{background:rgba(3,14,60,.4);border-radius:20px;padding:14px 10px;text-align:center}
+.stat .l{font-size:11px;font-weight:700;color:var(--soft);display:flex;align-items:center;justify-content:center;gap:6px}
+.stat .l img{width:16px;height:16px;object-fit:contain}
+.stat .v{font-weight:900;font-size:18px;margin-top:6px}
+.stat .v.time{color:var(--green)}
+.stat .v.gold{color:var(--gold)}
+
+.btn{display:block;width:100%;border:none;border-radius:999px;padding:16px;margin-top:14px;background:linear-gradient(180deg,#4f8cff,#1d4ed8);color:#fff;font:italic 900 14px 'Inter',sans-serif;text-transform:uppercase;cursor:pointer;box-shadow:0 0 20px rgba(47,107,255,.45),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .15s}
+.btn:active{transform:scale(.97)}
+.btn:disabled{background:rgba(3,14,60,.55);border:1px solid var(--glass-line);color:#8fb0f0;box-shadow:none;transform:none}
+.btn.ghost{background:var(--glass);border:1px solid var(--glass-line);box-shadow:none}
+
+.empty{text-align:center;padding:50px 24px;border:1px dashed var(--glass-line);border-radius:26px;margin-top:10px}
+.empty .ico{font-size:46px;margin-bottom:10px}
+.empty .t{font-weight:900;font-size:16px}
+.empty .s{font-size:12px;font-weight:600;color:var(--soft);margin-top:8px;line-height:1.5}
+
+.win-line{display:flex;justify-content:space-between;gap:8px;font-size:12px;font-weight:700;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.win-line:last-child{border:none}
+.win-line .u{color:var(--soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.win-line.me{color:var(--gold)}
+.win-line.me .u{color:var(--gold)}
+
+/* шторка */
+#sheet{position:fixed;inset:0;z-index:5000;display:none;align-items:flex-end;justify-content:center;background:rgba(2,10,40,.78);backdrop-filter:blur(6px);opacity:0;transition:opacity .25s}
+#sheet.show{display:flex}
+#sheet.vis{opacity:1}
+.sheet-box{width:100%;max-width:520px;max-height:94vh;overflow-y:auto;padding:20px 18px 30px;border-radius:30px 30px 0 0;background:linear-gradient(180deg,#1c4bc4 0%,#0a2468 100%);border:1px solid var(--glass-line);border-bottom:none;transform:translateY(40px);transition:transform .25s;scrollbar-width:none}
+.sheet-box::-webkit-scrollbar{display:none}
+#sheet.vis .sheet-box{transform:none}
+.sh-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.sh-x{width:38px;height:38px;border-radius:50%;border:none;background:rgba(255,255,255,.14);color:#fff;font-size:16px;cursor:pointer;flex-shrink:0}
+.sh-title{font-weight:900;font-size:19px;line-height:1.15;overflow:hidden}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);background:rgba(3,14,60,.4);border-radius:22px;padding:14px 6px;margin-bottom:10px}
+.stats3>div{text-align:center;border-right:1px solid rgba(255,255,255,.1)}
+.stats3>div:last-child{border:none}
+.stats3 .v{font-weight:900;font-size:19px}
+.stats3 .l{font-size:10px;font-weight:700;color:var(--soft);text-transform:uppercase;margin-top:4px}
+.stats3 .v.time{color:var(--green)}
+.pool{display:flex;align-items:center;justify-content:center;gap:12px;background:rgba(3,14,60,.4);border-radius:22px;padding:14px;margin-bottom:12px}
+.pool img{width:34px;height:34px;object-fit:contain}
+.pool .v{font-weight:900;font-size:22px;line-height:1}
+.pool .l{font-size:10px;font-weight:700;color:var(--soft);text-transform:uppercase;margin-top:3px}
+.desc{font-size:13px;font-weight:600;line-height:1.5;color:#dbe8ff;background:rgba(3,14,60,.3);border-radius:18px;padding:14px;margin-bottom:12px;white-space:pre-wrap;user-select:text}
+.sec-t{font-weight:900;font-size:13px;margin:16px 0 10px;display:flex;align-items:center;gap:8px}
+.join-box{background:rgba(3,14,60,.4);border:1px solid var(--glass-line);border-radius:24px;padding:16px;margin-top:16px}
+.jb-row{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;color:var(--soft)}
+.jb-row b{color:#fff;display:flex;align-items:center;gap:6px;font-weight:900}
+.jb-row img{width:18px;height:18px;object-fit:contain}
+.step{display:flex;gap:8px;margin:14px 0 10px}
+.step button{width:52px;border-radius:16px;border:1px solid var(--glass-line);background:var(--glass);color:#fff;font-size:22px;font-weight:700;cursor:pointer}
+.step button:active{transform:scale(.94)}
+.step input{flex:1;min-width:0;text-align:center;padding:14px;border-radius:16px;border:1px solid var(--glass-line);background:rgba(3,14,60,.5);color:#fff;font:900 20px 'Inter',sans-serif;outline:none;user-select:text}
+.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.quick div{text-align:center;padding:9px 0;border-radius:999px;border:1px solid var(--glass-line);background:var(--glass);font-weight:900;font-size:12px;cursor:pointer}
+.chance{margin-top:14px;text-align:center;font-size:12px;font-weight:700;color:var(--soft);line-height:1.6}
+.chance b{color:var(--green);font-size:16px}
+.note{font-size:10px;font-weight:600;color:#9fbbf0;text-align:center;margin-top:10px;line-height:1.4}
+
+.toast{position:fixed;left:50%;bottom:120px;transform:translate(-50%,20px);background:#0a2468;border:1px solid var(--blue-light);font-weight:800;font-size:13px;padding:12px 18px;border-radius:999px;z-index:9000;opacity:0;pointer-events:none;transition:all .25s;max-width:88vw;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+.dock-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(8,28,92,.92);border-top:1px solid var(--glass-line);display:flex;justify-content:space-around;padding:12px 10px 34px;z-index:1000;backdrop-filter:blur(25px);height:95px}
+.dock-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#8fb0f0;flex:1;cursor:pointer}
+.dock-btn.active{color:#fff}
+.dock-btn svg{width:28px;height:28px}
+.dock-btn span{font-size:10px;font-weight:900;font-style:italic;text-transform:uppercase}
+.dock-center{color:#e3eeff}
+.dock-center .ico{width:54px;height:54px;margin:-13px 0;transform:translateY(-16px);border-radius:20px;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#5b94ff,#1d4ed8);color:#fff;border:1px solid rgba(255,255,255,.4);box-shadow:0 6px 16px rgba(5,25,100,.6),inset 0 1px 0 rgba(255,255,255,.35)}
+
+#loader{position:fixed;inset:0;background:var(--bg-dark);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .25s}
+#loader.hidden{opacity:0;pointer-events:none}
+.ring{width:50px;height:50px;border:3px solid #12308a;border-left-color:var(--blue-light);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<div id="loader"><div class="ring"></div><div class="it" style="margin-top:16px;color:#8fc2ff;letter-spacing:3px;font-size:14px">PandaGift</div></div>
+<canvas id="stars-canvas"></canvas>
+
+<div class="main-wrapper">
+<div class="scroll">
+
+    <div class="top">
+        <h1 class="it">Розыгрыши</h1>
+        <div class="chip"><img src="img/bambyk.png" alt="Бамбук"><span id="bamboo">0</span></div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab on" id="tab-active" onclick="setTab('active')">Активные<b id="cnt-active">0</b></div>
+        <div class="tab" id="tab-finished" onclick="setTab('finished')">Завершённые<b id="cnt-finished">0</b></div>
+    </div>
+
+    <div class="filters">
+        <div class="seg" id="seg-filter">
+            <div class="on" data-v="all" onclick="setFilter('all')">Все</div>
+            <div data-v="mine" onclick="setFilter('mine')">Мои</div>
+        </div>
+        <div class="seg" id="seg-sort">
+            <div class="on" data-v="date" onclick="setSort('date')">По дате</div>
+            <div data-v="pool" onclick="setSort('pool')">По пулу</div>
+        </div>
+    </div>
+
+    <div id="list"></div>
+</div>
+
+<nav class="dock-bar">
+    <div onclick="location.href='index.html'" class="dock-btn">
+        <svg fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+        <span>Главная</span>
+    </div>
+    <div class="dock-btn active">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v8a1 1 0 001 1h12a1 1 0 001-1v-8M7.5 8a2.5 2.5 0 010-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 010 5"/></svg>
+        <span>Розыгрыши</span>
+    </div>
+    <div onclick="location.href='ref.html'" class="dock-btn dock-center">
+        <div class="ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="4.5" cy="9.5" r="2.2"/><circle cx="19.5" cy="9.5" r="2.2"/><path d="M1 18c0-2 1.3-3.5 3.5-3.7"/><path d="M23 18c0-2-1.3-3.5-3.5-3.7"/></svg>
+        </div>
+        <span>Рефералы</span>
+    </div>
+    <div onclick="location.href='profile.html'" class="dock-btn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        <span>Профиль</span>
+    </div>
+</nav>
+</div>
+
+<div id="sheet" onclick="closeSheet()"><div class="sheet-box" id="sheet-box" onclick="event.stopPropagation()"></div></div>
+<div id="toast" class="toast"></div>
+
+<script>
+const tg = window.Telegram.WebApp;
+const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
+const tgUser = tg.initDataUnsafe?.user;
+const uid = (tgUser && tgUser.id) ? tgUser.id : '12345';
+const $ = id => document.getElementById(id);
+
+const S = { tab: 'active', filter: 'all', sort: 'date', lists: { active: [], finished: [] }, bamboo: 0, cur: null, n: 1 };
+
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function haptic(kind, type) { try { tg.HapticFeedback[kind](type); } catch (e) {} }
+function toast(t) { const el = $('toast'); el.innerText = t; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2400); }
+function fmt(n) { return Number(n || 0).toLocaleString('ru-RU', { maximumFractionDigits: 2 }); }
+function imgUrl(id) { return `${BACKEND_URL}/inventory/preview/${id}`; }
+function serial(link) { const m = /-(\d+)$/.exec(link || ''); return m ? '#' + m[1] : ''; }
+function fallback(img) {
+    img.onerror = () => { img.onerror = null; img.src = 'img/star.png'; img.style.objectFit = 'contain'; img.style.padding = '22%'; img.style.boxSizing = 'border-box'; };
+}
+
+async function api(path, body) {
+    const res = await fetch(BACKEND_URL + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ init_data: tg.initData, ...(body || {}) })
+    });
+    let data = {};
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) throw new Error(data.detail || data.error || ('HTTP ' + res.status));
+    return data;
+}
+
+function fmtLeft(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+    if (d > 0) return `${d}д ${h}ч`;
+    if (h > 0) return `${h}ч ${m}м`;
+    return `${m}м ${String(s).padStart(2, '0')}с`;
+}
+function leftOf(it) { return (it.endAt - Date.now()) / 1000; }
+
+/* ---------- данные ---------- */
+function prep(items) {
+    return (items || []).map(it => ({ ...it, endAt: Date.now() + (Number(it.seconds_left) || 0) * 1000 }));
+}
+async function loadBamboo() {
+    try {
+        const r = await fetch(`${BACKEND_URL}/get_balance/${uid}?t=${Date.now()}`);
+        const d = await r.json();
+        S.bamboo = Number(d.bamboo_balance) || 0;
+    } catch (e) {}
+    $('bamboo').innerText = fmt(S.bamboo);
+}
+async function loadAll() {
+    const [a, f] = await Promise.allSettled([
+        api('/giveaways/list', { status: 'active' }),
+        api('/giveaways/list', { status: 'finished' })
+    ]);
+    if (a.status === 'fulfilled') S.lists.active = prep(a.value.items);
+    if (f.status === 'fulfilled') S.lists.finished = prep(f.value.items);
+    if (a.status === 'rejected' && f.status === 'rejected') {
+        $('list').innerHTML = `<div class="empty"><div class="ico">⚠️</div><div class="t it">Не удалось загрузить</div><div class="s">Открой приложение через Telegram и попробуй ещё раз.</div></div>`;
+        return;
+    }
+    render();
+}
+
+/* ---------- список ---------- */
+function setTab(t) {
+    S.tab = t;
+    $('tab-active').classList.toggle('on', t === 'active');
+    $('tab-finished').classList.toggle('on', t === 'finished');
+    render();
+}
+function setFilter(v) { S.filter = v; mark('seg-filter', v); render(); }
+function setSort(v) { S.sort = v; mark('seg-sort', v); render(); }
+function mark(id, v) { document.querySelectorAll('#' + id + ' div').forEach(d => d.classList.toggle('on', d.dataset.v === v)); }
+
+function visible() {
+    let list = S.lists[S.tab].slice();
+    if (S.filter === 'mine') list = list.filter(i => Number(i.my_tickets) > 0);
+    if (S.sort === 'pool') list.sort((a, b) => Number(b.pool) - Number(a.pool));
+    return list;
+}
+
+function giftTile(g) {
+    return `<div class="gift"><div class="gimg"><img alt="" loading="lazy" src="${imgUrl(g.nft_id)}" onerror="this.onerror=null;this.src='img/star.png';this.style.objectFit='contain';this.style.padding='22%'"></div>
+        <div class="gname">${esc(g.name)}</div><div class="gnum">${esc(serial(g.link))}</div></div>`;
+}
+
+function render() {
+    $('cnt-active').innerText = S.lists.active.length;
+    $('cnt-finished').innerText = S.lists.finished.length;
+    const list = visible();
+    const box = $('list');
+
+    if (!list.length) {
+        const total = S.lists[S.tab].length;
+        let t, s;
+        if (S.tab === 'active') {
+            t = total ? 'У тебя пока нет участий' : 'Сейчас розыгрышей нет';
+            s = total ? 'Выбери розыгрыш во вкладке «Все» и участвуй бамбуком.' : 'На данный момент активных розыгрышей нет. Загляни позже: новые появятся здесь.';
+        } else {
+            t = 'Пока ничего нет';
+            s = 'Завершённые розыгрыши будут появляться здесь.';
+        }
+        box.innerHTML = `<div class="empty"><div class="ico">🎁</div><div class="t it">${t}</div><div class="s">${s}</div></div>`;
+        return;
+    }
+
+    box.innerHTML = list.map(it => {
+        const gifts = it.gifts || [];
+        const active = it.status === 'active';
+        const mine = Number(it.my_tickets) > 0;
+        return `<div class="card">
+            <div class="card-head">
+                <svg width="20" height="20" fill="none" stroke="#8fc2ff" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v8a1 1 0 001 1h12a1 1 0 001-1v-8M7.5 8a2.5 2.5 0 010-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 010 5"/></svg>
+                <div class="ttl it">${esc(it.title)}</div>
+                ${mine ? `<div class="badge mine">${fmt(it.my_tickets)} 🎟</div>` : ''}
+                <div class="badge">${gifts.length}</div>
+            </div>
+            <div class="gifts">${gifts.slice(0, 3).map(giftTile).join('')}</div>
+            <div class="stats2">
+                <div class="stat"><div class="l"><img src="img/bambyk.png" alt="">Билетный пул</div><div class="v">${fmt(it.pool)}</div></div>
+                ${active
+                    ? `<div class="stat"><div class="l">⏱ Осталось</div><div class="v time" data-end="${it.endAt}">${fmtLeft(leftOf(it))}</div></div>`
+                    : `<div class="stat"><div class="l">👥 Участников</div><div class="v">${fmt(it.participants)}</div></div>`}
+            </div>
+            <button class="btn" onclick="openSheet(${Number(it.id)})">${active ? 'Открыть розыгрыш' : 'Результаты'}</button>
+        </div>`;
+    }).join('');
+}
+
+/* ---------- шторка ---------- */
+function findItem(id) { return [...S.lists.active, ...S.lists.finished].find(i => Number(i.id) === Number(id)); }
+
+function maxTickets(it) {
+    let m = Math.floor(S.bamboo);
+    if (it.max_tickets_per_user) m = Math.min(m, Number(it.max_tickets_per_user) - Number(it.my_tickets || 0));
+    return Math.max(0, m);
+}
+function pct(a, b) { return b > 0 ? (a / b * 100) : 0; }
+function fmtPct(x) { return (x >= 10 ? x.toFixed(1) : x.toFixed(2)).replace(/\.?0+$/, '') + '%'; }
+
+function openSheet(id) {
+    const it = findItem(id);
+    if (!it) return;
+    S.cur = it;
+    S.n = Math.min(1, maxTickets(it)) || 1;
+    drawSheet();
+    const m = $('sheet');
+    m.classList.add('show');
+    requestAnimationFrame(() => m.classList.add('vis'));
+    haptic('impactOccurred', 'light');
+}
+function closeSheet() {
+    const m = $('sheet');
+    m.classList.remove('vis');
+    setTimeout(() => m.classList.remove('show'), 250);
+    S.cur = null;
+}
+
+function drawSheet() {
+    const it = S.cur;
+    if (!it) return;
+    const active = it.status === 'active' && leftOf(it) > 0;
+    const gifts = it.gifts || [];
+    const mine = Number(it.my_tickets) || 0;
+    const pool = Number(it.pool) || 0;
+    const max = maxTickets(it);
+
+    let html = `
+    <div class="sh-head">
+        <button class="sh-x" onclick="closeSheet()">✕</button>
+        <div class="sh-title it">${esc(it.title)}</div>
+    </div>
+    <div class="stats3">
+        <div><div class="v">${fmt(it.participants)}</div><div class="l">Участники</div></div>
+        <div><div class="v">${gifts.length}</div><div class="l">Подарки</div></div>
+        <div><div class="v time" ${active ? `data-end="${it.endAt}"` : ''}>${active ? fmtLeft(leftOf(it)) : 'Конец'}</div><div class="l">Осталось</div></div>
+    </div>
+    <div class="pool">
+        <img src="img/bambyk.png" alt="">
+        <div><div class="v">${fmt(pool)}</div><div class="l">Общий пул билетов</div></div>
+    </div>`;
+
+    if (it.description) html += `<div class="desc">${esc(it.description)}</div>`;
+
+    html += `<div class="sec-t it">🎁 Все подарки <span class="badge">${gifts.length}</span></div>
+             <div class="gifts">${gifts.map(giftTile).join('')}</div>`;
+
+    if (active) {
+        const n = Math.max(1, S.n);
+        const now = pct(mine, pool);
+        const after = pct(mine + n, pool + n);
+        html += `
+        <div class="join-box">
+            <div class="jb-row"><span>Ваш бамбук</span><b><img src="img/bambyk.png" alt="">${fmt(S.bamboo)}</b></div>
+            <div class="jb-row" style="margin-top:8px"><span>Ваши билеты</span><b>${fmt(mine)} 🎟</b></div>
+            <div class="step">
+                <button onclick="stepN(-1)">−</button>
+                <input id="n-input" type="number" inputmode="numeric" min="1" value="${n}" oninput="typeN(this.value)">
+                <button onclick="stepN(1)">+</button>
+            </div>
+            <div class="quick">
+                <div onclick="setN(1)">1</div><div onclick="setN(10)">10</div><div onclick="setN(50)">50</div><div onclick="setN(${max})">Макс</div>
+            </div>
+            <div class="chance">Ваш шанс сейчас: <b>${fmtPct(now)}</b><br>С выбранными билетами: <b id="chance-after">${fmtPct(after)}</b></div>
+            <button class="btn" id="join-btn" onclick="join()" ${max < 1 ? 'disabled' : ''}>
+                ${max < 1 ? (Math.floor(S.bamboo) < 1 ? 'Недостаточно бамбука' : 'Лимит билетов исчерпан') : `Участвовать с <span id="btn-n">${n}</span> бамбук`}
+            </button>
+            <div class="note">1 бамбук = 1 билет. Чем больше билетов, тем выше шанс выиграть. Бамбук тратится при участии.${it.max_tickets_per_user ? `<br>Лимит: ${it.max_tickets_per_user} билетов на человека.` : ''}</div>
+        </div>`;
+    } else {
+        const w = it.winners || [];
+        html += `<div class="sec-t it">🏆 Победители</div>`;
+        html += w.length
+            ? `<div class="join-box" style="margin-top:0">${w.map(x => `<div class="win-line ${x.mine ? 'me' : ''}"><span class="u">${x.mine ? '⭐ Вы' : esc(x.user)}</span><span>${esc(x.name || ('NFT #' + x.nft_id))}</span></div>`).join('')}</div>`
+            : `<div class="note">Победителей нет: в розыгрыше никто не участвовал.</div>`;
+        if (mine > 0) html += `<div class="note" style="margin-top:12px">Вы участвовали с ${fmt(mine)} билетами.</div>`;
+    }
+    $('sheet-box').innerHTML = html;
+}
+
+function clampN(v) {
+    const max = maxTickets(S.cur);
+    v = Math.floor(Number(v) || 1);
+    return Math.max(1, max > 0 ? Math.min(v, max) : 1);
+}
+function refreshN() {
+    const it = S.cur; if (!it) return;
+    const inp = $('n-input'); if (inp && Number(inp.value) !== S.n) inp.value = S.n;
+    const bn = $('btn-n'); if (bn) bn.innerText = S.n;
+    const ca = $('chance-after'); if (ca) ca.innerText = fmtPct(pct((Number(it.my_tickets) || 0) + S.n, (Number(it.pool) || 0) + S.n));
+}
+function stepN(d) { S.n = clampN(S.n + d); refreshN(); haptic('selectionChanged'); }
+function setN(v) { S.n = clampN(v); refreshN(); }
+function typeN(v) { if (v === '') return; S.n = clampN(v); refreshN(); }
+
+let joining = false;
+async function join() {
+    const it = S.cur;
+    if (!it || joining) return;
+    const n = S.n;
+    joining = true;
+    const btn = $('join-btn'); if (btn) { btn.disabled = true; btn.innerText = 'Участвуем...'; }
+    try {
+        const r = await api('/giveaways/join', { giveaway_id: it.id, tickets: n });
+        it.my_tickets = r.my_tickets;
+        it.pool = r.pool;
+        if (n > 0 && Number(it.my_tickets) === n) it.participants = Number(it.participants) + 1;
+        S.bamboo = Number(r.bamboo_balance) || 0;
+        $('bamboo').innerText = fmt(S.bamboo);
+        haptic('notificationOccurred', 'success');
+        toast(`Готово! +${n} 🎟`);
+        S.n = Math.min(1, maxTickets(it)) || 1;
+        render();
+    } catch (e) {
+        haptic('notificationOccurred', 'error');
+        toast(e.message);
+    } finally {
+        joining = false;
+        drawSheet();
+    }
+}
+
+/* ---------- таймеры ---------- */
+let reloading = false;
+setInterval(() => {
+    let expired = false;
+    document.querySelectorAll('[data-end]').forEach(el => {
+        const sec = (Number(el.dataset.end) - Date.now()) / 1000;
+        if (sec <= 0) { el.innerText = 'Итоги...'; expired = true; }
+        else el.innerText = fmtLeft(sec);
+    });
+    if (expired && !reloading) {
+        reloading = true;
+        setTimeout(async () => { await loadAll(); if (S.cur) { S.cur = findItem(S.cur.id) || null; if (S.cur) drawSheet(); else closeSheet(); } reloading = false; }, 2500);
+    }
+}, 1000);
+
+/* ---------- фон ---------- */
+const canvas = $('stars-canvas'), ctx = canvas.getContext('2d');
+let bubbles = [];
+function initBubbles() {
+    canvas.width = innerWidth; canvas.height = innerHeight;
+    bubbles = Array.from({ length: 30 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: Math.random() * 2.2 + .6, speed: Math.random() * .35 + .1, drift: (Math.random() - .5) * .25, opacity: Math.random() * .45 + .15, bright: Math.random() < .4 }));
+}
+function animateBubbles() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    bubbles.forEach(s => {
+        ctx.beginPath(); ctx.globalAlpha = s.opacity; ctx.fillStyle = s.bright ? '#fff' : '#9cc4ff';
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); ctx.fill();
+        s.y -= s.speed; s.x += s.drift;
+        if (s.y < -5) { s.y = canvas.height + 5; s.x = Math.random() * canvas.width; }
+    });
+    requestAnimationFrame(animateBubbles);
+}
+initBubbles(); animateBubbles();
+addEventListener('resize', initBubbles);
+
+/* ---------- старт ---------- */
+window.onload = async () => {
+    try { tg.expand(); tg.ready(); tg.headerColor = '#1f55d6'; tg.backgroundColor = '#08205f'; } catch (e) {}
+    await Promise.all([loadBamboo(), loadAll()]);
+    $('loader').classList.add('hidden');
+};
+setTimeout(() => $('loader').classList.add('hidden'), 4000);
+</script>
+</body>
+</html>
