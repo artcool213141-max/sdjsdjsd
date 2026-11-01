@@ -26,16 +26,16 @@ h1{font-size:26px;margin:6px 0 4px;text-align:center;letter-spacing:-.4px;text-s
 .sub{text-align:center;font-size:12px;font-weight:700;color:var(--soft);margin-bottom:22px}
 
 /* лента рулетки */
-.roll{position:relative;margin:6px -18px 0;height:150px;overflow:hidden;background:rgba(3,14,60,.35);border-top:1px solid var(--glass-line);border-bottom:1px solid var(--glass-line);backdrop-filter:blur(8px)}
-.roll::before,.roll::after{content:'';position:absolute;top:0;bottom:0;width:70px;z-index:3;pointer-events:none}
-.roll::before{left:0;background:linear-gradient(90deg,#12358f,transparent)}
-.roll::after{right:0;background:linear-gradient(270deg,#12358f,transparent)}
+.roll{position:relative;margin:10px 0 0;height:168px;overflow:hidden;border-radius:32px;background:linear-gradient(180deg,rgba(3,14,60,.55),rgba(10,36,104,.45));border:1px solid var(--glass-line);box-shadow:0 14px 36px rgba(0,10,60,.45),inset 0 0 34px rgba(143,194,255,.14);backdrop-filter:blur(8px)}
+.roll::before,.roll::after{content:'';position:absolute;top:0;bottom:0;width:64px;z-index:3;pointer-events:none}
+.roll::before{left:0;background:linear-gradient(90deg,#0b2a78,transparent)}
+.roll::after{right:0;background:linear-gradient(270deg,#0b2a78,transparent)}
 .pointer{position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1.5px;z-index:4;background:linear-gradient(180deg,var(--blue-light),#fff,var(--blue-light));box-shadow:0 0 14px var(--blue-light)}
 .pointer::before,.pointer::after{content:'';position:absolute;left:50%;margin-left:-8px;border:8px solid transparent}
 .pointer::before{top:0;border-top-color:#fff}
 .pointer::after{bottom:0;border-bottom-color:#fff}
 .strip{position:absolute;left:0;top:0;height:100%;display:flex;align-items:center;gap:10px;padding-left:10px;will-change:transform}
-.cell{flex:0 0 112px;height:112px;border-radius:20px;background:linear-gradient(135deg,rgba(255,255,255,.2),rgba(255,255,255,.06));border:1px solid var(--glass-line);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.cell{flex:0 0 112px;height:112px;border-radius:26px;background:linear-gradient(135deg,rgba(255,255,255,.2),rgba(255,255,255,.06));border:1px solid var(--glass-line);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;position:relative}
 .cell img{width:78px;height:78px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,20,90,.45))}
 .cell .num{position:absolute;bottom:5px;font-weight:900;font-size:15px}
 .cell.win{border-color:#fff;box-shadow:0 0 22px rgba(143,194,255,.8)}
@@ -113,8 +113,6 @@ h1{font-size:26px;margin:6px 0 4px;text-align:center;letter-spacing:-.4px;text-s
         <div class="strip" id="strip"></div>
     </div>
 
-    <div class="hint">Бесплатный кейс раз в 24 часа: <b>1–5 бамбуков</b>.<br>Платный кейс: <b>NFT-подарок</b> или приз <b>15 ⭐ / 0.15 TON</b>.</div>
-
     <div class="spacer"></div>
 
     <button class="btn" id="free-btn" onclick="spinFree()">Раскрутить бесплатно</button>
@@ -177,11 +175,27 @@ function applyBalances(d) {
     if (d.balance !== undefined) { S.stars = Number(d.balance) || 0; $('bal-stars').innerText = fmt(S.stars); }
     if (d.bamboo_balance !== undefined) { S.bamboo = Number(d.bamboo_balance) || 0; $('bal-bamboo').innerText = fmt(S.bamboo); }
 }
+const uid = (tg.initDataUnsafe?.user && tg.initDataUnsafe.user.id) ? tg.initDataUnsafe.user.id : '12345';
+// балансы берём из того же эндпоинта, что и на главной
+async function loadBalances() {
+    try {
+        const r = await fetch(`${BACKEND_URL}/get_balance/${uid}?t=${Date.now()}`);
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const d = await r.json();
+        applyBalances({ balance: d.balance, bamboo_balance: d.bamboo_balance });
+    } catch (e) { console.warn('balance', e); }
+}
 async function loadStatus() {
-    const d = await api('/roulette/status');
-    applyBalances(d);
-    S.freeLeft = Number(d.free_left) || 0;
-    S.freeEnd = Date.now() + S.freeLeft * 1000;
+    await loadBalances();
+    try {
+        const d = await api('/roulette/status');
+        applyBalances(d);
+        S.freeLeft = Number(d.free_left) || 0;
+        S.freeEnd = Date.now() + S.freeLeft * 1000;
+    } catch (e) {
+        console.warn('status', e);
+        toast('Кейсы недоступны: ' + e.message);
+    }
     drawFreeBtn();
 }
 async function loadCatalog() {
@@ -215,6 +229,12 @@ function setBusy(v) { S.busy = v; $('paid-btn').disabled = v; drawFreeBtn(); }
 /* ---------- лента ---------- */
 function cellFree(v, win) { return `<div class="cell${win ? ' win' : ''}"><img src="img/bambyk.png" alt=""><div class="num">${v}</div></div>`; }
 function cellNft(it, win) { return `<div class="cell${win ? ' win' : ''}"><img src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)"></div>`; }
+function nftPool() {
+    if (S.catalog.length) return S.catalog;
+    return [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,59].map(id => ({ id }));
+}
+// в ленте всегда крутятся все NFT из базы, независимо от того, что выпадет
+function filler() { const p = nftPool(); return cellNft(p[Math.floor(Math.random() * p.length)], false); }
 function moneyLabel(cur, amt) { return cur === 'ton' ? `${amt} TON` : `${amt} ⭐`; }
 function cellMixa(cur, amt, win) { return `<div class="cell${win ? ' win' : ''}"><img src="img/mixa.jpg" alt="" style="width:78px;height:62px;object-fit:cover;border-radius:12px;margin-top:-14px"><div class="num">${moneyLabel(cur, amt)}</div></div>`; }
 function randMixa() { return Math.random() < 0.5 ? cellMixa('stars', 15, false) : cellMixa('ton', 0.15, false); }
@@ -227,7 +247,7 @@ function placeStrip(html, instant) {
     void st.offsetWidth;
 }
 function idleStrip() {
-    const pool = S.catalog.length ? S.catalog : [{ id: 0 }];
+    const pool = nftPool();
     let html = '';
     for (let i = 0; i < 14; i++) html += cellNft(pool[i % pool.length], false);
     placeStrip(html);
@@ -273,7 +293,7 @@ async function spinFree() {
 
     const amount = Number(r.amount) || 1;
     const cells = [];
-    for (let i = 0; i < TOTAL; i++) cells.push(i === WIN_INDEX ? cellFree(amount, true) : cellFree(1 + Math.floor(Math.random() * 5), false));
+    for (let i = 0; i < TOTAL; i++) cells.push(i === WIN_INDEX ? cellFree(amount, true) : filler());
     runStrip(cells, () => {
         applyBalances(r);
         S.freeLeft = Number(r.free_left) || 86400;
@@ -294,13 +314,10 @@ async function spinPaid() {
 
     const isMoney = r.kind === 'money';
     const won = r.nft;
-    const pool = S.catalog.length ? S.catalog : (won ? [won] : []);
     const cells = [];
     for (let i = 0; i < TOTAL; i++) {
-        if (i === WIN_INDEX) { cells.push(isMoney ? cellMixa(r.currency, r.amount, true) : cellNft(won, true)); continue; }
-        // в ленте картинка миха встречается часто, как и в реальном шансе
-        if (!pool.length || Math.random() < 0.55) cells.push(randMixa());
-        else cells.push(cellNft(pool[Math.floor(Math.random() * pool.length)], false));
+        if (i === WIN_INDEX) cells.push(isMoney ? cellMixa(r.currency, r.amount, true) : cellNft(won, true));
+        else cells.push(filler());
     }
     runStrip(cells, () => {
         applyBalances(r);
