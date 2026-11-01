@@ -37,6 +37,8 @@ h1{font-size:26px;margin:6px 0 4px;text-align:center;letter-spacing:-.4px;text-s
 .strip{position:absolute;left:0;top:0;height:100%;display:flex;align-items:center;gap:10px;padding-left:10px;will-change:transform}
 .cell{flex:0 0 112px;height:112px;border-radius:26px;background:linear-gradient(135deg,rgba(255,255,255,.2),rgba(255,255,255,.06));border:1px solid var(--glass-line);display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;position:relative}
 .cell img{width:78px;height:78px;object-fit:contain;filter:drop-shadow(0 4px 6px rgba(0,20,90,.45))}
+.cell img.nft{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:none;border-radius:inherit}
+.win-img.nft{border-radius:30px;object-fit:cover;width:180px;height:180px}
 .cell .num{position:absolute;bottom:5px;font-weight:900;font-size:15px}
 .cell.win{border-color:#fff;box-shadow:0 0 22px rgba(143,194,255,.8)}
 
@@ -228,7 +230,7 @@ function setBusy(v) { S.busy = v; $('paid-btn').disabled = v; drawFreeBtn(); }
 
 /* ---------- лента ---------- */
 function cellFree(v, win) { return `<div class="cell${win ? ' win' : ''}"><img src="img/bambyk.png" alt=""><div class="num">${v}</div></div>`; }
-function cellNft(it, win) { return `<div class="cell${win ? ' win' : ''}"><img src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)"></div>`; }
+function cellNft(it, win) { return `<div class="cell${win ? ' win' : ''}"><img class="nft" src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)"></div>`; }
 function nftPool() {
     if (S.catalog.length) return S.catalog;
     return [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,59].map(id => ({ id }));
@@ -364,7 +366,7 @@ function showNft(n) {
     openWin(`
         <div class="rays"></div>
         <div class="win-t it">Вы выиграли!</div>
-        <img class="win-img" src="${imgUrl(n.id)}" alt="" onerror="onImgErr(this)">
+        <img class="win-img nft" src="${imgUrl(n.id)}" alt="" onerror="onImgErr(this)">
         <div class="win-name"><span>${esc(n.name || 'NFT')}</span><img src="img/star.png" alt=""><span class="p">${fmt(price)}</span></div>
         <button class="wbtn main" onclick="upgradeNft()">Улучшить <span class="tag">шанс</span></button>
         <button class="wbtn" id="sell-btn" onclick="sellNft()">Продать за <img src="img/star.png" alt=""> ${fmt(price)}</button>
