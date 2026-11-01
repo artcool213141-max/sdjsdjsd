@@ -169,6 +169,21 @@
         .tp-sec { flex: 1; padding: 11px 8px; border-radius: 999px; border: 1px solid var(--glass-line); background: var(--glass); color: #e3eeff; font-weight: 800; font-size: 12px; cursor: pointer; }
         .tp-sec:active { transform: scale(0.97); }
 
+        /* модалка бамбука */
+        #bamboo-modal { position: fixed; inset: 0; z-index: 100002; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(2, 10, 40, 0.75); backdrop-filter: blur(6px); opacity: 0; transition: opacity 0.25s; }
+        #bamboo-modal.show { display: flex; }
+        #bamboo-modal.vis { opacity: 1; }
+        .bb-box { position: relative; width: 100%; max-width: 360px; padding: 28px 22px 22px; border-radius: 28px; text-align: center; background: linear-gradient(180deg, #1c4bc4 0%, #0a2468 100%); border: 1px solid var(--glass-line); box-shadow: 0 20px 60px rgba(0, 10, 60, 0.6); transform: translateY(24px) scale(0.92); transition: transform 0.3s cubic-bezier(.2,1.2,.4,1); }
+        #bamboo-modal.vis .bb-box { transform: translateY(0) scale(1); }
+        .bb-ico { width: 72px; height: 72px; object-fit: contain; margin: 0 auto 12px; display: block; animation: bounce 2s ease-in-out infinite; filter: drop-shadow(0 6px 10px rgba(0, 20, 90, 0.5)); }
+        .bb-title { font-size: 20px; font-weight: 900; font-style: italic; text-transform: uppercase; margin-bottom: 14px; }
+        .bb-text { font-size: 13px; line-height: 1.5; color: #cfe0ff; margin-bottom: 8px; }
+        .bb-text b { color: #fff; }
+        .bb-reward { display: inline-flex; align-items: center; gap: 6px; margin: 8px 0 18px; padding: 8px 14px; border-radius: 999px; background: var(--glass); border: 1px solid var(--glass-line); font-weight: 900; font-size: 13px; }
+        .bb-reward img { width: 18px; height: 18px; object-fit: contain; }
+        .bb-btn { width: 100%; padding: 14px; border: none; border-radius: 999px; background: linear-gradient(180deg, #4f8cff, #1d4ed8); color: #fff; font-size: 14px; font-weight: 900; font-style: italic; text-transform: uppercase; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255,255,255,0.35); }
+        .bb-btn:active { transform: scale(0.98); }
+
         .scrollable-content {
             position: relative;
             z-index: 1;
@@ -272,10 +287,11 @@
                         <span id="bal-ton">0.00</span>
                         <div class="bal-plus">+</div>
                     </div>
-                    <!-- Бамбук: пополнить нельзя, поэтому без плюса и без открытия пополнения -->
-                    <div class="balance-item-v2 no-plus" onclick="event.stopPropagation()">
+                    <!-- Бамбук: пополнить нельзя, плюс открывает окно с объяснением -->
+                    <div class="balance-item-v2" onclick="event.stopPropagation(); openBambooInfo()">
                         <img src="img/bambyk.png" alt="Бамбук">
                         <span id="bal-bamboo">0.00</span>
+                        <div class="bal-plus">+</div>
                     </div>
                 </div>
             </div>
@@ -411,6 +427,17 @@
                 </div>
                 <button class="tp-pay" id="ton-pay-btn" onclick="payTon()">Оплатить TON</button>
             </div>
+        </div>
+    </div>
+
+    <!-- модалка: бамбук нельзя пополнить -->
+    <div id="bamboo-modal" onclick="closeBambooInfo()">
+        <div class="bb-box" onclick="event.stopPropagation()">
+            <img class="bb-ico" src="img/bambyk.png" alt="Бамбук">
+            <div class="bb-title">Бамбук нельзя пополнить</div>
+            <div class="bb-text">Чтобы заработать бамбуки, открывайте <b>бесплатный кейс раз в 24 часа</b> или открывайте <b>платные кейсы</b>.</div>
+            <div class="bb-reward"><img src="img/bambyk.png" alt="">0–10 бамбуков за одно открытие</div>
+            <button class="bb-btn" onclick="location.href='case.html'">К кейсам</button>
         </div>
     </div>
 
@@ -670,6 +697,19 @@ try { if (tg.initData) localStorage.setItem('tg_init', tg.initData); } catch (e)
             document.getElementById('tab-' + n).classList.toggle('active', n === name);
             document.getElementById('pane-' + n).classList.toggle('active', n === name);
         });
+    }
+
+    // ===================== БАМБУК: ИНФО =====================
+    function openBambooInfo() {
+        try { tg.HapticFeedback.impactOccurred('light'); } catch (e) {}
+        const m = document.getElementById('bamboo-modal');
+        m.classList.add('show');
+        requestAnimationFrame(() => m.classList.add('vis'));
+    }
+    function closeBambooInfo() {
+        const m = document.getElementById('bamboo-modal');
+        m.classList.remove('vis');
+        setTimeout(() => m.classList.remove('show'), 250);
     }
 
     // чипы с суммой
