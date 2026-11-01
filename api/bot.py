@@ -219,11 +219,14 @@ def st_clear(aid: int):
 
 
 def all_user_ids():
-    ids, start, page = [], 0, 1000
+    ids = []
+    start = 0
+    page = 1000
     while True:
-        rows = (supabase.table("users").select("id")
-                .range(start, start + page - 1).execute().data or [])
-        ids += [r["id"] for r in rows]
+        # Используйте .execute() аккуратно, либо перейдите на async-клиент supabase, если используете async
+        response = supabase.table("users").select("id").range(start, start + page - 1).execute()
+        rows = response.data or []
+        ids.extend([r["id"] for r in rows])
         if len(rows) < page:
             break
         start += page
@@ -442,7 +445,8 @@ async def handle_rass_callback(cq: dict):
         await strip_keyboard(cq)
         await show_confirm(uid, chat_id, state)
     elif action == "go" and step == "confirm":
-        await run_broadcast(uid, chat_id, cq)
+        # Запускаем рассылку в фоновой задаче, чтобы вебхук не зависал и не падал по таймауту
+        asyncio.create_task(run_broadcast(uid, chat_id, cq))
     else:
         await answer_cb(cq, "Это действие уже неактуально.", alert=True)
 
