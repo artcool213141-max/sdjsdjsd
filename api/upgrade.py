@@ -23,6 +23,8 @@ _rng = random.SystemRandom()
 
 ERRORS = {
     "not_found": "Этого предмета нет в твоём инвентаре",
+    "user_not_found": "Пользователь не найден",
+    "item_not_found": "Целевой предмет сейчас недоступен",
 }
 
 
