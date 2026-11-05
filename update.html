@@ -430,11 +430,11 @@
             const resMsg = document.getElementById('res-msg');
             resMsg.style.display = 'flex';
             if (r.win) {
-                resMsg.innerText = 'Успех';
+                resMsg.innerText = 'Удача';
                 resMsg.style.color = '#8fc2ff';
                 tg.HapticFeedback?.notificationOccurred('success');
             } else {
-                resMsg.innerText = 'Сломался';
+                resMsg.innerText = 'Неудача';
                 resMsg.style.color = '#ff8a8a';
                 tg.HapticFeedback?.notificationOccurred('error');
             }
