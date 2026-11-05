@@ -77,6 +77,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .mbtn:active{transform:scale(.97)}
 .mbtn img{width:18px;height:18px;object-fit:contain}
 .mbtn.main{background:#fff;color:#16161a}
+.mbtn.ton{background:#0098ea}
 .mbtn.main .tag2{background:var(--blue);color:#fff;padding:4px 10px;border-radius:999px;font-size:11px}
 .mbtn:disabled{opacity:.6}
 
@@ -366,6 +367,7 @@ function showWin(n, demo) {
     }
     curNft = n;
     const price = Number(n.price_stars) || 0;
+    const priceTon = Number(n.price_ton) || 0;
     $('win-box').innerHTML = demo ? `
         <div class="win-t it">Демо-выигрыш</div>
         <img class="win-img" src="${imgUrl(n.id)}" alt="" onerror="onImgErr(this)">
@@ -376,7 +378,8 @@ function showWin(n, demo) {
         <img class="win-img" src="${imgUrl(n.id)}" alt="" onerror="onImgErr(this)">
         <div class="win-name"><span>${esc(n.name || 'NFT')}</span><img src="img/star.png" alt=""><span class="p">${fmt(price)}</span></div>
         <button class="mbtn main" onclick="upgradeNft()">Улучшить <span class="tag2">шанс</span></button>
-        <button class="mbtn" id="sell-btn" onclick="sellNft()">Продать за <img src="img/star.png" alt=""> ${fmt(price)}</button>
+        <button class="mbtn" id="sell-btn" onclick="sellNft('stars')">Продать за <img src="img/star.png" alt=""> ${fmt(price)}</button>
+        ${priceTon > 0 ? `<button class="mbtn ton" id="sell-ton-btn" onclick="sellNft('ton')">Продать за <img src="img/ton.png" alt=""> ${fmt(priceTon)}</button>` : ''}
         <button class="mbtn" onclick="closeWin()">Продолжить</button>`;
     showOv('ov-win');
 }
@@ -384,12 +387,15 @@ function upgradeNft() {
     if (!curNft) return;
     location.href = 'update.html?nft_id=' + encodeURIComponent(curNft.id) + '&v=' + Date.now();
 }
-async function sellNft() {
+async function sellNft(cur) {
     if (!curNft) return;
-    const b = $('sell-btn');
+    const btns = ['sell-btn', 'sell-ton-btn'].map($).filter(Boolean);
+    const b = { set disabled(v) { btns.forEach(x => x.disabled = v); } };
     b.disabled = true;
     try {
-        const r = await api('/roulette/sell', { nft_id: curNft.id });
+        const r = cur === 'ton'
+            ? await api('/case/sell_ton', { nft_id: curNft.id })
+            : await api('/roulette/sell', { nft_id: curNft.id });
         applyBalances(r);
         haptic('notificationOccurred', 'success');
         toast('Продано!');
