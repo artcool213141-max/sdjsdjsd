@@ -14,44 +14,39 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .main-wrapper{background:linear-gradient(180deg,#173f9c 0%,#1c4cc0 45%,#173f9c 100%);height:100vh;display:flex;flex-direction:column;position:relative;z-index:1;padding-top:12px;padding-bottom:max(22px,env(safe-area-inset-bottom))}
 .it{font-weight:900;font-style:italic;text-transform:uppercase}
 
-/* шапка */
-.top{display:flex;align-items:center;justify-content:space-between;padding:0 14px}
-.back{width:40px;height:40px;border-radius:50%;border:none;background:rgba(10,24,70,.6);color:#fff;font-size:18px;cursor:pointer}
-.title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;font-style:normal;text-transform:none}
-.title i{width:20px;height:20px;border-radius:50%;background:linear-gradient(145deg,#5b94ff,#1d4ed8)}
-.top .sp{width:40px}
+/* балансы */
 .chips{display:flex;justify-content:center;gap:12px;margin-top:6px}
 .chip{display:flex;align-items:center;gap:8px;background:rgba(10,24,70,.45);padding:6px 6px 6px 14px;border-radius:999px;font-weight:800;font-size:15px}
 .chip img{width:20px;height:20px;object-fit:contain}
 .chip .plus{width:28px;height:28px;border-radius:50%;border:none;background:#2f6bff;color:#fff;font-size:18px;line-height:1;cursor:pointer;padding:0}
 
-/* LIVE лента */
-.ticker{position:relative;margin:14px 12px 0;height:62px;overflow:hidden;border-radius:22px;background:rgba(10,24,70,.4);display:flex;align-items:center}
-.ticker .tag{flex-shrink:0;padding:0 14px 0 18px;font-size:20px;font-style:normal;position:relative;z-index:2;background:linear-gradient(90deg,#16358a 75%,transparent)}
-.ticker-track{display:flex;gap:16px;align-items:center;will-change:transform;animation:tick 45s linear infinite;padding-left:4px}
-.ticker-track img{width:42px;height:42px;object-fit:cover;border-radius:14px;flex-shrink:0;box-shadow:0 3px 8px rgba(0,10,60,.35)}
-@keyframes tick{to{transform:translateX(-50%)}}
-
-/* рулетка */
+/* рулетки (1–5 штук). Размеры задаёт JS через переменные */
 .stage{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
-.chev{display:block;margin:0 auto;width:28px;height:16px;opacity:.9}
-.roll{position:relative;height:196px;overflow:hidden;margin:10px 0}
-.roll::before,.roll::after{content:'';position:absolute;top:0;bottom:0;width:60px;z-index:3;pointer-events:none}
+.rolls{display:flex;flex-direction:column;gap:8px}
+.roll{position:relative;height:var(--rh);overflow:hidden}
+.roll::before,.roll::after{content:'';position:absolute;top:0;bottom:0;width:50px;z-index:3;pointer-events:none}
 .roll::before{left:0;background:linear-gradient(90deg,#1a45ad,transparent)}
 .roll::after{right:0;background:linear-gradient(270deg,#1a45ad,transparent)}
+.mk{display:none;position:absolute;left:50%;top:5px;bottom:5px;width:2px;margin-left:-1px;border-radius:2px;background:rgba(255,255,255,.5);z-index:4;pointer-events:none}
+.rolls.multi .mk{display:block}
 .strip{position:absolute;left:0;top:0;height:100%;display:flex;align-items:center;gap:8px;will-change:transform}
-.cell{flex:0 0 148px;height:176px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;position:relative;transition:transform .3s}
+.cell{flex:0 0 var(--cw);height:var(--rh);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;transition:transform .3s}
 .cell.win{transform:scale(1.06)}
-.cell img.pic{width:136px;height:136px;object-fit:cover;border-radius:30px;margin-bottom:-24px;position:relative;z-index:1;border:1px solid rgba(255,255,255,.18);box-shadow:0 10px 22px rgba(0,15,80,.5)}
+.cell img.pic{width:var(--pic);height:var(--pic);object-fit:cover;border-radius:var(--rad);margin-bottom:calc(var(--ov) * -1);position:relative;z-index:1;border:1px solid rgba(255,255,255,.18);box-shadow:0 8px 18px rgba(0,15,80,.5)}
 .pill{position:relative;z-index:2;display:flex;align-items:center;gap:6px;padding:9px 18px;border-radius:999px;background:rgba(30,60,140,.72);font-weight:800;font-size:15px;white-space:nowrap;backdrop-filter:blur(6px)}
 .pill img{width:16px;height:16px;object-fit:contain}
-.cell.money{justify-content:center}
-.mtile{width:172px;height:172px;margin:0 -12px;border-radius:34px;background:linear-gradient(160deg,#5b34c9,#2c1670);border:1px solid rgba(160,130,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:800;font-size:24px}
-.mtile img{width:56px;height:56px;object-fit:contain}
-.cell.money{flex-basis:172px}
+.roll .pill{font-size:var(--pf);padding:var(--pp);gap:5px}
+.roll .pill img{width:calc(var(--pf) + 1px);height:calc(var(--pf) + 1px)}
+.rolls.nopill .roll .pill{display:none}
+.mtile{width:var(--mt);height:var(--mt);margin:0 calc((var(--cw) - var(--mt)) / 2);flex-shrink:0;border-radius:calc(var(--mt) * .2);background:linear-gradient(160deg,#5b34c9,#2c1670);border:1px solid rgba(160,130,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:800;font-size:calc(var(--mt) * .14)}
+.mtile img{width:calc(var(--mt) * .32);height:calc(var(--mt) * .32);object-fit:contain}
 
 /* кнопки */
 .actions{padding:0 18px}
+.cnt{display:flex;gap:8px;margin-bottom:12px}
+.cnt button{flex:1;padding:11px 0;border:none;border-radius:12px;background:rgba(120,150,210,.28);color:#fff;font:800 15px 'Montserrat',sans-serif;cursor:pointer;transition:background .15s,color .15s,transform .1s}
+.cnt button:active{transform:scale(.95)}
+.cnt button.on{background:#fff;color:#0d2a78}
 .row{display:flex;gap:14px;margin-bottom:14px}
 .sbtn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;background:rgba(120,150,210,.28);color:#fff;font:700 14px 'Montserrat',sans-serif;cursor:pointer}
 .sbtn svg{width:18px;height:18px}
@@ -63,6 +58,10 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .btn.demo{background:#1f9e68}
 .btn.ton{margin-top:10px;background:#0098ea}
 .btn.ton:disabled{background:rgba(10,24,70,.55);color:#9db6ee}
+.skip{display:none;width:100%;border:none;border-radius:14px;padding:17px;background:rgba(120,150,210,.32);color:#fff;font:700 17px 'Montserrat',sans-serif;cursor:pointer}
+.skip:active{transform:scale(.97)}
+.actions.spinning .buy,.actions.spinning .cnt{display:none}
+.actions.spinning .skip{display:block}
 
 /* модалки (тёмные) */
 .ov{position:fixed;inset:0;z-index:6000;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,6,30,.78);backdrop-filter:blur(6px);opacity:0;transition:opacity .25s}
@@ -77,9 +76,9 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .mbtn:active{transform:scale(.97)}
 .mbtn img{width:18px;height:18px;object-fit:contain}
 .mbtn.main{background:#fff;color:#16161a}
-.mbtn.ton{background:#0098ea}
 .mbtn.main .tag2{background:var(--blue);color:#fff;padding:4px 10px;border-radius:999px;font-size:11px}
-.mbtn:disabled{opacity:.6}
+.mbtn.ton{background:#0098ea}
+.mbtn:disabled{opacity:.45;transform:none}
 
 .set{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:left;padding:16px 18px;border-radius:22px;background:var(--panel2)}
 .set b{display:block;font-size:19px;font-weight:700}
@@ -95,6 +94,22 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .gi .pill{background:#3a3b3f;font-size:14px;padding:9px 14px;width:100%;justify-content:center;border-radius:999px}
 .gi .mt{width:100%;aspect-ratio:1;border-radius:26px;background:linear-gradient(160deg,#5b34c9,#2c1670);border:1px solid rgba(160,130,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:800;font-size:18px}
 .gi .mt img{width:38px;height:38px;object-fit:contain}
+
+/* выбор призов после мульти-открытия */
+.sub{font-size:13px;font-weight:600;color:var(--muted);margin:-8px 0 16px}
+.pick{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 10px;margin-bottom:8px}
+.pi{position:relative;width:calc((100% - 20px) / 3);display:flex;flex-direction:column;align-items:center;padding:8px 6px 8px;border-radius:22px;border:2px solid transparent;background:rgba(255,255,255,.04);cursor:pointer;transition:all .18s}
+.pi img.pic{width:100%;aspect-ratio:1;object-fit:cover;border-radius:18px;display:block}
+.pi .pill{background:#3a3b3f;font-size:12px;padding:6px 10px;margin-top:-14px;gap:4px}
+.pi .pill img{width:13px;height:13px}
+.pi .nm{font-size:11px;font-weight:700;color:var(--muted);margin-top:6px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pi .ck{position:absolute;right:6px;top:6px;width:22px;height:22px;border-radius:50%;background:#fff;color:#16161a;display:none;align-items:center;justify-content:center;font-size:13px;font-weight:900;z-index:3}
+.pi.sel{border-color:#fff;background:rgba(255,255,255,.16);box-shadow:0 0 0 3px rgba(255,255,255,.16),0 0 22px rgba(255,255,255,.4);transform:scale(1.03)}
+.pi.sel .ck{display:flex}
+.pi.static{cursor:default}
+.pi .mt2{width:100%;aspect-ratio:1;border-radius:18px;background:linear-gradient(160deg,#5b34c9,#2c1670);border:1px solid rgba(160,130,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:800;font-size:16px}
+.pi .mt2 img{width:30px;height:30px;object-fit:contain}
+.selall{background:none;border:none;color:#8fb6ff;font:700 14px 'Montserrat',sans-serif;cursor:pointer;padding:8px}
 
 .win-t{font-size:24px;margin-bottom:12px}
 .win-img{width:180px;height:180px;object-fit:cover;border-radius:34px;margin:0 auto 12px;display:block;box-shadow:0 12px 28px rgba(0,0,0,.5);animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
@@ -130,10 +145,17 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
     </div>
 
     <div class="stage">
-        <div class="roll"><div class="strip" id="strip"></div></div>
+        <div class="rolls" id="rolls"></div>
     </div>
 
-    <div class="actions">
+    <div class="actions" id="actions">
+        <div class="cnt" id="cnt">
+            <button data-n="1" class="on">1</button>
+            <button data-n="2">2</button>
+            <button data-n="3">3</button>
+            <button data-n="4">4</button>
+            <button data-n="5">5</button>
+        </div>
         <div class="row">
             <div class="sbtn" onclick="openSettings()">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l8.66 5v10L12 22l-8.66-5V7z"/></svg>Настройки
@@ -142,12 +164,15 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12M12 8c-2-4-6-3-5 0M12 8c2-4 6-3 5 0"/></svg>Призы
             </div>
         </div>
-        <button class="btn" id="spin-btn" onclick="spin('stars')" disabled>
-            <span id="spin-lbl">Крутить за</span><img id="spin-ico" src="img/star.png" alt=""><span id="spin-price">—</span>
-        </button>
-        <button class="btn ton" id="spin-ton-btn" onclick="spin('ton')" disabled>
-            <span>Крутить за</span><img src="img/ton.png" alt=""><span id="spin-ton-price">—</span>
-        </button>
+        <div class="buy">
+            <button class="btn" id="spin-btn" onclick="spin('stars')" disabled>
+                <span id="spin-lbl">Крутить за</span><img id="spin-ico" src="img/star.png" alt=""><span id="spin-price">—</span>
+            </button>
+            <button class="btn ton" id="spin-ton-btn" onclick="spin('ton')" disabled>
+                <span>Крутить за</span><img src="img/ton.png" alt=""><span id="spin-ton-price">—</span>
+            </button>
+        </div>
+        <button class="skip" id="skip-btn" onclick="skip()">Пропустить</button>
     </div>
 </div>
 
@@ -175,13 +200,25 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 const tg = window.Telegram.WebApp;
 const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
 const $ = id => document.getElementById(id);
-const CELL = 148, GAP = 8, STEP = CELL + GAP, WIN_INDEX = 48, TOTAL = 60;
+const GAP = 8, WIN_INDEX = 48, TOTAL = 60;
 const META = { bear:'Bear', ring:'Ring', lip:'Lip', halloween:'Halloween', loot:'Loot', helmet:'Helmet', pepe:'Pepe', gorilla:'Gorilla Case' };
+
+// размеры рулеток в зависимости от количества: cw — ширина ячейки, pic — картинка, rh — высота рулетки,
+// rad — скругление, ov — на сколько плашка цены заходит на картинку, pf/pp — шрифт/отступы плашки, mt — плитка денег
+const CFG = {
+    1: { cw: 148, pic: 136, rh: 196, rad: 30, ov: 24, pf: 15, pp: '9px 18px', mt: 172, pill: true  },
+    2: { cw: 112, pic: 100, rh: 150, rad: 24, ov: 18, pf: 12, pp: '6px 12px', mt: 126, pill: true  },
+    3: { cw: 84,  pic: 74,  rh: 104, rad: 20, ov: 14, pf: 11, pp: '4px 9px',  mt: 84,  pill: true  },
+    4: { cw: 66,  pic: 58,  rh: 78,  rad: 16, ov: 0,  pf: 11, pp: '4px 9px',  mt: 58,  pill: false },
+    5: { cw: 56,  pic: 50,  rh: 64,  rad: 14, ov: 0,  pf: 11, pp: '4px 9px',  mt: 48,  pill: false }
+};
 
 const CASE_ID = new URLSearchParams(location.search).get('id');
 if (!CASE_ID || CASE_ID === 'free') location.replace(CASE_ID === 'free' ? 'event.html' : 'case.html');
 
-const S = { items: [], priceStars: 0, priceTon: 0, busy: false, stars: 0, ton: 0, demo: false };
+const S = { items: [], priceStars: 0, priceTon: 0, busy: false, stars: 0, ton: 0, demo: false, count: 1 };
+let L = { n: 1, cw: 148 };       // текущая раскладка рулеток
+let skipFn = null;               // функция «пропустить», пока крутятся рулетки
 
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 function haptic(kind, type) { try { tg.HapticFeedback[kind](type); } catch (e) {} }
@@ -192,6 +229,7 @@ function onImgErr(img) { img.onerror = null; img.src = 'img/star.png'; }
 const isMoney = it => it && (it.kind === 'money' || (it.id == null && it.amount != null));
 function curIcon(c) { return c === 'ton' ? 'img/ton.png' : 'img/star.png'; }
 function valueOf(it) { return isMoney(it) ? (it.currency === 'ton' ? 0 : Number(it.amount) || 0) : (Number(it.price_stars) || 0); }
+const r2 = n => Math.round(n * 100) / 100;
 
 async function api(path, body) {
     const res = await fetch(BACKEND_URL + path, {
@@ -230,15 +268,20 @@ async function loadCase() {
     drawSpinBtn();
 }
 
-/* ---------- кнопка ---------- */
+/* ---------- выбор количества и кнопки ---------- */
+function drawCnt() { document.querySelectorAll('#cnt button').forEach(b => b.classList.toggle('on', +b.dataset.n === S.count)); }
+document.querySelectorAll('#cnt button').forEach(b => b.onclick = () => {
+    if (S.busy || +b.dataset.n === S.count) return;
+    S.count = +b.dataset.n;
+    drawCnt(); idleRolls(); drawSpinBtn(); haptic('selectionChanged');
+});
 function drawSpinBtn() {
-    const b = $('spin-btn');
+    const b = $('spin-btn'), tb = $('spin-ton-btn');
     b.disabled = S.busy || !S.items.length;
-    b.classList.toggle('demo', S.demo);
-    const tb = $('spin-ton-btn');
     tb.disabled = S.busy || !S.items.length;
+    b.classList.toggle('demo', S.demo);
     tb.style.display = S.demo ? 'none' : '';
-    $('spin-ton-price').innerText = S.items.length ? fmt(S.priceTon) : '—';
+    $('spin-ton-price').innerText = S.items.length ? fmt(r2(S.priceTon * S.count)) : '—';
     if (S.demo) {
         $('spin-lbl').innerText = 'Крутить демо';
         $('spin-ico').style.display = 'none';
@@ -246,12 +289,14 @@ function drawSpinBtn() {
     } else {
         $('spin-lbl').innerText = 'Крутить за';
         $('spin-ico').style.display = '';
-        $('spin-price').innerText = S.items.length ? fmt(S.priceStars) : '—';
+        $('spin-price').innerText = S.items.length ? fmt(S.priceStars * S.count) : '—';
     }
 }
-function setBusy(v) { S.busy = v; drawSpinBtn(); }
+function beginSpin() { S.busy = true; $('actions').classList.add('spinning'); drawSpinBtn(); }
+function endSpin() { S.busy = false; skipFn = null; $('actions').classList.remove('spinning'); idleRolls(); drawSpinBtn(); }
+function skip() { if (skipFn) skipFn(); }
 
-/* ---------- LIVE лента и призы ---------- */
+/* ---------- призы (окно «Призы») ---------- */
 function sorted() { return S.items.slice().sort((a, b) => valueOf(b) - valueOf(a)); }
 function drawPrizes() {
     $('prizes').innerHTML = sorted().map(it => isMoney(it) ? `
@@ -262,52 +307,80 @@ function drawPrizes() {
         </div>`).join('');
 }
 
-/* ---------- лента ---------- */
+/* ---------- рулетки ---------- */
 function cellItem(it, win) {
-    if (isMoney(it)) return `<div class="cell money${win ? ' win' : ''}"><div class="mtile"><img src="${curIcon(it.currency)}" alt="">${fmt(it.amount)}</div></div>`;
+    if (isMoney(it)) return `<div class="cell${win ? ' win' : ''}"><div class="mtile"><img src="${curIcon(it.currency)}" alt="">${fmt(it.amount)}</div></div>`;
     return `<div class="cell${win ? ' win' : ''}"><img class="pic" src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)"><div class="pill"><img src="img/star.png" alt="">${fmt(it.price_stars)}</div></div>`;
 }
 function filler() { const p = S.items; return cellItem(p[Math.floor(Math.random() * p.length)], false); }
-function placeStrip(html) {
-    const st = $('strip');
+function layoutRolls(n) {
+    const C = CFG[n] || CFG[1];
+    const R = $('rolls');
+    R.className = 'rolls' + (n > 1 ? ' multi' : '') + (C.pill ? '' : ' nopill');
+    R.style.setProperty('--cw', C.cw + 'px');
+    R.style.setProperty('--pic', C.pic + 'px');
+    R.style.setProperty('--rh', C.rh + 'px');
+    R.style.setProperty('--rad', C.rad + 'px');
+    R.style.setProperty('--ov', (C.pill ? C.ov : 0) + 'px');
+    R.style.setProperty('--pf', C.pf + 'px');
+    R.style.setProperty('--pp', C.pp);
+    R.style.setProperty('--mt', C.mt + 'px');
+    R.innerHTML = Array.from({ length: n }, () => '<div class="roll"><div class="mk"></div><div class="strip"></div></div>').join('');
+    L = { n, cw: C.cw };
+    return [...R.querySelectorAll('.strip')];
+}
+function placeStrip(st, html) {
     st.style.transition = 'none';
     st.innerHTML = html;
     st.style.transform = 'translateX(0)';
     void st.offsetWidth;
 }
-function idleStrip() {
+function idleRolls() {
+    const strips = layoutRolls(S.count);
     if (!S.items.length) return;
     const list = sorted();
-    let html = '';
-    for (let i = 0; i < 14; i++) html += cellItem(list[i % list.length], false);
-    placeStrip(html);
-    const w = $('strip').parentElement.clientWidth;
-    $('strip').style.transform = `translateX(${Math.round(w / 2 - CELL / 2 - STEP * 3)}px)`;
-}
-// анимация прокрута — как в case.html
-function runStrip(cells, onDone) {
-    const st = $('strip');
-    placeStrip(cells.join(''));
-    const w = st.parentElement.clientWidth;
-    const jitter = Math.round((Math.random() - 0.5) * (CELL * 0.6));
-    const target = WIN_INDEX * STEP + CELL / 2;
-    const shift = Math.round(target - w / 2 + jitter);
-    requestAnimationFrame(() => {
-        st.style.transition = 'transform 5.2s cubic-bezier(.08,.6,.12,1)';
-        st.style.transform = `translateX(${-shift}px)`;
+    const STEP = L.cw + GAP;
+    const w = $('rolls').clientWidth;
+    strips.forEach((st, k) => {
+        let html = '';
+        for (let i = 0; i < 14; i++) html += cellItem(list[(i + k * 2) % list.length], false);
+        placeStrip(st, html);
+        st.style.transform = `translateX(${Math.round(w / 2 - L.cw / 2 - STEP * 3)}px)`;
     });
+}
+// анимация прокрута — как в case.html, только для нескольких лент сразу
+function runRolls(wons, onDone) {
+    const strips = layoutRolls(wons.length);
+    const STEP = L.cw + GAP;
+    const w = $('rolls').clientWidth;
+    const finals = [];
+    strips.forEach((st, i) => {
+        const cells = [];
+        for (let k = 0; k < TOTAL; k++) cells.push(k === WIN_INDEX ? cellItem(wons[i], true) : filler());
+        placeStrip(st, cells.join(''));
+        const jitter = Math.round((Math.random() - 0.5) * (L.cw * 0.6));
+        finals.push(Math.round(WIN_INDEX * STEP + L.cw / 2 - w / 2 + jitter));
+    });
+    requestAnimationFrame(() => strips.forEach((st, i) => {
+        st.style.transition = `transform ${(5.2 + i * 0.3).toFixed(1)}s cubic-bezier(.08,.6,.12,1)`;
+        st.style.transform = `translateX(${-finals[i]}px)`;
+    }));
     let done = false;
-    const fin = () => { if (done) return; done = true; st.removeEventListener('transitionend', fin); onDone(); };
-    st.addEventListener('transitionend', fin);
-    setTimeout(fin, 5600);
+    const fin = () => { if (done) return; done = true; skipFn = null; onDone(); };
+    skipFn = () => {
+        strips.forEach((st, i) => { st.style.transition = 'none'; st.style.transform = `translateX(${-finals[i]}px)`; });
+        haptic('impactOccurred', 'light');
+        fin();
+    };
+    setTimeout(fin, (5.2 + (wons.length - 1) * 0.3) * 1000 + 450);
+    // тики при проезде ячеек (по первой ленте)
     const t0 = Date.now();
     let lastTick = -1;
     const tick = setInterval(() => {
-        if (done) return clearInterval(tick);
-        const m = new DOMMatrix(getComputedStyle(st).transform);
+        if (done || Date.now() - t0 > 7500) return clearInterval(tick);
+        const m = new DOMMatrix(getComputedStyle(strips[0]).transform);
         const idx = Math.floor((-m.m41 + w / 2) / STEP);
         if (idx !== lastTick) { lastTick = idx; haptic('selectionChanged'); }
-        if (Date.now() - t0 > 5800) clearInterval(tick);
     }, 60);
 }
 
@@ -315,29 +388,29 @@ function runStrip(cells, onDone) {
 async function spin(cur) {
     cur = cur === 'ton' ? 'ton' : 'stars';
     if (S.busy || !S.items.length) return;
-    let won, r = {};
+    const n = S.count;
+    let wons = [], r = {};
     if (S.demo) {
-        won = S.items[Math.floor(Math.random() * S.items.length)];
-        setBusy(true);
+        for (let i = 0; i < n; i++) wons.push(S.items[Math.floor(Math.random() * S.items.length)]);
+        beginSpin();
     } else {
-        const price = cur === 'ton' ? S.priceTon : S.priceStars;
+        const price = cur === 'ton' ? r2(S.priceTon * n) : S.priceStars * n;
         const have = cur === 'ton' ? S.ton : S.stars;
         if (have < price) {
             haptic('notificationOccurred', 'error');
             toast(cur === 'ton' ? 'Недостаточно TON. Пополните баланс на главной.' : 'Недостаточно Stars. Пополните баланс на главной.');
             return;
         }
-        setBusy(true);
-        try { r = await api('/case/open', { case_id: CASE_ID, currency: cur }); }
-        catch (e) { haptic('notificationOccurred', 'error'); toast(e.message); setBusy(false); loadBalances(); return; }
-        won = r.kind === 'money' ? { kind: 'money', currency: r.currency, amount: r.amount } : r.nft;
+        beginSpin();
+        try { r = await api('/case/open', { case_id: CASE_ID, currency: cur, count: n }); }
+        catch (e) { haptic('notificationOccurred', 'error'); toast(e.message); endSpin(); loadBalances(); return; }
+        wons = (r.nfts && r.nfts.length) ? r.nfts : [r.nft];
+        if (wons.length < n) toast(`Открыто ${wons.length} из ${n}: не хватило средств`);
     }
-    const cells = [];
-    for (let i = 0; i < TOTAL; i++) cells.push(i === WIN_INDEX ? cellItem(won, true) : filler());
-    runStrip(cells, () => {
+    runRolls(wons, () => {
         if (!S.demo) applyBalances(r);
         haptic('notificationOccurred', 'success');
-        showWin(won, S.demo);
+        if (wons.length === 1) showWin(wons[0], S.demo); else showPick(wons, S.demo);
     });
 }
 
@@ -347,13 +420,14 @@ function closeOv(id) { const m = $(id); m.classList.remove('vis'); setTimeout(()
 function openSettings() { drawSettings(); showOv('ov-settings'); }
 function openPrizes() { showOv('ov-prizes'); }
 function drawSettings() { $('demo-sw').classList.toggle('on', S.demo); }
-function toggleDemo() { S.demo = !S.demo; drawSettings(); drawSpinBtn(); haptic('impactOccurred', 'light'); }
+function toggleDemo() { if (S.busy) return; S.demo = !S.demo; drawSettings(); drawSpinBtn(); haptic('impactOccurred', 'light'); }
 
 function closeWin() {
     closeOv('ov-win');
-    setBusy(false);
-    idleStrip();
+    endSpin();
 }
+
+/* одиночный выигрыш (1 кейс) */
 let curNft = null;
 function showWin(n, demo) {
     if (isMoney(n)) {
@@ -390,8 +464,7 @@ function upgradeNft() {
 async function sellNft(cur) {
     if (!curNft) return;
     const btns = ['sell-btn', 'sell-ton-btn'].map($).filter(Boolean);
-    const b = { set disabled(v) { btns.forEach(x => x.disabled = v); } };
-    b.disabled = true;
+    btns.forEach(x => x.disabled = true);
     try {
         const r = cur === 'ton'
             ? await api('/case/sell_ton', { nft_id: curNft.id })
@@ -403,8 +476,78 @@ async function sellNft(cur) {
     } catch (e) {
         haptic('notificationOccurred', 'error');
         toast(e.message);
-        b.disabled = false;
+        btns.forEach(x => x.disabled = false);
     }
+}
+
+/* выбор призов (2–5 кейсов): тап по подарку — подсветка белым, затем продать или продолжить */
+const P = { list: [], sel: new Set(), demo: false, busy: false };
+function showPick(list, demo) {
+    P.list = list.slice(); P.sel = new Set(); P.demo = demo; P.busy = false;
+    drawPick();
+    showOv('ov-win');
+}
+function selectable() { return P.list.map((it, i) => isMoney(it) ? -1 : i).filter(i => i >= 0); }
+function togglePick(i) {
+    if (P.demo || P.busy || isMoney(P.list[i])) return;
+    P.sel.has(i) ? P.sel.delete(i) : P.sel.add(i);
+    haptic('selectionChanged');
+    drawPick();
+}
+function toggleAll() {
+    if (P.demo || P.busy) return;
+    const all = selectable();
+    P.sel = P.sel.size === all.length ? new Set() : new Set(all);
+    haptic('selectionChanged');
+    drawPick();
+}
+function drawPick() {
+    const sel = [...P.sel];
+    const sumS = sel.reduce((a, i) => a + (Number(P.list[i].price_stars) || 0), 0);
+    const sumT = r2(sel.reduce((a, i) => a + (Number(P.list[i].price_ton) || 0), 0));
+    const canTon = sel.length > 0 && sel.every(i => Number(P.list[i].price_ton) > 0);
+    const allSel = selectable().length > 0 && P.sel.size === selectable().length;
+    const cards = P.list.map((it, i) => isMoney(it) ? `
+        <div class="pi static"><div class="mt2"><img src="${curIcon(it.currency)}" alt="">+${fmt(it.amount)}</div><div class="nm">Зачислено</div></div>` : `
+        <div class="pi${P.sel.has(i) ? ' sel' : ''}" onclick="togglePick(${i})">
+            <div class="ck">✓</div>
+            <img class="pic" src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)">
+            <div class="pill"><img src="img/star.png" alt="">${fmt(it.price_stars)}</div>
+            <div class="nm">${esc(it.name || 'NFT')}</div>
+        </div>`).join('');
+    $('win-box').innerHTML = P.demo ? `
+        <div class="win-t it">Демо-выигрыш</div>
+        <div class="sub">Призы не начислены: это демо-режим</div>
+        <div class="pick">${cards}</div>
+        <button class="mbtn" onclick="closeWin()">Продолжить</button>` : `
+        <div class="win-t it">Вы выиграли!</div>
+        <div class="sub">Нажми на подарки, которые хочешь продать</div>
+        <div class="pick">${cards}</div>
+        <button class="selall" onclick="toggleAll()">${allSel ? 'Снять выбор' : 'Выбрать все'}</button>
+        <button class="mbtn main" ${sel.length && !P.busy ? '' : 'disabled'} onclick="sellPick('stars')">${sel.length ? `Продать за <img src="img/star.png" alt=""> ${fmt(sumS)}` : 'Выбери подарки для продажи'}</button>
+        ${canTon ? `<button class="mbtn ton" ${P.busy ? 'disabled' : ''} onclick="sellPick('ton')">Продать за <img src="img/ton.png" alt=""> ${fmt(sumT)}</button>` : ''}
+        <button class="mbtn" ${P.busy ? 'disabled' : ''} onclick="closeWin()">Продолжить</button>
+        ${P.list.some(it => !isMoney(it)) ? '<div class="note">Невыбранные подарки останутся в инвентаре</div>' : ''}`;
+}
+async function sellPick(cur) {
+    if (P.busy || P.demo || !P.sel.size) return;
+    P.busy = true; drawPick();
+    const idx = [...P.sel].sort((a, b) => a - b);
+    const sold = []; let last = null, err = null;
+    for (const i of idx) {
+        try {
+            last = cur === 'ton'
+                ? await api('/case/sell_ton', { nft_id: P.list[i].id })
+                : await api('/roulette/sell', { nft_id: P.list[i].id });
+            sold.push(i);
+        } catch (e) { err = e.message; break; }
+    }
+    if (last) applyBalances(last);
+    P.list = P.list.filter((_, i) => !sold.includes(i));
+    P.sel = new Set(); P.busy = false;
+    if (sold.length) { haptic('notificationOccurred', 'success'); toast('Продано: ' + sold.length); }
+    if (err) { haptic('notificationOccurred', 'error'); toast(err); }
+    if (!selectable().length) closeWin(); else drawPick();
 }
 
 /* ---------- фон ---------- */
@@ -432,9 +575,9 @@ window.onload = async () => {
     try { tg.expand(); tg.ready(); tg.headerColor = '#173f9c'; tg.backgroundColor = '#173f9c'; } catch (e) {}
     try { tg.BackButton.show(); tg.BackButton.onClick(() => { location.href = 'case.html'; }); } catch (e) {}
     $('case-title').innerText = META[CASE_ID] || 'Кейс';
-    drawSettings(); drawSpinBtn();
+    drawSettings(); drawCnt(); drawSpinBtn();
     await Promise.allSettled([loadBalances(), loadCase()]);
-    idleStrip();
+    idleRolls();
     $('loader').classList.add('hidden');
 };
 setTimeout(() => $('loader').classList.add('hidden'), 4000);
