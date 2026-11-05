@@ -20,7 +20,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .title{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;font-style:normal;text-transform:none}
 .title i{width:20px;height:20px;border-radius:50%;background:linear-gradient(145deg,#5b94ff,#1d4ed8)}
 .top .sp{width:40px}
-.chips{display:flex;justify-content:center;gap:12px;margin-top:12px}
+.chips{display:flex;justify-content:center;gap:12px;margin-top:6px}
 .chip{display:flex;align-items:center;gap:8px;background:rgba(10,24,70,.45);padding:6px 6px 6px 14px;border-radius:999px;font-weight:800;font-size:15px}
 .chip img{width:20px;height:20px;object-fit:contain}
 .chip .plus{width:28px;height:28px;border-radius:50%;border:none;background:#2f6bff;color:#fff;font-size:18px;line-height:1;cursor:pointer;padding:0}
@@ -61,6 +61,8 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .btn:active{transform:scale(.97)}
 .btn:disabled{background:rgba(10,24,70,.55);color:#9db6ee;transform:none}
 .btn.demo{background:#1f9e68}
+.btn.ton{margin-top:10px;background:#0098ea}
+.btn.ton:disabled{background:rgba(10,24,70,.55);color:#9db6ee}
 
 /* модалки (тёмные) */
 .ov{position:fixed;inset:0;z-index:6000;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,6,30,.78);backdrop-filter:blur(6px);opacity:0;transition:opacity .25s}
@@ -119,26 +121,15 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 
 <div class="main-wrapper">
 
-    <div class="top">
-        <button class="back" onclick="location.href='case.html'">←</button>
-        <span id="case-title" hidden></span>
-        <div class="sp"></div>
-    </div>
+    <span id="case-title" hidden></span>
 
     <div class="chips">
         <div class="chip"><img src="img/star.png" alt="Stars"><span id="bal-stars">0</span><button class="plus" onclick="location.href='index.html'">+</button></div>
         <div class="chip"><img src="img/ton.png" alt="TON"><span id="bal-ton">0</span><button class="plus" onclick="location.href='index.html'">+</button></div>
     </div>
 
-    <div class="ticker">
-        <div class="tag it">Live</div>
-        <div class="ticker-track" id="ticker"></div>
-    </div>
-
     <div class="stage">
-        <svg class="chev" viewBox="0 0 26 16" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l10 10L23 3"/></svg>
         <div class="roll"><div class="strip" id="strip"></div></div>
-        <svg class="chev" viewBox="0 0 26 16" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13L13 3l10 10"/></svg>
     </div>
 
     <div class="actions">
@@ -150,8 +141,11 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12M12 8c-2-4-6-3-5 0M12 8c2-4 6-3 5 0"/></svg>Призы
             </div>
         </div>
-        <button class="btn" id="spin-btn" onclick="spin()" disabled>
+        <button class="btn" id="spin-btn" onclick="spin('stars')" disabled>
             <span id="spin-lbl">Крутить за</span><img id="spin-ico" src="img/star.png" alt=""><span id="spin-price">—</span>
+        </button>
+        <button class="btn ton" id="spin-ton-btn" onclick="spin('ton')" disabled>
+            <span>Крутить за</span><img src="img/ton.png" alt=""><span id="spin-ton-price">—</span>
         </button>
     </div>
 </div>
@@ -186,7 +180,7 @@ const META = { bear:'Bear', ring:'Ring', lip:'Lip', halloween:'Halloween', loot:
 const CASE_ID = new URLSearchParams(location.search).get('id');
 if (!CASE_ID || CASE_ID === 'free') location.replace(CASE_ID === 'free' ? 'event.html' : 'case.html');
 
-const S = { items: [], priceStars: 0, busy: false, stars: 0, ton: 0, demo: false };
+const S = { items: [], priceStars: 0, priceTon: 0, busy: false, stars: 0, ton: 0, demo: false };
 
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 function haptic(kind, type) { try { tg.HapticFeedback[kind](type); } catch (e) {} }
@@ -228,8 +222,9 @@ async function loadCase() {
         const d = await api('/case/info', { case_id: CASE_ID });
         S.items = (d.items || []).filter(x => x && (x.id != null || isMoney(x)));
         S.priceStars = Number(d.price_stars) || 0;
+        S.priceTon = Number(d.price_ton) || Math.round(S.priceStars * 1.3) / 100;
         $('case-title').innerText = d.name || META[CASE_ID] || 'Кейс';
-        drawTicker(); drawPrizes();
+        drawPrizes();
     } catch (e) { toast('Кейс недоступен: ' + e.message); }
     drawSpinBtn();
 }
@@ -239,6 +234,10 @@ function drawSpinBtn() {
     const b = $('spin-btn');
     b.disabled = S.busy || !S.items.length;
     b.classList.toggle('demo', S.demo);
+    const tb = $('spin-ton-btn');
+    tb.disabled = S.busy || !S.items.length;
+    tb.style.display = S.demo ? 'none' : '';
+    $('spin-ton-price').innerText = S.items.length ? fmt(S.priceTon) : '—';
     if (S.demo) {
         $('spin-lbl').innerText = 'Крутить демо';
         $('spin-ico').style.display = 'none';
@@ -252,12 +251,6 @@ function drawSpinBtn() {
 function setBusy(v) { S.busy = v; drawSpinBtn(); }
 
 /* ---------- LIVE лента и призы ---------- */
-function drawTicker() {
-    const nfts = S.items.filter(it => !isMoney(it));
-    const list = nfts.slice().sort(() => Math.random() - .5);
-    const one = list.map(it => `<img src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)">`).join('');
-    $('ticker').innerHTML = one + one;
-}
 function sorted() { return S.items.slice().sort((a, b) => valueOf(b) - valueOf(a)); }
 function drawPrizes() {
     $('prizes').innerHTML = sorted().map(it => isMoney(it) ? `
@@ -318,20 +311,23 @@ function runStrip(cells, onDone) {
 }
 
 /* ---------- открытие ---------- */
-async function spin() {
+async function spin(cur) {
+    cur = cur === 'ton' ? 'ton' : 'stars';
     if (S.busy || !S.items.length) return;
     let won, r = {};
     if (S.demo) {
         won = S.items[Math.floor(Math.random() * S.items.length)];
         setBusy(true);
     } else {
-        if (S.stars < S.priceStars) {
+        const price = cur === 'ton' ? S.priceTon : S.priceStars;
+        const have = cur === 'ton' ? S.ton : S.stars;
+        if (have < price) {
             haptic('notificationOccurred', 'error');
-            toast('Недостаточно Stars. Пополните баланс на главной.');
+            toast(cur === 'ton' ? 'Недостаточно TON. Пополните баланс на главной.' : 'Недостаточно Stars. Пополните баланс на главной.');
             return;
         }
         setBusy(true);
-        try { r = await api('/case/open', { case_id: CASE_ID, currency: 'stars' }); }
+        try { r = await api('/case/open', { case_id: CASE_ID, currency: cur }); }
         catch (e) { haptic('notificationOccurred', 'error'); toast(e.message); setBusy(false); loadBalances(); return; }
         won = r.kind === 'money' ? { kind: 'money', currency: r.currency, amount: r.amount } : r.nft;
     }
