@@ -78,6 +78,7 @@ class InfoReq(Base):
 class OpenReq(Base):
     case_id: str
     currency: str = "stars"  # stars | ton
+    count: int = 1           # сколько кейсов открыть за раз (1..5)
 
 
 class SellReq(Base):
@@ -151,19 +152,32 @@ async def case_open(req: OpenReq):
     if not pool:
         raise HTTPException(500, "В кейсе нет призов")
 
-    # приз выбирает сервер, браузеру доверять нельзя
-    nft_id = random.SystemRandom().choices([p[0] for p in pool], weights=[p[1] for p in pool], k=1)[0]
+    count = max(1, min(5, int(req.count or 1)))
     price = cfg["price"] if req.currency == "stars" else _price_ton(cfg["price"])
+    rng = random.SystemRandom()
+    ids = [p[0] for p in pool]
+    weights = [p[1] for p in pool]
 
-    # SQL-функция должна В ОДНОЙ ТРАНЗАКЦИИ: проверить баланс, списать цену
-    # и добавить подарок в инвентарь. Возвращает {success, balance, ton_balance}.
-    res = _check(rpc("open_case", {
-        "p_user_id": str(user["id"]),
-        "p_nft_id": nft_id,
-        "p_currency": req.currency,
-        "p_price": price,
-    }))
-    return {**res, "nft": cat[nft_id]}
+    nfts, res = [], {}
+    for i in range(count):
+        # приз выбирает сервер, браузеру доверять нельзя
+        nft_id = rng.choices(ids, weights=weights, k=1)[0]
+        # SQL-функция должна В ОДНОЙ ТРАНЗАКЦИИ: проверить баланс, списать цену
+        # и добавить подарок в инвентарь. Возвращает {success, balance, ton_balance}.
+        # Каждый кейс списывается отдельно: если денег хватило не на все, откроются первые.
+        try:
+            res = _check(rpc("open_case", {
+                "p_user_id": str(user["id"]),
+                "p_nft_id": nft_id,
+                "p_currency": req.currency,
+                "p_price": price,
+            }))
+        except HTTPException:
+            if i == 0:
+                raise
+            break
+        nfts.append(cat[nft_id])
+    return {**res, "nft": nfts[0], "nfts": nfts}
 
 @router.post("/case/sell_ton")
 async def case_sell_ton(req: SellReq):
