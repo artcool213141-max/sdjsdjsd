@@ -107,12 +107,17 @@
             padding: 2px 9px; border-radius: 999px; font-size: 9px; font-weight: 800;
             background: linear-gradient(180deg, #ff6b6b, #c81e3a); border: 1px solid rgba(255,255,255,0.4); white-space: nowrap;
         }
+        /* Опускаем плашку лимита ниже для широкого кейса LOOT */
+        .case-card.wide .limit-badge {
+            bottom: -12px;
+        }
         .case-card.wide { grid-column: span 2; }
         .case-card.wide .case-img-box { height: 120px; }
         .case-foot { display: flex; flex-direction: column; align-items: flex-start; margin-top: 8px; gap: 4px; }
         .case-prices { display: flex; align-items: center; gap: 10px; }
         .case-price.ton { color: #8fc2ff; }
-        .case-name { font-weight: 900; font-size: 14px; font-style: italic; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* Исправление обрезания букв: добавлен padding-right и padding-left для компенсации italic */
+        .case-name { font-weight: 900; font-size: 14px; font-style: italic; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 6px; padding-left: 2px; }
         .case-price { display: flex; align-items: center; gap: 3px; font-weight: 900; font-size: 13px; color: #ffd45e; flex-shrink: 0; }
         .case-price img { width: 14px; height: 14px; object-fit: contain; }
 
@@ -202,20 +207,15 @@ try {
 const tgUser = tg.initDataUnsafe?.user;
 const user = (tgUser && tgUser.id) ? tgUser : { id: '12345', username: 'TestUser', first_name: 'Тестер' };
 
-/* =====================================================
-   СПИСОК КЕЙСОВ — меняй названия, цены и картинки здесь.
-   img  — файл из папки img/
-   limit — true покажет плашку «Лимит»
-   ===================================================== */
 const STARS_PER_TON = 100 / 1.3;   // 100 Stars = 1.3 TON
 const CASES = [
-    { id: 'bear',      name: 'Bear',      price: 149,  img: 'bear.png' },
-    { id: 'ring',      name: 'Ring',      price: 199,  img: 'colso.png',      limit: true },
-    { id: 'lip',     name: 'Lip',     price: 249,  img: 'gyba.png' },
-    { id: 'halloween', name: 'Halloween', price: 299,  img: 'ev_pumpkin.png', limit: true },
-    { id: 'loot',      name: 'Loot',      price: 499,  img: 'statyyetka.png',      limit: true },
-    { id: 'helmet',    name: 'Helmet',    price: 1499, img: 'helmet.png' },
-    { id: 'pepe',      name: 'Pepe',      price: 2999, img: 'pepe.png' }
+    { id: 'bear',     name: 'Bear',     price: 149,   img: 'bear.png' },
+    { id: 'ring',     name: 'Ring',     price: 199,   img: 'colso.png',     limit: true },
+    { id: 'lip',      name: 'Lip',      price: 249,   img: 'gyba.png' },
+    { id: 'halloween', name: 'Halloween', price: 299,   img: 'ev_pumpkin.png', limit: true },
+    { id: 'loot',     name: 'Loot',     price: 499,   img: 'statyyetka.png',     limit: true },
+    { id: 'helmet',   name: 'Helmet',   price: 1499, img: 'helmet.png' },
+    { id: 'pepe',     name: 'Pepe',     price: 2999, img: 'pepe.png' }
 ];
 const toTon = stars => (stars * 1.3 / 100).toFixed(2);
 
@@ -241,13 +241,11 @@ function renderCases() {
 }
 renderCases();
 
-// переход на страницу конкретного кейса (создай case_open.html, id придёт в ?id=)
 function openCase(id) {
     try { tg.HapticFeedback.impactOccurred('light'); } catch (e) {}
     location.href = 'case_open.html?id=' + encodeURIComponent(id) + '&v=' + Date.now();
 }
 
-// балансы
 async function syncData() {
     try {
         const username = user.username || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Player';
@@ -260,7 +258,6 @@ async function syncData() {
 }
 syncData();
 
-// фон: пузырьки как на главной
 const canvas = document.getElementById('stars-canvas');
 const ctx = canvas.getContext('2d');
 let bubbles = [];
