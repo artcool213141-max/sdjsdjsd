@@ -31,111 +31,111 @@ CASES = {
     "bear": {
         "name": "Bear", "price": 149,
         "loot": [
-            (61, 80),      // Звезда (5 ⭐)
-            (17, 3.333),   // WhipCupcake
-            (15, 3.333),   // XmasStocking
-            (13, 3.333),   // SnakeBox
-            (1, 3.333),    // ChillFlame
-            (4, 3.333),    // InstantRamen
-            (6, 1.333),    // MirageLamp
-            (16, 1.333),   // CandyCane
-            (9, 0.533),    // LolPop
-            (3, 0.067),    // ViceCream
-            (7, 0.067)     // PoolFloat
+            (61, 80),      # Звезда (5 ⭐)
+            (17, 3.333),   # WhipCupcake
+            (15, 3.333),   # XmasStocking
+            (13, 3.333),   # SnakeBox
+            (1, 3.333),    # ChillFlame
+            (4, 3.333),    # InstantRamen
+            (6, 1.333),    # MirageLamp
+            (16, 1.333),   # CandyCane
+            (9, 0.533),    # LolPop
+            (3, 0.067),    # ViceCream
+            (7, 0.067)     # PoolFloat
         ]
     },
     "ring": {
         "name": "Ring", "price": 199,
         "loot": [
-            (62, 75),      // Звезда (10 ⭐)
-            (18, 3.125),   // LunarSnake
-            (1, 3.125),    // ChillFlame
-            (4, 3.125),    // InstantRamen
-            (7, 3.125),    // PoolFloat
-            (12, 3.125),   // MoodPack
-            (6, 3.125),    // MirageLamp
-            (13, 3.125),   // SnakeBox
-            (15, 3.125)    // XmasStocking
+            (62, 75),      # Звезда (10 ⭐)
+            (18, 3.125),   # LunarSnake
+            (1, 3.125),    # ChillFlame
+            (4, 3.125),    # InstantRamen
+            (7, 3.125),    # PoolFloat
+            (12, 3.125),   # MoodPack
+            (6, 3.125),    # MirageLamp
+            (13, 3.125),   # SnakeBox
+            (15, 3.125)    # XmasStocking
         ]
     },
     "lip": {
         "name": "Lip", "price": 249,
         "loot": [
-            (61, 45),      // Звезда (5 ⭐)
-            (62, 25),      // Звезда (10 ⭐)
-            (9, 15),       // LolPop
-            (10, 8),       // HappyBrownie
-            (11, 4),       // SwagBag
-            (12, 1.8),     // MoodPack
-            (13, 0.8),     // SnakeBox
-            (14, 0.3),     // CloverPin
-            (29, 0.08),    // TimelessBook
-            (30, 0.02)     // InputKey
+            (61, 45),      # Звезда (5 ⭐)
+            (62, 25),      # Звезда (10 ⭐)
+            (9, 15),       # LolPop
+            (10, 8),       # HappyBrownie
+            (11, 4),       # SwagBag
+            (12, 1.8),     # MoodPack
+            (13, 0.8),     # SnakeBox
+            (14, 0.3),     # CloverPin
+            (29, 0.08),    # TimelessBook
+            (30, 0.02)     # InputKey
         ]
     },
     "halloween": {
         "name": "Halloween", "price": 299,
         "loot": [
-            (61, 40),      // Звезда (5 ⭐)
-            (62, 30),      // Звезда (10 ⭐)
-            (13, 13.5),    // SnakeBox
-            (14, 8),       // CloverPin
-            (15, 4),       // XmasStocking
-            (16, 2),       // CandyCane
-            (17, 1),       // WhipCupcake
-            (18, 0.8),     // LunarSnake
-            (36, 0.4),     // MadPumpkin
-            (39, 0.2),     // HexPot
-            (38, 0.08),    // EternalCandle
-            (20, 0.02)     // LightSword
+            (61, 40),      # Звезда (5 ⭐)
+            (62, 30),      # Звезда (10 ⭐)
+            (13, 13.5),    # SnakeBox
+            (14, 8),       # CloverPin
+            (15, 4),       # XmasStocking
+            (16, 2),       # CandyCane
+            (17, 1),       # WhipCupcake
+            (18, 0.8),     # LunarSnake
+            (36, 0.4),     # MadPumpkin
+            (39, 0.2),     # HexPot
+            (38, 0.08),    # EternalCandle
+            (20, 0.02)     # LightSword
         ]
     },
     "loot": {
         "name": "Loot", "price": 499,
         "loot": [
-            (61, 40),      // Звезда (5 ⭐)
-            (62, 30),      // Звезда (10 ⭐)
-            (17, 13.5),    // WhipCupcake
-            (18, 8),       // LunarSnake
-            (19, 4),       // SnoopCigar
+            (61, 40),      # Звезда (5 ⭐)
+            (62, 30),      # Звезда (10 ⭐)
+            (17, 13.5),    # WhipCupcake
+            (18, 8),       # LunarSnake
+            (19, 4),       # SnoopCigar
             (59, 2),       
-            (20, 1),       // LightSword
-            (21, 0.8),     // CookieHeart
-            (22, 0.4),     // FaithAmulet
-            (26, 0.2),     // StellarRocket
-            (35, 0.08),    // TopHat
-            (32, 0.02)     // TrappedHeart
+            (20, 1),       # LightSword
+            (21, 0.8),     # CookieHeart
+            (22, 0.4),     # FaithAmulet
+            (26, 0.2),     # StellarRocket
+            (35, 0.08),    # TopHat
+            (32, 0.02)     # TrappedHeart
         ]
     },
     "helmet": {
         "name": "Helmet", "price": 1499,
         "loot": [
-            (61, 35),      // Звезда (5 ⭐)
-            (62, 35),      // Звезда (10 ⭐)
-            (1, 14),       // ChillFlame
-            (2, 8),        // LibertyFigure
-            (3, 4),        // ViceCream
-            (4, 2.5),      // InstantRamen
-            (25, 1),       // EvilEye
-            (27, 0.3),     // JellyBunny
-            (42, 0.1),     // NekoHelmet
-            (44, 0.08),    // SwissWatch
-            (45, 0.02)     // SignetRing
+            (61, 35),      # Звезда (5 ⭐)
+            (62, 35),      # Звезда (10 ⭐)
+            (1, 14),       # ChillFlame
+            (2, 8),        # LibertyFigure
+            (3, 4),        # ViceCream
+            (4, 2.5),      # InstantRamen
+            (25, 1),       # EvilEye
+            (27, 0.3),     # JellyBunny
+            (42, 0.1),     # NekoHelmet
+            (44, 0.08),    # SwissWatch
+            (45, 0.02)     # SignetRing
         ]
     },
     "pepe": {
         "name": "Pepe", "price": 2999,
         "loot": [
-            (62, 50),      // Звезда (10 ⭐)
-            (5, 25),       // SnoopDogg
-            (6, 12),       // MirageLamp
-            (7, 7),        // PoolFloat
-            (8, 3.5),      // IceCream
-            (37, 1.5),     // KhabibsPapakha
-            (46, 0.6),     // LowRider
-            (49, 0.3),     // ToyBear
-            (50, 0.07),    // RareBird
-            (55, 0.02)     // MightyArm
+            (62, 50),      # Звезда (10 ⭐)
+            (5, 25),       # SnoopDogg
+            (6, 12),       # MirageLamp
+            (7, 7),        # PoolFloat
+            (8, 3.5),      # IceCream
+            (37, 1.5),     # KhabibsPapakha
+            (46, 0.6),     # LowRider
+            (49, 0.3),     # ToyBear
+            (50, 0.07),    # RareBird
+            (55, 0.02)     # MightyArm
         ]
     }
 }
