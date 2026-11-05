@@ -62,6 +62,7 @@ CASES = {
 ERRORS = {
     "insufficient": "Недостаточно средств",
     "user_not_found": "Пользователь не найден",
+    "no_item": "Подарок не найден в инвентаре",
     "failed": "Не удалось открыть кейс",
 }
 
@@ -77,6 +78,10 @@ class InfoReq(Base):
 class OpenReq(Base):
     case_id: str
     currency: str = "stars"  # stars | ton
+
+
+class SellReq(Base):
+    nft_id: int
 
 
 def _one(res):
@@ -104,7 +109,12 @@ def _catalog() -> dict:
     if isinstance(data, dict):
         data = data.get("items") or data.get("catalog") or []
     return {
-        x["id"]: {"id": x["id"], "name": x.get("name"), "price_stars": x.get("price_stars")}
+        x["id"]: {
+            "id": x["id"],
+            "name": x.get("name"),
+            "price_stars": x.get("price_stars"),
+            "price_ton": x.get("price_ton") or 0,
+        }
         for x in (data or [])
         if isinstance(x, dict) and x.get("id") is not None
     }
@@ -154,3 +164,15 @@ async def case_open(req: OpenReq):
         "p_price": price,
     }))
     return {**res, "nft": cat[nft_id]}
+
+@router.post("/case/sell_ton")
+async def case_sell_ton(req: SellReq):
+    user = validate_init_data(req.init_data)
+    # SQL-функция sell_item_ton в ОДНОЙ ТРАНЗАКЦИИ: найти подарок в инвентаре пользователя,
+    # удалить его и начислить nft_catalog.price_ton на ton_balance.
+    # Возвращает {success, balance, ton_balance}.
+    res = _check(rpc("sell_item_ton", {
+        "p_user_id": str(user["id"]),
+        "p_nft_id": req.nft_id,
+    }))
+    return res
