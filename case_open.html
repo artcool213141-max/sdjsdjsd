@@ -29,7 +29,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .ticker{position:relative;margin:14px 12px 0;height:62px;overflow:hidden;border-radius:22px;background:rgba(10,24,70,.4);display:flex;align-items:center}
 .ticker .tag{flex-shrink:0;padding:0 14px 0 18px;font-size:20px;font-style:normal;position:relative;z-index:2;background:linear-gradient(90deg,#16358a 75%,transparent)}
 .ticker-track{display:flex;gap:16px;align-items:center;will-change:transform;animation:tick 45s linear infinite;padding-left:4px}
-.ticker-track img{width:40px;height:40px;object-fit:contain;flex-shrink:0}
+.ticker-track img{width:42px;height:42px;object-fit:cover;border-radius:14px;flex-shrink:0;box-shadow:0 3px 8px rgba(0,10,60,.35)}
 @keyframes tick{to{transform:translateX(-50%)}}
 
 /* рулетка */
@@ -42,7 +42,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .strip{position:absolute;left:0;top:0;height:100%;display:flex;align-items:center;gap:8px;will-change:transform}
 .cell{flex:0 0 148px;height:176px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;position:relative;transition:transform .3s}
 .cell.win{transform:scale(1.06)}
-.cell img.pic{width:128px;height:128px;object-fit:contain;margin-bottom:-26px;position:relative;z-index:1;filter:drop-shadow(0 8px 10px rgba(0,20,90,.45))}
+.cell img.pic{width:136px;height:136px;object-fit:cover;border-radius:30px;margin-bottom:-24px;position:relative;z-index:1;border:1px solid rgba(255,255,255,.18);box-shadow:0 10px 22px rgba(0,15,80,.5)}
 .pill{position:relative;z-index:2;display:flex;align-items:center;gap:6px;padding:9px 18px;border-radius:999px;background:rgba(30,60,140,.72);font-weight:800;font-size:15px;white-space:nowrap;backdrop-filter:blur(6px)}
 .pill img{width:16px;height:16px;object-fit:contain}
 .cell.money{justify-content:center}
@@ -88,13 +88,13 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px}
 .gi{display:flex;flex-direction:column;align-items:center}
-.gi img.pic{width:100%;aspect-ratio:1;object-fit:contain;display:block;margin-bottom:-22px;position:relative;z-index:1}
+.gi img.pic{width:100%;aspect-ratio:1;object-fit:cover;border-radius:22px;display:block;margin-bottom:-22px;position:relative;z-index:1;box-shadow:0 6px 14px rgba(0,0,0,.4)}
 .gi .pill{background:#3a3b3f;font-size:14px;padding:9px 14px;width:100%;justify-content:center;border-radius:999px}
 .gi .mt{width:100%;aspect-ratio:1;border-radius:26px;background:linear-gradient(160deg,#5b34c9,#2c1670);border:1px solid rgba(160,130,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:800;font-size:18px}
 .gi .mt img{width:38px;height:38px;object-fit:contain}
 
 .win-t{font-size:24px;margin-bottom:12px}
-.win-img{width:180px;height:180px;object-fit:contain;margin:0 auto 12px;display:block;filter:drop-shadow(0 10px 18px rgba(0,0,0,.5));animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
+.win-img{width:180px;height:180px;object-fit:cover;border-radius:34px;margin:0 auto 12px;display:block;box-shadow:0 12px 28px rgba(0,0,0,.5);animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
 .win-money{width:170px;height:170px;margin:0 auto 14px;border-radius:34px;background:linear-gradient(160deg,#5b34c9,#2c1670);border:1px solid rgba(160,130,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:800;font-size:26px;animation:pop .5s cubic-bezier(.2,1.4,.4,1)}
 .win-money img{width:60px;height:60px;object-fit:contain}
 @keyframes pop{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
@@ -121,7 +121,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 
     <div class="top">
         <button class="back" onclick="location.href='case.html'">←</button>
-        <div class="title"><i></i><span id="case-title">Кейс</span></div>
+        <span id="case-title" hidden></span>
         <div class="sp"></div>
     </div>
 
