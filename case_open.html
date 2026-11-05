@@ -21,7 +21,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .chip .plus{width:28px;height:28px;border-radius:50%;border:none;background:#2f6bff;color:#fff;font-size:18px;line-height:1;cursor:pointer;padding:0}
 
 /* рулетки (1–5 штук). Размеры задаёт JS через переменные */
-.stage{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+.stage{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0;overflow:hidden}
 .rolls{display:flex;flex-direction:column;gap:8px}
 .roll{position:relative;height:var(--rh);overflow:hidden}
 .roll::before,.roll::after{content:'';position:absolute;top:0;bottom:0;width:50px;z-index:3;pointer-events:none}
@@ -61,6 +61,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .skip{display:none;width:100%;border:none;border-radius:14px;padding:17px;background:rgba(120,150,210,.32);color:#fff;font:700 17px 'Montserrat',sans-serif;cursor:pointer}
 .skip:active{transform:scale(.97)}
 .actions.spinning .buy,.actions.spinning .cnt{display:none}
+.actions.spinning{display:flex;flex-direction:column;justify-content:flex-end}
 .actions.spinning .skip{display:block}
 
 /* модалки (тёмные) */
@@ -144,7 +145,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
         <div class="chip"><img src="img/ton.png" alt="TON"><span id="bal-ton">0</span><button class="plus" onclick="location.href='index.html'">+</button></div>
     </div>
 
-    <div class="stage">
+    <div class="stage" id="stage">
         <div class="rolls" id="rolls"></div>
     </div>
 
@@ -292,8 +293,8 @@ function drawSpinBtn() {
         $('spin-price').innerText = S.items.length ? fmt(S.priceStars * S.count) : '—';
     }
 }
-function beginSpin() { S.busy = true; $('actions').classList.add('spinning'); drawSpinBtn(); }
-function endSpin() { S.busy = false; skipFn = null; $('actions').classList.remove('spinning'); idleRolls(); drawSpinBtn(); }
+function beginSpin() { S.busy = true; const a = $('actions'); a.style.minHeight = a.offsetHeight + 'px'; a.classList.add('spinning'); drawSpinBtn(); }
+function endSpin() { S.busy = false; skipFn = null; const a = $('actions'); a.classList.remove('spinning'); a.style.minHeight = ''; idleRolls(); drawSpinBtn(); }
 function skip() { if (skipFn) skipFn(); }
 
 /* ---------- призы (окно «Призы») ---------- */
@@ -314,8 +315,17 @@ function cellItem(it, win) {
 }
 function filler() { const p = S.items; return cellItem(p[Math.floor(Math.random() * p.length)], false); }
 function layoutRolls(n) {
-    const C = CFG[n] || CFG[1];
+    const C0 = CFG[n] || CFG[1];
     const R = $('rolls');
+    // свободная высота под рулетки: уменьшаем всё пропорционально, чтобы не перекрывать интерфейс
+    const H = $('stage').clientHeight;
+    const gap = n >= 4 ? 6 : 8;
+    let f = H > 0 ? Math.min(1, (H - gap * (n - 1) - 6) / (n * C0.rh)) : 1;
+    f = Math.max(f, 0.4);
+    const sc = v => Math.round(v * f);
+    const C = { cw: sc(C0.cw), pic: sc(C0.pic), rh: sc(C0.rh), rad: sc(C0.rad), ov: sc(C0.ov),
+                pf: Math.max(9, Math.round(C0.pf * Math.max(f, 0.8))), pp: C0.pp, mt: sc(C0.mt), pill: C0.pill };
+    R.style.gap = gap + 'px';
     R.className = 'rolls' + (n > 1 ? ' multi' : '') + (C.pill ? '' : ' nopill');
     R.style.setProperty('--cw', C.cw + 'px');
     R.style.setProperty('--pic', C.pic + 'px');
