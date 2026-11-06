@@ -60,7 +60,7 @@
 
         .balance-pill {
             display: flex; align-items: center; gap: 8px;
-            background: var(--glass); padding: 6px 16px; backdrop-filter: blur(10px);
+            background: var(--glass); padding: 6px 12px; backdrop-filter: blur(10px);
             border-radius: 999px; border: 1px solid #000;
         }
 
@@ -74,39 +74,26 @@
             letter-spacing: 0.15em; color: #cfe0ff; margin: 0 0 16px 4px;
         }
 
-        .games-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
-        }
-
-        .game-card { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-
-        .game-btn {
-            position: relative; overflow: hidden;
-            width: 100%; aspect-ratio: 1 / 1; border-radius: 24px;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.08) 100%);
+        /* Горизонтальная карточка игры (в стиле карточек с главной) */
+        .game-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%);
             border: 1px solid var(--glass-line);
+            border-radius: 24px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+            position: relative;
+            overflow: hidden;
             backdrop-filter: blur(10px);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 44px; transition: transform 0.15s;
-            box-shadow: 0 8px 20px rgba(0, 20, 90, 0.35);
+            cursor: pointer;
         }
-        .game-btn:active {
-            transform: scale(0.95);
-            border-color: #fff;
-        }
-
-        .game-name {
-            font-size: 10px; font-weight: 900; text-transform: uppercase;
-            letter-spacing: 0.1em; color: #cfe0ff;
-        }
-
-        #toast {
-            position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%) translateY(20px);
-            background: #0a2468; border: 1px solid var(--blue-light); color: #fff;
-            font-size: 11px; font-weight: 700; padding: 10px 18px; border-radius: 999px;
-            opacity: 0; pointer-events: none; transition: 0.25s; z-index: 10;
-        }
-        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .game-card:active { transform: scale(0.97); border-color: #fff; background: rgba(255, 255, 255, 0.24); }
+        .game-card img { width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0, 20, 90, 0.4)); }
+        .card-title { font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; line-height: 1; letter-spacing: -0.3px; }
+        .card-desc { font-size: 10px; font-weight: 700; color: #cfe0ff; text-transform: uppercase; opacity: 0.95; margin-top: 5px; }
 
         ::-webkit-scrollbar { display: none; }
 
@@ -128,32 +115,35 @@
             </button>
             <div class="font-black italic text-lg tracking-tighter">Panda<span style="color:#8fc2ff">Gift</span></div>
         </div>
-        <div class="balance-pill">
-            <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
-            <span id="val-stars" class="font-black text-sm">0.00</span>
+        <div class="flex items-center gap-2">
+            <div class="balance-pill">
+                <img src="img/star.png" class="w-4 h-4" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1828/1828884.png'">
+                <span id="val-stars" class="font-black text-sm">0.00</span>
+            </div>
+            <div class="balance-pill">
+                <img src="img/ton.png" class="w-4 h-4" alt="TON">
+                <span id="val-ton" class="font-black text-sm">0.00</span>
+            </div>
         </div>
     </header>
 
     <main class="games-container">
         <h1 class="games-title">Мини игры</h1>
 
-        <div class="games-grid">
-            <div class="game-card" onclick="window.location.href='mines.html?v=' + Date.now()">
-                <button class="game-btn">🏀</button>
-                <span class="game-name">Баскет</span>
+        <!-- МИНЫ -->
+        <div onclick="openMines()" class="game-card">
+            <img src="img/bomb.png" alt="Мины">
+            <div>
+                <div class="card-title">Мины</div>
+                <div class="card-desc">Открывай звёзды, обходи мины и забирай выигрыш</div>
             </div>
-            <div class="game-card" onclick="window.location.href='football.html?v=' + Date.now()">
-                <button class="game-btn">⚽</button>
-                <span class="game-name">Футбол</span>
-            </div>
-            <div class="game-card" onclick="window.location.href='darts.html?v=' + Date.now()">
-                <button class="game-btn">🎯</button>
-                <span class="game-name">Дартс</span>
+            <div class="ml-auto opacity-50">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
+                </svg>
             </div>
         </div>
     </main>
-
-    <div id="toast">Скоро будет доступно</div>
 
     <script src="music.js"></script>
     <script>
@@ -168,13 +158,6 @@
             tg.backgroundColor = '#08205f';
         } catch (_) {}
 
-        // Страницы игр. Когда сделаешь файл игры — поставь ready: true
-        const GAMES = {
-            basket:   { url: 'basket.html',   ready: false },
-            football: { url: 'football.html', ready: false },
-            darts:    { url: 'darts.html',    ready: false }
-        };
-
         let user = null;
 
         function goHome() {
@@ -182,21 +165,9 @@
             window.location.href = 'index.html';
         }
 
-        function showToast(text) {
-            const t = document.getElementById('toast');
-            t.innerText = text;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 1800);
-        }
-
-        function openGame(name) {
+        function openMines() {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            const game = GAMES[name];
-            if (game && game.ready) {
-                window.location.href = game.url;
-            } else {
-                showToast('Скоро будет доступно');
-            }
+            window.location.href = 'mines.html?v=' + Date.now();
         }
 
         async function loadBalance() {
@@ -207,6 +178,7 @@
                 if (data) {
                     user = data;
                     document.getElementById('val-stars').innerText = Number(user.balance || 0).toFixed(2);
+                    document.getElementById('val-ton').innerText = Number(user.ton_balance || 0).toFixed(2);
                 }
             } catch (e) {
                 console.error("Ошибка загрузки баланса:", e);
