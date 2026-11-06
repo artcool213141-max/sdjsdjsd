@@ -2,6 +2,7 @@ import os
 import sys
 import importlib
 import traceback
+from typing import Union
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -53,7 +54,8 @@ supabase: Client = create_client(_url, _key) if _url and _key else None
 
 
 class BalanceUpdateRequest(BaseModel):
-    user_id: str
+    # Telegram ID приходит с фронта числом (user.id), поэтому принимаем и int, и str
+    user_id: Union[str, int]
     stars_change: float = 0
     ton_change: float = 0
 
