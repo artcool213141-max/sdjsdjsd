@@ -359,11 +359,11 @@
             const res = await fetch(`${BACKEND_URL}/update_balance`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    user_id: user.id,
-                    stars_change: amountStars,
-                    ton_change: amountTon
-                })
+body: JSON.stringify({
+    user_id: String(user.id),
+    stars_change: amountStars,
+    ton_change: amountTon
+})
             });
             return res.ok;
         } catch (e) {
