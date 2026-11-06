@@ -3,8 +3,9 @@ import sys
 import importlib
 import traceback
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from supabase import create_client, Client
 
 # Папка api/ и корень проекта должны быть в путях поиска модулей,
@@ -50,12 +51,12 @@ _url = os.environ.get("SUPABASE_URL")
 _key = os.environ.get("SUPABASE_SERVICE_KEY")
 supabase: Client = create_client(_url, _key) if _url and _key else None
 
-from fastapi import HTTPException # Убедитесь, что HTTPException импортирован (обычно из fastapi)
 
 class BalanceUpdateRequest(BaseModel):
     user_id: str
     stars_change: float = 0
     ton_change: float = 0
+
 
 @app.post("/update_balance")
 async def update_balance(req: BalanceUpdateRequest):
@@ -66,26 +67,26 @@ async def update_balance(req: BalanceUpdateRequest):
         res = supabase.table("users").select("balance, ton_balance").eq("id", str(req.user_id)).execute()
         if not res.data:
             raise HTTPException(status_code=404, detail="User not found")
-            
+
         row = res.data[0]
         current_stars = float(row.get("balance") or 0)
         current_ton = float(row.get("ton_balance") or 0)
-        
+
         new_stars = current_stars + req.stars_change
         new_ton = current_ton + req.ton_change
-        
+
         if new_stars < 0 or new_ton < 0:
             raise HTTPException(status_code=400, detail="Insufficient funds")
-            
+
         # Обновляем в таблице users
         supabase.table("users").update({
             "balance": new_stars,
             "ton_balance": new_ton
         }).eq("id", str(req.user_id)).execute()
-        
+
         return {
-            "success": True, 
-            "balance": new_stars, 
+            "success": True,
+            "balance": new_stars,
             "ton_balance": new_ton
         }
     except HTTPException as he:
