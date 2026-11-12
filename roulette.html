@@ -41,7 +41,7 @@ body {
 .top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .back-btn {
     width: 40px; height: 40px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
-    background: var(--glass); border: 1px solid var(--glass-line); backdrop-filter: blur(10px); cursor: pointer;
+    background: var(--glass); border: 1px solid var(--glass-line); backdrop-filter: blur(10px); cursor: pointer; flex-shrink: 0;
 }
 .back-btn:active { transform: scale(0.94); }
 .page-title { font-size: 24px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -0.5px; text-shadow: 0 4px 18px rgba(0, 20, 100, 0.55); }
@@ -55,33 +55,39 @@ body {
 .bal-pill img { width: 16px; height: 16px; object-fit: contain; }
 .bal-pill span { font-weight: 900; font-size: 12px; }
 
-/* Сетка подарков (ровная, одинаковые карточки) */
-.cases-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+/* Сетка подарков — строго 2 колонки, ровные карточки */
+.cases-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    width: 100%;
+}
 .case-card {
-    position: relative; padding: 14px 12px; border-radius: 24px; cursor: pointer; overflow: hidden;
+    position: relative; padding: 14px 10px; border-radius: 20px; cursor: pointer; overflow: hidden;
     background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
     border: 1px solid var(--glass-line); backdrop-filter: blur(10px);
     transition: transform 0.2s, border-color 0.2s, background 0.2s;
     display: flex; flex-direction: column; align-items: center;
+    width: 100%;
 }
 .case-card:active { transform: scale(0.96); border-color: #fff; background: rgba(255,255,255,0.22); }
 .case-img-box {
-    position: relative; width: 100%; height: 100px; display: flex; align-items: center; justify-content: center;
+    position: relative; width: 100%; height: 96px; display: flex; align-items: center; justify-content: center;
 }
 .case-img-box::before {
-    content: ''; position: absolute; width: 88px; height: 88px; border-radius: 50%;
+    content: ''; position: absolute; width: 80px; height: 80px; border-radius: 50%;
     background: radial-gradient(circle, rgba(140,190,255,0.35) 0%, transparent 70%);
 }
 .case-img-box img {
-    position: relative; max-width: 92px; max-height: 92px; object-fit: contain;
+    position: relative; max-width: 86px; max-height: 86px; object-fit: contain;
     filter: drop-shadow(0 6px 10px rgba(0, 20, 90, 0.45)); border-radius: 12px;
 }
-.case-foot { display: flex; flex-direction: column; align-items: center; margin-top: 10px; gap: 4px; width: 100%; text-align: center; }
-.case-name { font-weight: 900; font-size: 13px; font-style: italic; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
-.case-price { display: flex; align-items: center; gap: 4px; font-weight: 900; font-size: 13px; color: #ffd45e; }
-.case-price img { width: 14px; height: 14px; object-fit: contain; }
+.case-foot { display: flex; flex-direction: column; align-items: center; margin-top: 8px; gap: 4px; width: 100%; text-align: center; }
+.case-name { font-weight: 900; font-size: 12px; font-style: italic; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+.case-price { display: flex; align-items: center; justify-content: center; gap: 4px; font-weight: 900; font-size: 12px; color: #ffd45e; }
+.case-price img { width: 13px; height: 13px; object-fit: contain; }
 
-/* Модальное окно рулетки (выскакивает при клике на подарок) */
+/* Модальное окно рулетки */
 .rr-modal {
     position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column;
     padding: 20px 20px 30px; overflow-y: auto;
@@ -94,7 +100,7 @@ body {
 
 .rr-view { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; margin: 0 auto; }
 .rr-view.show { display: flex; }
-.rr-big-img { width: 160px; height: 160px; object-fit: contain; border-radius: 28px; filter: drop-shadow(0 10px 22px rgba(0, 20, 90, 0.6)); background: rgba(255,255,255,0.05); padding: 10px; }
+.rr-big-img { width: 150px; height: 150px; object-fit: contain; border-radius: 28px; filter: drop-shadow(0 10px 22px rgba(0, 20, 90, 0.6)); background: rgba(255,255,255,0.05); padding: 10px; }
 .rr-name { font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 20px; margin-top: 10px; text-align: center; }
 .rr-row { display: flex; align-items: center; gap: 6px; }
 .rr-row img { width: 16px; height: 16px; object-fit: contain; }
@@ -122,7 +128,7 @@ input[type="range"].rr-slider::-webkit-slider-thumb {
 .rr-panel {
     width: 100%; display: flex; align-items: center; justify-content: space-between;
     padding: 14px 18px; border-radius: 20px; background: var(--glass); border: 1px solid var(--glass-line);
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 .rr-btn {
     width: 100%; padding: 16px; border-radius: 22px; font-weight: 900; font-style: italic;
@@ -153,7 +159,6 @@ input[type="range"].rr-slider::-webkit-slider-thumb {
 .rr-tile img { width: 76px; height: 76px; object-fit: contain; border-radius: 12px; }
 .rr-tile svg { width: 36px; height: 36px; opacity: 0.35; }
 .rr-result-title { font-size: 32px; font-weight: 900; font-style: italic; text-transform: uppercase; }
-.rr-fee { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #9fbcf5; text-align: center; margin-top: 10px; }
 
 /* Уведомления и лоадер */
 .toast-box {
@@ -240,7 +245,6 @@ input[type="range"].rr-slider::-webkit-slider-thumb {
             </div>
         </div>
         <button id="rr-go" class="rr-btn" onclick="spinRR()">Крутить</button>
-        <div id="rr-fee" class="rr-fee"></div>
     </div>
 
     <!-- 2. Экран прокрутки рулетки -->
@@ -281,7 +285,7 @@ try { tg.expand(); tg.ready(); tg.headerColor = '#1f55d6'; tg.backgroundColor = 
 try {
     tg.BackButton.show();
     tg.BackButton.onClick(() => {
-        if ($('rr-modal').classList.contains('open')) К{ closeRR(); return; }
+        if ($('rr-modal').classList.contains('open')) { closeRR(); return; }
         location.href = 'cases.html';
     });
 } catch (e) {}
@@ -403,8 +407,6 @@ function openRR(i) {
     
     const s = $('rr-slider');
     s.min = rrMin; s.max = rrMax; s.value = 50;
-    // Убираем эту строчку:
-    // $('rr-fee').innerText = `Цена = цена приза × шанс + комиссия ${Math.round(rrMargin * 100)}%.`;
     
     setCurrency('stars');
     updateRR();
