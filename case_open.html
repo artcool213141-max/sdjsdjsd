@@ -41,6 +41,31 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .mtile{width:var(--mt);height:var(--mt);margin:0 calc((var(--cw) - var(--mt)) / 2);flex-shrink:0;border-radius:calc(var(--mt) * .2);background:linear-gradient(160deg,#5b34c9,#2c1670);border:1px solid rgba(160,130,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:800;font-size:calc(var(--mt) * .14)}
 .mtile img{width:calc(var(--mt) * .32);height:calc(var(--mt) * .32);object-fit:contain}
 
+/* Стили для кастомной плитки звезды */
+.star-drop-tile, .star-drop-tile-grid {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 22px;
+    background: linear-gradient(160deg, #3c3c8c, #1e1e50);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    box-shadow: 0 8px 18px rgba(0, 15, 80, 0.4);
+}
+.star-drop-tile img, .star-drop-tile-grid img {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+}
+.star-drop-tile span, .star-drop-tile-grid span {
+    font-size: 16px;
+    font-weight: 900;
+    color: #fff;
+}
+
 /* кнопки */
 .actions{padding:0 18px}
 .cnt{display:flex;gap:8px;margin-bottom:12px}
@@ -201,6 +226,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 <script>
 const tg = window.Telegram.WebApp;
 const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
+const CUSTOM_STAR_URL = 'https://github.com/artcool213141-max/sdjsdjsd/raw/main/img/stars.png';
 const $ = id => document.getElementById(id);
 const GAP = 8, WIN_INDEX = 48, TOTAL = 60;
 const META = { bear:'Bear', ring:'Ring', lip:'Lip', halloween:'Halloween', loot:'Loot', helmet:'Helmet', pepe:'Pepe', gorilla:'Gorilla Case' };
@@ -236,15 +262,24 @@ function fmt(n) { return Number(n || 0).toLocaleString('ru-RU', { maximumFractio
 
 let catalogItemsCache = {};
 
-// Обновленная функция: если в кеше есть прямой image_url (как для звезды), берем его, иначе бьем на эндпоинт превью
+// Функция генерации ссылки на картинку дропа (принудительно подставляет твою звезду для ID 61 и 62)
 function imgUrl(id) {
+    if (Number(id) === 61 || Number(id) === 62) {
+        return CUSTOM_STAR_URL;
+    }
     if (catalogItemsCache[id] && catalogItemsCache[id].image_url) {
         return catalogItemsCache[id].image_url;
     }
     return `${BACKEND_URL}/inventory/preview/${id}`;
 }
     
-function onImgErr(img) { img.onerror = null; img.src = 'img/star.png'; }
+function onImgErr(img) { 
+    img.onerror = null; 
+    if (!img.src.includes('stars.png')) {
+        img.src = 'img/star.png'; 
+    }
+}
+
 const isMoney = it => it && (it.kind === 'money' || (it.id == null && it.amount != null));
 function curIcon(c) { return c === 'ton' ? 'img/ton.png' : 'img/star.png'; }
 function valueOf(it) { return isMoney(it) ? (it.currency === 'ton' ? 0 : Number(it.amount) || 0) : (Number(it.price_stars) || 0); }
@@ -280,7 +315,6 @@ async function loadCase() {
         const d = await api('/case/info', { case_id: CASE_ID });
         S.items = (d.items || []).filter(x => x && (x.id != null || isMoney(x)));
         
-        // Сохраняем элементы в кеш для правильных картинок из БД
         S.items.forEach(item => {
             if (item && item.id != null) {
                 catalogItemsCache[item.id] = item;
@@ -323,19 +357,46 @@ function endSpin() { S.busy = false; skipFn = null; const a = $('actions'); a.cl
 function skip() { if (skipFn) skipFn(); }
 
 function sorted() { return S.items.slice().sort((a, b) => valueOf(b) - valueOf(a)); }
+
+// Рендеринг призов в модалке (с поддержкой красивой плашки для кастомной звезды)
 function drawPrizes() {
-    $('prizes').innerHTML = sorted().map(it => isMoney(it) ? `
-        <div class="gi"><div class="mt"><img src="${curIcon(it.currency)}" alt="">${fmt(it.amount)}</div></div>` : `
+    $('prizes').innerHTML = sorted().map(it => {
+        if (isMoney(it)) {
+            return `<div class="gi"><div class="mt"><img src="${curIcon(it.currency)}" alt="">+${fmt(it.amount)}</div></div>`;
+        }
+        if (Number(it.id) === 61 || Number(it.id) === 62) {
+            return `
+            <div class="gi">
+                <div class="star-drop-tile-grid">
+                    <img src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)">
+                    <span>${fmt(it.price_stars)}</span>
+                </div>
+            </div>`;
+        }
+        return `
         <div class="gi">
             <img class="pic" src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)">
             <div class="pill"><img src="img/star.png" alt="">${fmt(it.price_stars)}</div>
-        </div>`).join('');
+        </div>`;
+    }).join('');
 }
 
+// Рендеринг ячейки рулетки
 function cellItem(it, win) {
-    if (isMoney(it)) return `<div class="cell${win ? ' win' : ''}"><div class="mtile"><img src="${curIcon(it.currency)}" alt="">${fmt(it.amount)}</div></div>`;
+    if (isMoney(it)) return `<div class="cell${win ? ' win' : ''}"><div class="mtile"><img src="${curIcon(it.currency)}" alt="">+${fmt(it.amount)}</div></div>`;
+    
+    if (Number(it.id) === 61 || Number(it.id) === 62) {
+        return `<div class="cell${win ? ' win' : ''}">
+            <div class="star-drop-tile">
+                <img src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)">
+                <span>${fmt(it.price_stars)}</span>
+            </div>
+        </div>`;
+    }
+
     return `<div class="cell${win ? ' win' : ''}"><img class="pic" src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)"><div class="pill"><img src="img/star.png" alt="">${fmt(it.price_stars)}</div></div>`;
 }
+
 function filler() { const p = S.items; return cellItem(p[Math.floor(Math.random() * p.length)], false); }
 function layoutRolls(n) {
     const C0 = CFG[n] || CFG[1];
