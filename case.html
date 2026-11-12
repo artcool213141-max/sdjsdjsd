@@ -71,7 +71,7 @@
         /* бесплатный кейс */
         .free-card {
             position: relative; overflow: hidden; display: flex; align-items: center; gap: 14px;
-            padding: 14px 16px; margin-bottom: 18px; border-radius: 24px; cursor: pointer;
+            padding: 14px 16px; margin-bottom: 12px; border-radius: 24px; cursor: pointer;
             background: linear-gradient(135deg, #5b94ff 0%, #2456e6 100%);
             border: 1px solid rgba(255,255,255,0.35);
             box-shadow: 0 8px 24px rgba(5, 25, 100, 0.5), inset 0 1px 0 rgba(255,255,255,0.35);
@@ -83,6 +83,31 @@
         .free-desc { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #e3eeff; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
         .free-desc img { width: 13px; height: 13px; object-fit: contain; }
         .free-dot { margin-left: auto; width: 12px; height: 12px; border-radius: 50%; background: #fff; animation: ping 1.4s cubic-bezier(0,0,.2,1) infinite; }
+
+        /* ===== РУССКАЯ РУЛЕТКА (ссылка на отдельную страницу) ===== */
+        .rr-card {
+            position: relative; overflow: hidden; display: flex; align-items: center; gap: 14px;
+            padding: 14px 16px; margin-bottom: 18px; border-radius: 24px; cursor: pointer;
+            background: linear-gradient(135deg, #ff5a6e 0%, #8e1a45 100%);
+            border: 1px solid rgba(255,255,255,0.35);
+            box-shadow: 0 8px 24px rgba(60, 5, 40, 0.5), inset 0 1px 0 rgba(255,255,255,0.35);
+            transition: transform 0.2s;
+        }
+        .rr-card:active { transform: scale(0.97); }
+        .rr-card::after {
+            content: ''; position: absolute; right: -30px; top: -30px; width: 120px; height: 120px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.22) 0%, transparent 70%); pointer-events: none;
+        }
+        .rr-ico {
+            width: 64px; height: 64px; border-radius: 20px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.3);
+            animation: bounce 2.4s ease-in-out infinite;
+        }
+        .rr-title { font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 17px; line-height: 1; padding-right: 4px; }
+        .rr-desc { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #ffe0e5; margin-top: 6px; letter-spacing: 0.4px; display: flex; align-items: center; gap: 4px; }
+        .rr-desc img { width: 13px; height: 13px; object-fit: contain; }
+        .rr-arrow { margin-left: auto; flex-shrink: 0; opacity: 0.9; }
 
         .section-label { font-size: 11px; font-weight: 900; font-style: italic; text-transform: uppercase; color: #cfe0ff; letter-spacing: 1px; margin: 0 4px 10px; }
 
@@ -116,90 +141,6 @@
         .case-name { font-weight: 900; font-size: 14px; font-style: italic; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 6px; padding-left: 2px; }
         .case-price { display: flex; align-items: center; gap: 3px; font-weight: 900; font-size: 13px; color: #ffd45e; flex-shrink: 0; }
         .case-price img { width: 14px; height: 14px; object-fit: contain; }
-
-        /* ===== РУССКАЯ РУЛЕТКА ===== */
-        .rr-section { margin-top: 26px; }
-        .rr-head {
-            position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px;
-            padding: 14px 16px; margin-bottom: 12px; border-radius: 24px;
-            background: linear-gradient(135deg, rgba(255, 90, 110, 0.55) 0%, rgba(120, 20, 60, 0.7) 100%);
-            border: 1px solid rgba(255,255,255,0.28);
-            box-shadow: 0 8px 24px rgba(40, 5, 40, 0.45), inset 0 1px 0 rgba(255,255,255,0.25);
-        }
-        .rr-head-ico {
-            width: 44px; height: 44px; border-radius: 16px; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.3);
-        }
-        .rr-head-title { font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 18px; line-height: 1; padding-right: 4px; }
-        .rr-head-desc { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #ffd9de; margin-top: 6px; letter-spacing: 0.4px; }
-        .rr-card { cursor: pointer; }
-        .rr-card .case-img-box { height: 96px; }
-        .rr-card .case-img-box img { max-height: 92px; max-width: 92px; border-radius: 14px; }
-
-        .rr-modal {
-            position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column;
-            padding: 20px 20px 30px; overflow-y: auto;
-            background: linear-gradient(180deg, #1a3fa0 0%, #0a2262 60%, #061748 100%);
-            visibility: hidden; opacity: 0; transform: scale(0.97); pointer-events: none;
-            transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0.25s;
-        }
-        .rr-modal.open { visibility: visible; opacity: 1; transform: scale(1); pointer-events: auto; transition: opacity 0.25s ease, transform 0.25s ease; }
-        .rr-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-        .rr-view { display: none; flex-direction: column; align-items: center; }
-        .rr-view.show { display: flex; }
-        .rr-big-img { width: 190px; height: 190px; object-fit: contain; border-radius: 28px; filter: drop-shadow(0 10px 22px rgba(0, 20, 90, 0.6)); }
-        .rr-name { font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 22px; margin-top: 12px; text-align: center; padding-right: 4px; }
-        .rr-row { display: flex; align-items: center; gap: 6px; }
-        .rr-row img { width: 16px; height: 16px; object-fit: contain; }
-        .rr-muted { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #b9d0ff; }
-        .rr-chance { font-size: 56px; font-weight: 900; font-style: italic; color: #fff; line-height: 1; padding-right: 6px; text-shadow: 0 4px 18px rgba(0, 20, 100, 0.6); }
-        .rr-panel {
-            width: 100%; display: flex; align-items: center; justify-content: space-between;
-            padding: 14px 18px; border-radius: 20px;
-            background: var(--glass); border: 1px solid var(--glass-line);
-        }
-        input[type="range"].rr-slider {
-            -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 999px;
-            background: rgba(255,255,255,0.22); outline: none;
-        }
-        input[type="range"].rr-slider::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%;
-            background: #fff; border: 4px solid var(--blue); box-shadow: 0 0 14px rgba(120, 170, 255, 0.8); cursor: pointer;
-        }
-        input[type="range"].rr-slider::-moz-range-thumb {
-            width: 28px; height: 28px; border-radius: 50%;
-            background: #fff; border: 4px solid var(--blue); box-shadow: 0 0 14px rgba(120, 170, 255, 0.8); cursor: pointer;
-        }
-        .rr-btn {
-            width: 100%; padding: 16px; border-radius: 22px; font-weight: 900; font-style: italic;
-            text-transform: uppercase; font-size: 15px; color: #fff; cursor: pointer; border: 1px solid rgba(255,255,255,0.4);
-            background: linear-gradient(145deg, #5b94ff, #1d4ed8);
-            box-shadow: 0 8px 20px rgba(5, 25, 100, 0.55), inset 0 1px 0 rgba(255,255,255,0.35);
-            transition: transform 0.15s;
-        }
-        .rr-btn:active { transform: scale(0.96); }
-        .rr-btn.ghost { background: var(--glass); box-shadow: none; font-size: 12px; }
-        .rr-btn[disabled] { opacity: 0.6; }
-
-        .rr-tape-box {
-            position: relative; width: 100%; height: 150px; overflow: hidden; margin: 18px 0 6px;
-            border-radius: 22px; background: rgba(4, 16, 60, 0.55); border: 1px solid var(--glass-line);
-        }
-        .rr-tape-box::before, .rr-tape-box::after { content: ''; position: absolute; top: 0; width: 22%; height: 100%; z-index: 5; pointer-events: none; }
-        .rr-tape-box::before { left: 0; background: linear-gradient(to right, #0b2570 5%, transparent); }
-        .rr-tape-box::after { right: 0; background: linear-gradient(to left, #0b2570 5%, transparent); }
-        .rr-pointer { position: absolute; left: 50%; top: 0; width: 3px; height: 100%; background: #fff; z-index: 6; transform: translateX(-50%); box-shadow: 0 0 14px #fff; }
-        .rr-rail { position: absolute; left: 0; top: 0; height: 100%; display: flex; align-items: center; will-change: transform; }
-        .rr-tile {
-            width: 120px; height: 120px; margin: 0 10px; flex-shrink: 0; border-radius: 22px;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
-        }
-        .rr-tile img { width: 84px; height: 84px; object-fit: contain; border-radius: 12px; }
-        .rr-tile svg { width: 40px; height: 40px; opacity: 0.35; }
-        .rr-result-title { font-size: 34px; font-weight: 900; font-style: italic; text-transform: uppercase; padding-right: 6px; }
-        .rr-fee { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #9fbcf5; text-align: center; margin-top: 10px; }
 
         .toast-box {
             position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%) translateY(20px);
@@ -258,31 +199,29 @@
                 <div class="free-dot"></div>
             </div>
 
+            <!-- РУССКАЯ РУЛЕТКА: строго под бесплатным кейсом -> отдельная страница -->
+            <div class="rr-card" onclick="openRoulette()">
+                <div class="rr-ico">
+                    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="9"></circle>
+                        <circle cx="12" cy="12" r="2.2"></circle>
+                        <circle cx="12" cy="6.6" r="1.1"></circle>
+                        <circle cx="16.7" cy="9.3" r="1.1"></circle>
+                        <circle cx="16.7" cy="14.7" r="1.1"></circle>
+                        <circle cx="12" cy="17.4" r="1.1"></circle>
+                        <circle cx="7.3" cy="14.7" r="1.1"></circle>
+                        <circle cx="7.3" cy="9.3" r="1.1"></circle>
+                    </svg>
+                </div>
+                <div>
+                    <div class="rr-title">Русская рулетка</div>
+                    <div class="rr-desc">Выбери шанс · цена от 10% <img src="img/star.png" alt=""></div>
+                </div>
+                <svg class="rr-arrow" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg>
+            </div>
+
             <div class="section-label">Платные кейсы</div>
             <div class="cases-grid" id="cases-grid"></div>
-
-            <!-- РУССКАЯ РУЛЕТКА -->
-            <div class="rr-section">
-                <div class="rr-head">
-                    <div class="rr-head-ico">
-                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="9"></circle>
-                            <circle cx="12" cy="12" r="2.2"></circle>
-                            <circle cx="12" cy="6.6" r="1.1"></circle>
-                            <circle cx="16.7" cy="9.3" r="1.1"></circle>
-                            <circle cx="16.7" cy="14.7" r="1.1"></circle>
-                            <circle cx="12" cy="17.4" r="1.1"></circle>
-                            <circle cx="7.3" cy="14.7" r="1.1"></circle>
-                            <circle cx="7.3" cy="9.3" r="1.1"></circle>
-                        </svg>
-                    </div>
-                    <div>
-                        <div class="rr-head-title">Русская рулетка</div>
-                        <div class="rr-head-desc">Выбери шанс — цена считается сама</div>
-                    </div>
-                </div>
-                <div class="cases-grid" id="rr-grid"></div>
-            </div>
         </div>
 
         <!-- ТУЛБАР -->
@@ -304,71 +243,6 @@
         </div>
     </div>
 
-    <!-- МОДАЛКА РУЛЕТКИ -->
-    <div id="rr-modal" class="rr-modal">
-        <div class="rr-top">
-            <div class="back-btn" onclick="closeRR()">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
-            </div>
-            <div class="rr-muted">Русская рулетка</div>
-            <div class="bal-pill"><img src="img/star.png" alt="STAR"><span id="rr-bal">0</span></div>
-        </div>
-
-        <!-- настройка -->
-        <div id="rr-setup" class="rr-view show">
-            <img id="rr-img" class="rr-big-img" src="img/star.png" alt="">
-            <div id="rr-title" class="rr-name"></div>
-            <div class="rr-row" style="margin:8px 0 22px">
-                <span class="rr-muted">Цена приза</span>
-                <img src="img/star.png" alt="">
-                <span id="rr-prize" class="font-black text-sm" style="color:#ffd45e"></span>
-            </div>
-
-            <div class="rr-muted">Твой шанс на победу</div>
-            <div id="rr-chance" class="rr-chance" style="margin:8px 0 16px">50%</div>
-            <input id="rr-slider" class="rr-slider" type="range" min="5" max="95" value="50" step="1" oninput="updateRR()">
-            <div class="flex justify-between w-full" style="margin-top:8px">
-                <span class="rr-muted" style="font-size:9px">5% — дёшево</span>
-                <span class="rr-muted" style="font-size:9px">95% — дорого</span>
-            </div>
-
-            <div class="rr-panel" style="margin:22px 0 14px">
-                <span class="rr-muted">Цена прокрута</span>
-                <div class="rr-row">
-                    <img src="img/star.png" alt="" style="width:20px;height:20px">
-                    <span id="rr-cost" class="font-black text-lg">0</span>
-                </div>
-            </div>
-            <button id="rr-go" class="rr-btn" onclick="spinRR()">Крутить</button>
-            <div id="rr-fee" class="rr-fee"></div>
-        </div>
-
-        <!-- прокрутка -->
-        <div id="rr-spin" class="rr-view">
-            <div id="rr-spin-title" class="rr-name" style="margin-top:20px"></div>
-            <div class="rr-tape-box">
-                <div class="rr-pointer"></div>
-                <div class="rr-rail" id="rr-rail"></div>
-            </div>
-            <button class="rr-btn ghost" style="width:auto;padding:10px 28px;margin-top:22px" onclick="skipRR()">
-                Пропустить
-                <svg style="display:inline-block;vertical-align:-2px;margin-left:4px" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l7 7-7 7"></path><path d="M13 5l7 7-7 7"></path></svg>
-            </button>
-        </div>
-
-        <!-- результат -->
-        <div id="rr-result" class="rr-view" style="margin-top:50px;gap:16px">
-            <img id="rr-res-img" class="rr-big-img" style="width:150px;height:150px" src="img/star.png" alt="">
-            <div id="rr-res-lose" style="display:none">
-                <svg width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="#ff8a9a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><path d="M15 9l-6 6M9 9l6 6"></path></svg>
-            </div>
-            <div id="rr-res-text" class="rr-result-title"></div>
-            <div id="rr-res-sub" class="rr-muted" style="text-align:center;line-height:1.6"></div>
-            <button class="rr-btn" style="margin-top:14px" onclick="backToSetup()">Ещё раз</button>
-            <button class="rr-btn ghost" onclick="closeRR()">Закрыть</button>
-        </div>
-    </div>
-
     <div id="toast" class="toast-box"></div>
 
 <script src="music.js"></script>
@@ -378,13 +252,10 @@ const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
 
 try { tg.expand(); tg.ready(); tg.headerColor = '#1f55d6'; tg.backgroundColor = '#08205f'; } catch (e) {}
 
-// кнопка «назад» Telegram -> главная (внутри рулетки — закрывает рулетку)
+// кнопка «назад» Telegram -> главная
 try {
     tg.BackButton.show();
-    tg.BackButton.onClick(() => {
-        if (document.getElementById('rr-modal').classList.contains('open')) { closeRR(); return; }
-        location.href = 'index.html';
-    });
+    tg.BackButton.onClick(() => { location.href = 'index.html'; });
 } catch (e) {}
 
 const tgUser = tg.initDataUnsafe?.user;
@@ -437,11 +308,9 @@ function openCase(id) {
     location.href = 'case_open.html?id=' + encodeURIComponent(id) + '&v=' + Date.now();
 }
 
-let starsBalance = 0;
-function setStars(v) {
-    starsBalance = Number(v) || 0;
-    $('bal-stars').innerText = starsBalance.toFixed(2);
-    $('rr-bal').innerText = fmt(starsBalance);
+function openRoulette() {
+    try { tg.HapticFeedback.impactOccurred('light'); } catch (e) {}
+    location.href = 'russian_roulette.html?v=' + Date.now();
 }
 
 async function syncData() {
@@ -450,177 +319,15 @@ async function syncData() {
         const res = await fetch(`${BACKEND_URL}/get_balance/${user.id}?username=${encodeURIComponent(username)}&t=${Date.now()}`);
         if (!res.ok) throw new Error('Ошибка сервера');
         const data = await res.json();
-        setStars(data.balance);
+        $('bal-stars').innerText = (Number(data.balance) || 0).toFixed(2);
         $('bal-ton').innerText = (Number(data.ton_balance) || 0).toFixed(2);
         $('bal-bamboo').innerText = fmt(Number(data.bamboo_balance) || 0);
-    } catch (e) { console.warn('Не удалось обновить баланс:', e); }
+    } catch (e) {
+        console.warn('Не удалось обновить баланс:', e);
+        showToast('Не удалось обновить баланс', 'img/star.png');
+    }
 }
 syncData();
-
-/* ================= РУССКАЯ РУЛЕТКА ================= */
-let rrItems = [], rrMargin = 0.10, rrMin = 5, rrMax = 95;
-let rrActive = null, rrBusy = false, rrOutcome = null, rrTimer = null;
-
-async function post(path, body) {
-    const res = await fetch(BACKEND_URL + path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ init_data: tg.initData || '', ...body })
-    });
-    let data = {};
-    try { data = await res.json(); } catch (e) {}
-    if (!res.ok) throw new Error(data.detail || 'Ошибка сервера');
-    return data;
-}
-
-const rrCost = (price, chance) => Math.max(1, Math.ceil(price * (chance / 100) * (1 + rrMargin)));
-const itemImg = it => it.image_url || 'img/star.png';
-
-async function loadRR() {
-    try {
-        const data = await post('/case/rr/info', {});
-        rrItems = (data.items || []).slice().sort((a, b) => a.price_stars - b.price_stars);
-        rrMargin = Number(data.margin ?? 0.10);
-        rrMin = data.min_chance || 5; rrMax = data.max_chance || 95;
-    } catch (e) { console.warn('RR info error:', e); }
-    renderRR();
-}
-
-function renderRR() {
-    $('rr-grid').innerHTML = rrItems.map((it, i) => `
-        <div class="case-card rr-card" style="animation-delay:${i * 40}ms" onclick="openRR(${i})">
-            <div class="case-img-box">
-                <img src="${esc(itemImg(it))}" alt="" onerror="this.onerror=null;this.src='img/star.png'">
-            </div>
-            <div class="case-foot">
-                <div class="case-name">${esc(it.name)}</div>
-                <div class="case-prices">
-                    <div class="case-price"><img src="img/star.png" alt="">${fmt(it.price_stars)}</div>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
-
-function showView(id) {
-    ['rr-setup', 'rr-spin', 'rr-result'].forEach(v => $(v).classList.toggle('show', v === id));
-}
-
-function openRR(i) {
-    if (rrBusy) return;
-    try { tg.HapticFeedback.impactOccurred('light'); } catch (e) {}
-    rrActive = rrItems[i];
-    if (!rrActive) return;
-    $('rr-img').src = itemImg(rrActive);
-    $('rr-title').innerText = rrActive.name;
-    $('rr-prize').innerText = fmt(rrActive.price_stars);
-    const s = $('rr-slider');
-    s.min = rrMin; s.max = rrMax; s.value = 50;
-    $('rr-fee').innerText = `Цена = цена приза × шанс + комиссия ${Math.round(rrMargin * 100)}%. Шанс на слайдере — реальный шанс победы.`;
-    updateRR();
-    showView('rr-setup');
-    $('rr-bal').innerText = fmt(starsBalance);
-    $('rr-modal').classList.add('open');
-}
-
-function updateRR() {
-    const chance = parseInt($('rr-slider').value, 10);
-    $('rr-chance').innerText = chance + '%';
-    $('rr-cost').innerText = fmt(rrCost(rrActive.price_stars, chance));
-}
-
-function closeRR() {
-    if (rrBusy) return;
-    $('rr-modal').classList.remove('open');
-    rrActive = null;
-}
-
-function backToSetup() { showView('rr-setup'); }
-
-const TILE_W = 140;
-const XMARK = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>';
-
-async function spinRR() {
-    if (rrBusy || !rrActive) return;
-    const chance = parseInt($('rr-slider').value, 10);
-    const cost = rrCost(rrActive.price_stars, chance);
-    if (starsBalance < cost) { showToast('Недостаточно звёзд', 'img/star.png'); return; }
-
-    rrBusy = true;
-    $('rr-go').disabled = true;
-    try { tg.HapticFeedback.impactOccurred('medium'); } catch (e) {}
-
-    let out;
-    try {
-        out = await post('/case/rr/spin', { item_id: rrActive.id, chance });
-    } catch (e) {
-        rrBusy = false; $('rr-go').disabled = false;
-        showToast(e.message || 'Ошибка', 'img/star.png');
-        return;
-    }
-    $('rr-go').disabled = false;
-    rrOutcome = out;
-    if (out.balance !== null && out.balance !== undefined) setStars(out.balance);
-    else setStars(starsBalance - out.cost);
-
-    $('rr-spin-title').innerText = rrActive.name;
-    showView('rr-spin');
-
-    // лента: доля плиток с призом = выбранному шансу, на победной позиции — результат
-    const winIndex = 30;
-    let html = '';
-    for (let i = 0; i < 45; i++) {
-        const prize = (i === winIndex) ? out.win : (Math.random() * 100 < chance);
-        html += `<div class="rr-tile">${prize
-            ? `<img src="${esc(itemImg(rrActive))}" alt="" onerror="this.onerror=null;this.src='img/star.png'">`
-            : XMARK}</div>`;
-    }
-    const rail = $('rr-rail');
-    rail.style.transition = 'none';
-    rail.style.transform = 'translateX(0)';
-    rail.innerHTML = html;
-
-    setTimeout(() => {
-        const half = rail.parentElement.clientWidth / 2;
-        const offset = winIndex * TILE_W - half + TILE_W / 2;
-        rail.style.transition = 'transform 5.5s cubic-bezier(0.15, 0, 0.05, 1)';
-        rail.style.transform = `translateX(-${offset}px)`;
-    }, 60);
-
-    clearTimeout(rrTimer);
-    rrTimer = setTimeout(finishRR, 5800);
-}
-
-function skipRR() {
-    if (!rrBusy) return;
-    clearTimeout(rrTimer);
-    finishRR();
-}
-
-function finishRR() {
-    if (!rrOutcome) return;
-    const out = rrOutcome; rrOutcome = null;
-    if (out.win) {
-        $('rr-res-img').style.display = 'block';
-        $('rr-res-img').src = itemImg(rrActive || out.item);
-        $('rr-res-lose').style.display = 'none';
-        $('rr-res-text').innerText = 'Победа!';
-        $('rr-res-text').style.color = '#8dffb0';
-        $('rr-res-sub').innerText = `${out.item.name} добавлен в инвентарь`;
-        try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
-    } else {
-        $('rr-res-img').style.display = 'none';
-        $('rr-res-lose').style.display = 'block';
-        $('rr-res-text').innerText = 'Неудача';
-        $('rr-res-text').style.color = '#ff8a9a';
-        $('rr-res-sub').innerText = `Шанс был ${out.chance}% — в этот раз не повезло`;
-        try { tg.HapticFeedback.notificationOccurred('error'); } catch (e) {}
-    }
-    showView('rr-result');
-    rrBusy = false;
-}
-
-loadRR();
 
 /* ============== фон ============== */
 const canvas = $('stars-canvas');
