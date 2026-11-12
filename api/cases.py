@@ -1,3 +1,5 @@
+import math
+import os
 import random
 
 from fastapi import APIRouter, HTTPException
@@ -8,137 +10,92 @@ try:
 except ImportError:
     from api.ref import validate_init_data, rpc
 
+try:
+    from supabase import create_client
+except Exception:  # supabase не установлен
+    create_client = None
+
 router = APIRouter()
 
 # 100 Stars = 1.3 TON
 TON_PER_STAR = 1.3 / 100
 
+# Бамбук за каждый открытый платный кейс (включительно)
+BAMBOO_MIN = 1
+BAMBOO_MAX = 10
+
+# ---------------- РУССКАЯ РУЛЕТКА ----------------
+# id подарков из nft_catalog: 2 дешёвых, 2 средних, 2 дорогих (но не самых).
+# Цены берутся из БД, поэтому список можно менять свободно.
+RR_ITEMS = [
+    17,  # дешёвый  (~410 ⭐)
+    9,   # дешёвый  (~480 ⭐)
+    48,  # средний  (~1445 ⭐)
+    19,  # средний  (~1520 ⭐)
+    49,  # дорогой  (~3265 ⭐)
+    47,  # дорогой  (~3828 ⭐)
+]
+RR_MIN_CHANCE = 5
+RR_MAX_CHANCE = 95
+# Открытая комиссия сервиса: цена = цена приза * шанс * (1 + RR_MARGIN).
+# Показывается игроку на странице. Шанс на слайдере = реальный шанс победы.
+RR_MARGIN = 0.10
+
 # =====================================================================
-#  ЛУТ КЕЙСОВ — БАЛАНС: Стабильный окуп (раз в 2-3 прокрута) + Джекпот 5-7%
+#  ЛУТ КЕЙСОВ
 # =====================================================================
 CASES = {
 "bear": {
         "name": "Bear", "price": 149,
         "loot": [
-            (61, 71.0),    # Минус / Слив (5 ⭐) — поднят для контроля профита
-            (17, 12.0),    # Возврат / Окуп (410 ⭐) — понижен
-            (15, 8.0),     # Окуп (420 ⭐) — понижен
-            (13, 5.0),     # Окуп (428 ⭐) — понижен
-            (1, 2.0),      # Окуп (455 ⭐) — понижен
-            (4, 1.2),      # Крупный окуп (459 ⭐) — понижен
-            (6, 0.5),      # (475 ⭐) — понижен
-            (16, 0.2),     # (479 ⭐) — понижен
-            (9, 0.07),     # (480 ⭐) — понижен
-            (3, 0.02),     # (490 ⭐) — понижен
-            (7, 0.01)      # (497 ⭐) — редкий вин
+            (61, 71.0), (17, 12.0), (15, 8.0), (13, 5.0), (1, 2.0), (4, 1.2),
+            (6, 0.5), (16, 0.2), (9, 0.07), (3, 0.02), (7, 0.01)
         ]
     },
     "ring": {
         "name": "Ring", "price": 199,
         "loot": [
-            (62, 55.0),    # Минус / Слив (10 ⭐)
-            (18, 18.0),    # Возврат / Окуп (399 ⭐)
-            (1, 12.0),     # Окуп (455 ⭐)
-            (4, 8.0),      # Окуп (459 ⭐)
-            (7, 3.5),      # Крупный окуп (497 ⭐)
-            (12, 2.0),     # Джекпот ~5.5% (500 ⭐)
-            (6, 1.0),      # (475 ⭐)
-            (13, 0.3),     # (428 ⭐)
-            (15, 0.2)      # (420 ⭐)
+            (62, 55.0), (18, 18.0), (1, 12.0), (4, 8.0), (7, 3.5),
+            (12, 2.0), (6, 1.0), (13, 0.3), (15, 0.2)
         ]
     },
     "lip": {
         "name": "Lip", "price": 249,
         "loot": [
-            (61, 45.0),    # Минус (5 ⭐)
-            (62, 18.0),    # Минус (10 ⭐)
-            (9, 15.0),     # Окуп (480 ⭐)
-            (10, 10.0),    # Окуп (543 ⭐)
-            (11, 5.0),     # Крупный окуп (571 ⭐)
-            (12, 3.5),     # Джекпот ~5.5% (500 ⭐)
-            (13, 1.8),     # (428 ⭐)
-            (14, 1.0),     # (525 ⭐)
-            (29, 0.5),     # (525 ⭐)
-            (30, 0.2)      # (610 ⭐)
+            (61, 45.0), (62, 18.0), (9, 15.0), (10, 10.0), (11, 5.0),
+            (12, 3.5), (13, 1.8), (14, 1.0), (29, 0.5), (30, 0.2)
         ]
     },
     "halloween": {
         "name": "Halloween", "price": 299,
         "loot": [
-            (61, 42.0),    # Минус (5 ⭐)
-            (62, 20.0),    # Минус (10 ⭐)
-            (13, 15.0),    # Окуп (428 ⭐)
-            (14, 10.0),    # Окуп (525 ⭐)
-            (15, 6.0),     # Крупный окуп (420 ⭐)
-            (16, 4.0),     # Джекпот ~6% (479 ⭐)
-            (17, 1.5),     # (410 ⭐)
-            (18, 0.8),     # (399 ⭐)
-            (10, 0.4),     # (543 ⭐)
-            (36, 0.2),     # (1345 ⭐)
-            (39, 0.05),    # (580 ⭐)
-            (38, 0.03),    # (571 ⭐)
-            (20, 0.02)     # (612 ⭐)
+            (61, 42.0), (62, 20.0), (13, 15.0), (14, 10.0), (15, 6.0),
+            (16, 4.0), (17, 1.5), (18, 0.8), (10, 0.4), (36, 0.2),
+            (39, 0.05), (38, 0.03), (20, 0.02)
         ]
     },
     "loot": {
         "name": "Loot", "price": 499,
         "loot": [
-            (61, 42.0),    # Минус (5 ⭐)
-            (62, 20.0),    # Минус (10 ⭐)
-            (17, 15.0),    # Окуп (410 ⭐)
-            (18, 10.0),    # Окуп (399 ⭐)
-            (19, 6.0),     # Крупный окуп (1520 ⭐)
-            (59, 4.0),     # Джекпот ~6%
-            (20, 1.5),     # (612 ⭐)
-            (21, 0.8),     # (555 ⭐)
-            (22, 0.4),     # (572 ⭐)
-            (26, 0.2),     # (554 ⭐)
-            (28, 0.08),    # (715 ⭐)
-            (32, 0.02)     # (1343 ⭐)
+            (61, 42.0), (62, 20.0), (17, 15.0), (18, 10.0), (19, 6.0),
+            (59, 4.0), (20, 1.5), (21, 0.8), (22, 0.4), (26, 0.2),
+            (28, 0.08), (32, 0.02)
         ]
     },
     "helmet": {
         "name": "Helmet", "price": 1499,
         "loot": [
-            # Минусовые позиции
-            (34, 38.0),    # CrystalBall (1321 ⭐)
-            (32, 24.0),    # TrappedHeart (1343 ⭐)
-            (36, 15.0),    # MadPumpkin (1345 ⭐)
-            # Окупаемые позиции и джекпот (суммарно ~23%, где крупный/редкий окуп занимает 5-7%)
-            (48, 12.0),    # IonicDryer (1445 ⭐)
-            (33, 5.0),     # LovePotion (1447 ⭐)
-            (19, 3.5),     # SnoopCigar (1520 ⭐)
-            (50, 1.5),     # RareBird (2643 ⭐) — крупный окуп
-            (49, 0.6),     # ToyBear (3265 ⭐) — джекпот
-            (31, 0.25),    # DiamondRing (3258 ⭐)
-            (42, 0.1),     # NekoHelmet (3494 ⭐)
-            (45, 0.03),    # SignetRing (3510 ⭐)
-            (47, 0.015),   # VintageCigar (3828 ⭐)
-            (46, 0.003),   # LowRider (6121 ⭐)
-            (44, 0.001),   # SwissWatch (6285 ⭐)
-            (52, 0.0005)   # NailBracelet (11259 ⭐)
+            (34, 38.0), (32, 24.0), (36, 15.0), (48, 12.0), (33, 5.0),
+            (19, 3.5), (50, 1.5), (49, 0.6), (31, 0.25), (42, 0.1),
+            (45, 0.03), (47, 0.015), (46, 0.003), (44, 0.001), (52, 0.0005)
         ]
     },
     "pepe": {
         "name": "Pepe", "price": 2999,
         "loot": [
-            # Минусовые позиции
-            (37, 40.0),    # KhabibsPapakha (2363 ⭐)
-            (50, 25.0),    # RareBird (2643 ⭐)
-            (49, 14.0),    # ToyBear (3265 ⭐)
-            # Окупаемые позиции и джекпот (~21% суммарно, 5-7% на крупные)
-            (31, 10.0),    # DiamondRing (3258 ⭐)
-            (42, 4.5),     # NekoHelmet (3494 ⭐)
-            (45, 3.5),     # SignetRing (3510 ⭐)
-            (47, 1.5),     # VintageCigar (3828 ⭐) — крупный окуп
-            (46, 0.7),     # LowRider (6121 ⭐) — джекпот
-            (44, 0.3),     # SwissWatch (6285 ⭐)
-            (52, 0.2),     # NailBracelet (11259 ⭐)
-            (55, 0.1),     # MightyArm (13869 ⭐)
-            (57, 0.05),    # LootBag (14685 ⭐)
-            (56, 0.02),    # HeroicHelmet (22836 ⭐)
-            (58, 0.01),    # ScaredCat (25039 ⭐)
-            (40, 0.005)    # AstralShard (11855 ⭐)
+            (37, 40.0), (50, 25.0), (49, 14.0), (31, 10.0), (42, 4.5),
+            (45, 3.5), (47, 1.5), (46, 0.7), (44, 0.3), (52, 0.2),
+            (55, 0.1), (57, 0.05), (56, 0.02), (58, 0.01), (40, 0.005)
         ]
     }
 }
@@ -150,6 +107,11 @@ ERRORS = {
     "no_item": "Подарок не найден в инвентаре",
     "failed": "Не удалось открыть кейс",
 }
+
+# Прямой клиент Supabase (для бамбука и списания звёзд в рулетке)
+_SB_URL = os.environ.get("SUPABASE_URL")
+_SB_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
+_sb = create_client(_SB_URL, _SB_KEY) if (create_client and _SB_URL and _SB_KEY) else None
 
 
 class Base(BaseModel):
@@ -168,6 +130,11 @@ class OpenReq(Base):
 
 class SellReq(Base):
     nft_id: int
+
+
+class RRSpinReq(Base):
+    item_id: int
+    chance: int
 
 
 def _one(res):
@@ -200,6 +167,8 @@ def _catalog() -> dict:
             "name": x.get("name"),
             "price_stars": x.get("price_stars"),
             "price_ton": x.get("price_ton") or 0,
+            "image_url": x.get("image_url"),
+            "link": x.get("link"),
         }
         for x in (data or [])
         if isinstance(x, dict) and x.get("id") is not None
@@ -210,6 +179,59 @@ def _price_ton(stars: int) -> float:
     return round(stars * TON_PER_STAR, 2)
 
 
+# ---------------- Работа с балансами (с проверкой записи) ----------------
+def _add_bamboo(user_id: str, amount: int) -> float:
+    """Начисляет бамбук и возвращает НОВЫЙ баланс, прочитанный из БД.
+    Используется оптимистичная блокировка: обновление проходит только если
+    баланс не изменился между чтением и записью (защита от гонок)."""
+    if _sb is None:
+        raise RuntimeError("supabase env missing")
+    for _ in range(6):
+        rows = _sb.table("users").select("bamboo_balance").eq("id", user_id).execute().data
+        if not rows:
+            raise RuntimeError("user not found")
+        old = rows[0].get("bamboo_balance") or 0
+        new = float(old) + amount
+        upd = (_sb.table("users").update({"bamboo_balance": new})
+               .eq("id", user_id).eq("bamboo_balance", old).execute())
+        if upd.data:
+            return float(upd.data[0].get("bamboo_balance") or new)
+    raise RuntimeError("bamboo update conflict")
+
+
+def _spend_stars(user_id: str, cost: float) -> float:
+    if _sb is None:
+        raise HTTPException(500, "Сервер не настроен")
+    for _ in range(6):
+        rows = _sb.table("users").select("balance").eq("id", user_id).execute().data
+        if not rows:
+            raise HTTPException(404, ERRORS["user_not_found"])
+        old = rows[0].get("balance") or 0
+        if float(old) < cost:
+            raise HTTPException(400, ERRORS["insufficient"])
+        new = float(old) - cost
+        upd = (_sb.table("users").update({"balance": new})
+               .eq("id", user_id).eq("balance", old).execute())
+        if upd.data:
+            return new
+    raise HTTPException(409, "Повторите попытку")
+
+
+def _stars_balance(user_id: str):
+    if _sb is None:
+        return None
+    try:
+        rows = _sb.table("users").select("balance").eq("id", user_id).execute().data
+        return float(rows[0].get("balance") or 0) if rows else None
+    except Exception:
+        return None
+
+
+def _rr_cost(price_stars: float, chance: int) -> int:
+    return max(1, math.ceil(price_stars * (chance / 100.0) * (1 + RR_MARGIN)))
+
+
+# ---------------- Кейсы ----------------
 @router.post("/case/info")
 async def case_info(req: InfoReq):
     validate_init_data(req.init_data)
@@ -222,6 +244,8 @@ async def case_info(req: InfoReq):
         "price_stars": cfg["price"],
         "price_ton": _price_ton(cfg["price"]),
         "items": items,
+        "bamboo_min": BAMBOO_MIN,
+        "bamboo_max": BAMBOO_MAX,
     }
 
 
@@ -258,7 +282,27 @@ async def case_open(req: OpenReq):
                 raise
             break
         nfts.append(cat[nft_id])
-    return {**res, "nft": nfts[0], "nfts": nfts}
+
+    # Бамбук: 1..10 за КАЖДЫЙ реально открытый кейс (только после успешного списания)
+    bamboo_each = [rng.randint(BAMBOO_MIN, BAMBOO_MAX) for _ in nfts]
+    bamboo = sum(bamboo_each)
+    bamboo_balance = None
+    try:
+        bamboo_balance = _add_bamboo(str(user["id"]), bamboo)
+    except Exception as e:
+        print("bamboo credit error:", repr(e))
+        bamboo = 0
+        bamboo_each = []
+
+    return {
+        **res,
+        "nft": nfts[0],
+        "nfts": nfts,
+        "bamboo": bamboo,
+        "bamboo_each": bamboo_each,
+        "bamboo_balance": bamboo_balance,
+    }
+
 
 @router.post("/case/sell_ton")
 async def case_sell_ton(req: SellReq):
@@ -268,3 +312,56 @@ async def case_sell_ton(req: SellReq):
         "p_nft_id": req.nft_id,
     }))
     return res
+
+
+# ---------------- Русская рулетка ----------------
+@router.post("/case/rr/info")
+async def rr_info(req: Base):
+    validate_init_data(req.init_data)
+    cat = _catalog()
+    items = [cat[i] for i in RR_ITEMS if i in cat]
+    return {
+        "items": items,
+        "min_chance": RR_MIN_CHANCE,
+        "max_chance": RR_MAX_CHANCE,
+        "margin": RR_MARGIN,
+    }
+
+
+@router.post("/case/rr/spin")
+async def rr_spin(req: RRSpinReq):
+    user = validate_init_data(req.init_data)
+    uid = str(user["id"])
+
+    if req.item_id not in RR_ITEMS:
+        raise HTTPException(404, "Подарок не найден")
+    if not (RR_MIN_CHANCE <= req.chance <= RR_MAX_CHANCE):
+        raise HTTPException(400, "Неверный шанс")
+
+    cat = _catalog()
+    item = cat.get(req.item_id)
+    if not item:
+        raise HTTPException(404, "Подарок не найден")
+
+    cost = _rr_cost(float(item["price_stars"] or 0), req.chance)
+    # Шанс победы = ровно тот, что выбрал игрок
+    win = random.SystemRandom().random() * 100 < req.chance
+
+    if win:
+        # open_case списывает цену и кладёт подарок в инвентарь
+        _check(rpc("open_case", {
+            "p_user_id": uid,
+            "p_nft_id": req.item_id,
+            "p_currency": "stars",
+            "p_price": cost,
+        }))
+    else:
+        _spend_stars(uid, cost)
+
+    return {
+        "win": win,
+        "cost": cost,
+        "chance": req.chance,
+        "item": item,
+        "balance": _stars_balance(uid),
+    }
