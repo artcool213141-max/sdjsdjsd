@@ -1,6 +1,7 @@
 import math
 import os
 import random
+import time
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -20,32 +21,39 @@ router = APIRouter()
 # 100 Stars = 1.3 TON
 TON_PER_STAR = 1.3 / 100
 
-# Бамбук за каждый открытый платный кейс (включительно)
+# Бамбук за каждый открытый платный кейс (включительно).
+# Не начисляется за русскую рулетку и бесплатный кейс.
 BAMBOO_MIN = 1
 BAMBOO_MAX = 10
 
 # ---------------- РУССКАЯ РУЛЕТКА ----------------
-# id подарков из nft_catalog: 2 дешёвых, 2 средних, 2 дорогих (но не самых).
-# Цены берутся из БД, поэтому список можно менять свободно.
+# id подарков из nft_catalog: 2 дешёвых, 3 средних, 2 дорогих (но не самые топовые).
+# Цены и картинки берутся из БД, поэтому список можно менять свободно.
 RR_ITEMS = [
-    17,  # дешёвый  (~410 ⭐)
-    9,   # дешёвый  (~480 ⭐)
-    48,  # средний  (~1445 ⭐)
-    19,  # средний  (~1520 ⭐)
-    49,  # дорогой  (~3265 ⭐)
-    47,  # дорогой  (~3828 ⭐)
+    17,  # WhipCupcake     — дешёвый
+    9,   # LolPop          — дешёвый
+    48,  # IonicDryer      — средний
+    19,  # SnoopCigar      — средний
+    50,  # RareBird        — средний+
+    49,  # ToyBear         — дорогой
+    47,  # VintageCigar    — дорогой
 ]
-RR_MIN_CHANCE = 5
+RR_MIN_CHANCE = 10
 RR_MAX_CHANCE = 95
-# Открытая комиссия сервиса: цена = цена приза * шанс * (1 + RR_MARGIN).
-# Показывается игроку на странице. Шанс на слайдере = реальный шанс победы.
-RR_MARGIN = 0.10
+# Шанс на слайдере = реальный шанс победы (проверяется честным random на сервере).
+# Сервис берёт ОТКРЫТУЮ комиссию, которая видна игроку:
+#   шанс >= RR_FEE_THRESHOLD  -> комиссия RR_FEE_HIGH_CHANCE %
+#   шанс <  RR_FEE_THRESHOLD  -> комиссия RR_FEE_LOW_CHANCE %
+# Цена = цена приза * шанс * (1 + комиссия).
+RR_FEE_THRESHOLD = 50
+RR_FEE_HIGH_CHANCE = 5    # %
+RR_FEE_LOW_CHANCE = 15    # %
 
 # =====================================================================
 #  ЛУТ КЕЙСОВ
 # =====================================================================
 CASES = {
-"bear": {
+    "bear": {
         "name": "Bear", "price": 149,
         "loot": [
             (61, 71.0), (17, 12.0), (15, 8.0), (13, 5.0), (1, 2.0), (4, 1.2),
@@ -179,42 +187,51 @@ def _price_ton(stars: int) -> float:
     return round(stars * TON_PER_STAR, 2)
 
 
-# ---------------- Работа с балансами (с проверкой записи) ----------------
-def _add_bamboo(user_id: str, amount: int) -> float:
-    """Начисляет бамбук и возвращает НОВЫЙ баланс, прочитанный из БД.
-    Используется оптимистичная блокировка: обновление проходит только если
-    баланс не изменился между чтением и записью (защита от гонок)."""
+# ---------------- Работа с балансами (атомарно, с проверкой записи) ----------------
+def _adjust(user_id: str, column: str, delta, min_value=None):
+    """Меняет числовую колонку users.<column> на delta и возвращает НОВОЕ значение,
+    прочитанное из ответа Supabase (то есть реально записанное в БД).
+
+    Оптимистичная блокировка: UPDATE проходит только если значение не изменилось
+    между чтением и записью (защита от гонок). NULL в колонке обрабатывается
+    отдельно (IS NULL), иначе обновление молча не находило бы строку."""
     if _sb is None:
         raise RuntimeError("supabase env missing")
-    for _ in range(6):
-        rows = _sb.table("users").select("bamboo_balance").eq("id", user_id).execute().data
+    for attempt in range(10):
+        rows = _sb.table("users").select(column).eq("id", user_id).execute().data
         if not rows:
-            raise RuntimeError("user not found")
-        old = rows[0].get("bamboo_balance") or 0
-        new = float(old) + amount
-        upd = (_sb.table("users").update({"bamboo_balance": new})
-               .eq("id", user_id).eq("bamboo_balance", old).execute())
+            raise LookupError("user_not_found")
+        raw = rows[0].get(column)
+        old = raw if raw is not None else 0
+        new = old + delta
+        if isinstance(new, float):
+            new = round(new, 4)
+        if min_value is not None and new < min_value:
+            raise ValueError("insufficient")
+        q = _sb.table("users").update({column: new}).eq("id", user_id)
+        q = q.is_(column, "null") if raw is None else q.eq(column, raw)
+        upd = q.execute()
         if upd.data:
-            return float(upd.data[0].get("bamboo_balance") or new)
-    raise RuntimeError("bamboo update conflict")
+            val = upd.data[0].get(column)
+            return float(val if val is not None else new)
+        time.sleep(0.03 * (attempt + 1))
+    raise RuntimeError(f"{column} update conflict")
 
 
-def _spend_stars(user_id: str, cost: float) -> float:
-    if _sb is None:
-        raise HTTPException(500, "Сервер не настроен")
-    for _ in range(6):
-        rows = _sb.table("users").select("balance").eq("id", user_id).execute().data
-        if not rows:
-            raise HTTPException(404, ERRORS["user_not_found"])
-        old = rows[0].get("balance") or 0
-        if float(old) < cost:
-            raise HTTPException(400, ERRORS["insufficient"])
-        new = float(old) - cost
-        upd = (_sb.table("users").update({"balance": new})
-               .eq("id", user_id).eq("balance", old).execute())
-        if upd.data:
-            return new
-    raise HTTPException(409, "Повторите попытку")
+def _add_bamboo(user_id: str, amount: int) -> float:
+    """Начисляет бамбук в users.bamboo_balance, возвращает новый баланс из БД."""
+    return _adjust(user_id, "bamboo_balance", int(amount))
+
+
+def _spend_stars(user_id: str, cost: int) -> float:
+    try:
+        return _adjust(user_id, "balance", -int(cost), min_value=0)
+    except LookupError:
+        raise HTTPException(404, ERRORS["user_not_found"])
+    except ValueError:
+        raise HTTPException(400, ERRORS["insufficient"])
+    except RuntimeError:
+        raise HTTPException(409, "Повторите попытку")
 
 
 def _stars_balance(user_id: str):
@@ -227,8 +244,15 @@ def _stars_balance(user_id: str):
         return None
 
 
-def _rr_cost(price_stars: float, chance: int) -> int:
-    return max(1, math.ceil(price_stars * (chance / 100.0) * (1 + RR_MARGIN)))
+def _rr_fee(chance: int) -> int:
+    """Открытая комиссия сервиса в процентах для выбранного шанса."""
+    return RR_FEE_HIGH_CHANCE if chance >= RR_FEE_THRESHOLD else RR_FEE_LOW_CHANCE
+
+
+def _rr_cost(price_stars, chance: int) -> int:
+    """Цена прокрута (целые звёзды, считается целочисленно — на фронте та же формула)."""
+    price = int(round(float(price_stars or 0)))
+    return max(1, -(-(price * chance * (100 + _rr_fee(chance))) // 10000))
 
 
 # ---------------- Кейсы ----------------
@@ -252,6 +276,7 @@ async def case_info(req: InfoReq):
 @router.post("/case/open")
 async def case_open(req: OpenReq):
     user = validate_init_data(req.init_data)
+    uid = str(user["id"])
     cfg = _case(req.case_id)
     if req.currency not in ("stars", "ton"):
         raise HTTPException(400, "Неверная валюта")
@@ -272,7 +297,7 @@ async def case_open(req: OpenReq):
         nft_id = rng.choices(ids, weights=weights, k=1)[0]
         try:
             res = _check(rpc("open_case", {
-                "p_user_id": str(user["id"]),
+                "p_user_id": uid,
                 "p_nft_id": nft_id,
                 "p_currency": req.currency,
                 "p_price": price,
@@ -283,12 +308,13 @@ async def case_open(req: OpenReq):
             break
         nfts.append(cat[nft_id])
 
-    # Бамбук: 1..10 за КАЖДЫЙ реально открытый кейс (только после успешного списания)
+    # Бамбук: от 1 до 10 за КАЖДЫЙ реально открытый кейс
+    # (начисляется только после успешного списания и выдачи приза).
     bamboo_each = [rng.randint(BAMBOO_MIN, BAMBOO_MAX) for _ in nfts]
     bamboo = sum(bamboo_each)
     bamboo_balance = None
     try:
-        bamboo_balance = _add_bamboo(str(user["id"]), bamboo)
+        bamboo_balance = _add_bamboo(uid, bamboo)  # значение уже прочитано из Supabase
     except Exception as e:
         print("bamboo credit error:", repr(e))
         bamboo = 0
@@ -314,7 +340,7 @@ async def case_sell_ton(req: SellReq):
     return res
 
 
-# ---------------- Русская рулетка ----------------
+# ---------------- Русская рулетка (бамбук здесь НЕ начисляется) ----------------
 @router.post("/case/rr/info")
 async def rr_info(req: Base):
     validate_init_data(req.init_data)
@@ -324,7 +350,9 @@ async def rr_info(req: Base):
         "items": items,
         "min_chance": RR_MIN_CHANCE,
         "max_chance": RR_MAX_CHANCE,
-        "margin": RR_MARGIN,
+        "fee_threshold": RR_FEE_THRESHOLD,
+        "fee_high_chance": RR_FEE_HIGH_CHANCE,
+        "fee_low_chance": RR_FEE_LOW_CHANCE,
     }
 
 
@@ -343,8 +371,8 @@ async def rr_spin(req: RRSpinReq):
     if not item:
         raise HTTPException(404, "Подарок не найден")
 
-    cost = _rr_cost(float(item["price_stars"] or 0), req.chance)
-    # Шанс победы = ровно тот, что выбрал игрок
+    cost = _rr_cost(item["price_stars"], req.chance)
+    # Шанс победы = ровно тот, что выбрал игрок (честный random на сервере)
     win = random.SystemRandom().random() * 100 < req.chance
 
     if win:
@@ -362,6 +390,7 @@ async def rr_spin(req: RRSpinReq):
         "win": win,
         "cost": cost,
         "chance": req.chance,
+        "fee": _rr_fee(req.chance),
         "item": item,
         "balance": _stars_balance(uid),
     }
