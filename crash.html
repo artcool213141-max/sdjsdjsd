@@ -7,13 +7,12 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Подключаем скрипт для рендеринга .tgs (Lottie) анимаций -->
+    <!-- Подключаем Lottie для анимации crach.tgs -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap');
 
         :root {
-            /* Фирменная синяя палитра PandaGift */
             --bg-dark: #07173f;
             --blue: #2f6bff;
             --blue-light: #8fc2ff;
@@ -124,17 +123,22 @@
         .status-strip.is-live { color: var(--success); border-color: rgba(67,217,163,0.4); }
         .status-strip.is-crash { color: var(--danger); border-color: rgba(255,90,90,0.4); }
 
-        /* Контейнер для анимации crach.tgs */
+        /* Четкое отображение контейнера анимации crach.tgs */
         #rocket-wrap {
-            position: absolute; left: -300px; bottom: -300px;
-            z-index: 10; opacity: 0; width: 160px; height: 160px;
-            transition: opacity 0.3s;
+            position: absolute;
+            left: 50%;
+            bottom: 20%;
+            transform: translate(-50%, 50%);
+            z-index: 10;
+            width: 180px;
+            height: 180px;
+            pointer-events: none;
+            transition: transform 0.2s ease-out;
         }
-        .flying { opacity: 1 !important; animation: approach 12s cubic-bezier(0.1, 0.4, 0.2, 1) forwards; }
-        .paused { animation-play-state: paused !important; }
-        @keyframes approach {
-            from { left: -80px; bottom: -80px; }
-            to { left: 50%; bottom: 52%; transform: translate(-50%, 50%); }
+        .flying { animation: floatRocket 2s ease-in-out infinite alternate; }
+        @keyframes floatRocket {
+            from { transform: translate(-50%, 50%) scale(1); }
+            to { transform: translate(-50%, 45%) scale(1.05); }
         }
 
         #multiplier {
@@ -149,7 +153,6 @@
         }
         #multiplier.crashed { color: var(--danger); text-shadow: 0 0 40px rgba(255,90,90,0.5); }
 
-        /* История крашей слева сверху */
         .live-drop {
             position: absolute; left: 12px; top: 48px; z-index: 25;
             display: flex; flex-direction: column; gap: 5px;
@@ -162,7 +165,6 @@
             font-weight: 800; font-size: 11px;
         }
 
-        /* Список живых ставок других игроков справа */
         .players-list {
             position: absolute; right: 12px; top: 48px; z-index: 25;
             display: flex; flex-direction: column; gap: 4px;
@@ -236,7 +238,6 @@
         }
         .bet-input-wrap.locked { opacity: 0.45; pointer-events: none; }
 
-        /* Кнопка выбора подарка для ставки */
         .gift-bet-btn {
             background: rgba(255,255,255,0.08);
             border: 1px solid rgba(255,255,255,0.15);
@@ -273,7 +274,6 @@
         .btn-main.is-live-cashout { background: var(--success); box-shadow: 0 6px 18px rgba(67, 217, 163, 0.4); color: #07173f; }
         .btn-main.is-bet-placed { background: #223875; color: var(--blue-light); border: 1px solid rgba(47,107,255,0.5); }
 
-        /* Модальное окно выбора подарка */
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.7);
             z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px;
@@ -326,9 +326,11 @@
         <div id="live-drop" class="live-drop"></div>
         <div id="players-list" class="players-list"></div>
         <div id="status-strip" class="status-strip">Взлёт через 10с</div>
-        <div id="multiplier" class="num">1.00x</div>
+        <div id="multiplier" class="num">0.00x</div>
         <!-- Контейнер для анимации crach.tgs -->
-        <div id="rocket-wrap"><div id="lottie-rocket" style="width:100%;height:100%;"></div></div>
+        <div id="rocket-wrap">
+            <div id="lottie-rocket" style="width:100%;height:100%;"></div>
+        </div>
     </div>
 
     <div class="ui-panel">
@@ -363,35 +365,32 @@
         <button id="btn-main" onclick="onAction()" class="btn-main">Сделать ставку</button>
     </div>
 
-    <!-- Модальное окно выбора подарка -->
+    <!-- Модальное окно выбора подарка из инвентаря-строки -->
     <div id="inventory-modal" class="modal-overlay">
         <div class="modal-box">
             <div class="flex justify-between items-center mb-2">
                 <span class="font-extrabold text-sm">Выберите подарок для ставки</span>
                 <button onclick="closeInventoryModal()" class="text-xs text-gray-400 font-bold">Закрыть</button>
             </div>
-            <div id="inventory-list" class="inventory-grid">
-                <!-- Сюда подгружаются подарки пользователя -->
-            </div>
+            <div id="inventory-list" class="inventory-grid"></div>
         </div>
     </div>
 
 <script>
     const tg = window.Telegram.WebApp;
-    // Твои данные Supabase
     const SB_URL = "https://xjucalpaoqlrtmofmden.supabase.co";
     const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqdWNhbHBhb3FscnRtb2ZtZGVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDIzODcsImV4cCI6MjA5MjAxODM4N30.3jfEF1lSa1YTBYgc4O8ZtJVpfkJN9SBGmqYn8-Sn7Zo";
     const SB = supabase.createClient(SB_URL, SB_KEY);
 
-    const BET_WINDOW_MS = 10000;   // Окно ставок (10 секунд)
-    const CRASH_DISPLAY_MS = 3000; // Показ краха (3 секунды)
+    const BET_WINDOW_MS = 10000;
+    const CRASH_DISPLAY_MS = 3000;
 
-    let currentUser = null, cur = 'stars', state = 'wait', mult = 1.00;
+    let currentUser = null, cur = 'stars', state = 'wait', mult = 0.00;
     let betQueued = false, betVal = 0, isCashedOut = false;
     let crashPoint = 2.00;
     let currentRoundId = Math.floor(Date.now() / 1000);
     let historyLogged = false;
-    let selectedGift = null; // Если ставит подарком
+    let selectedGift = null;
 
     let phaseStart = Date.now();
     let roundTimer = null;
@@ -408,7 +407,7 @@
         playersList: document.getElementById('players-list')
     };
 
-    // Инициализация анимации lottie для файла crach.tgs
+    // Загрузка анимации crach.tgs через Lottie
     let lottieAnim = null;
     try {
         lottieAnim = lottie.loadAnimation({
@@ -416,7 +415,7 @@
             renderer: 'svg',
             loop: true,
             autoplay: true,
-            path: 'crach.tgs' // Путь к твоему файлу анимации рядом с HTML
+            path: 'crach.tgs'
         });
     } catch(e) { console.log('Lottie load error:', e); }
 
@@ -433,23 +432,23 @@
 
     async function syncBalances() {
         try {
-            const { data } = await SB.from('users').select('*').eq('user_id', currentUser.user_id).single();
+            const { data } = await SB.from('users').select('*').eq('id', currentUser.user_id).single();
             if (data) {
                 document.getElementById('val-stars').innerText = Math.floor(Number(data.stars || 0));
-                document.getElementById('val-ton').innerText = Number(data.balance || 0).toFixed(2);
+                document.getElementById('val-ton').innerText = Number(data.ton_balance || 0).toFixed(2);
             }
         } catch(e) {}
     }
 
     async function adjustBalance(delta) {
-        const col = cur === 'stars' ? 'stars' : 'balance';
+        const col = cur === 'stars' ? 'stars' : 'ton_balance';
         try {
-            const { data } = await SB.from('users').select(col).eq('user_id', currentUser.user_id).single();
+            const { data } = await SB.from('users').select(col).eq('id', currentUser.user_id).single();
             const currentVal = Number(data?.[col] || 0);
             const newVal = currentVal + delta;
             if (newVal < 0) return false;
 
-            await SB.from('users').update({ [col]: newVal }).eq('user_id', currentUser.user_id);
+            await SB.from('users').update({ [col]: newVal }).eq('id', currentUser.user_id);
             syncBalances();
             return true;
         } catch(e) { return false; }
@@ -475,7 +474,6 @@
         return r > 0.93 ? (2 + r2 * 10).toFixed(2) : (1.01 + r2 * 1.5).toFixed(2);
     }
 
-    // --- Управление раундами ---
     function startWaitPhase() {
         clearTimeout(roundTimer);
         state = 'wait';
@@ -486,12 +484,13 @@
         crashPoint = generateCrashPoint(currentRoundId);
         historyLogged = false;
         phaseStart = Date.now();
+        mult = 0.00;
 
-        el.rocketWrap.classList.remove('flying', 'paused');
-        el.rocketWrap.style.opacity = "0";
+        el.rocketWrap.classList.remove('flying');
+        el.rocketWrap.style.opacity = "0.2";
         el.scene.classList.remove('grid-moving');
         el.mult.classList.remove('crashed');
-        el.mult.innerText = "1.00x";
+        el.mult.innerText = "0.00x";
         el.strip.classList.remove('is-live', 'is-crash');
         el.btn.classList.remove('is-live-cashout', 'is-bet-placed');
         el.btn.innerHTML = "Сделать ставку";
@@ -512,6 +511,7 @@
         phaseStart = Date.now();
 
         el.rocketWrap.classList.add('flying');
+        el.rocketWrap.style.opacity = "1";
         el.scene.classList.add('grid-moving');
         el.strip.innerText = 'В полёте';
         el.strip.classList.add('is-live');
@@ -527,7 +527,6 @@
         state = 'crash';
         phaseStart = Date.now();
 
-        el.rocketWrap.classList.add('paused');
         el.scene.classList.remove('grid-moving');
         el.mult.innerText = val + "x";
         el.mult.classList.add('crashed');
@@ -555,16 +554,16 @@
             el.strip.innerText = `Взлёт через ${secs}с`;
         } else if (state === 'fly') {
             const flightTime = elapsed / 1000;
-            mult = Math.pow(1.10, flightTime);
+            // Множитель стартует с 0.00 и плавно растет
+            mult = Math.max(0, Math.pow(1.10, flightTime) - 1);
             el.mult.innerText = mult.toFixed(2) + "x";
             if (betQueued && !isCashedOut) {
-                el.btn.innerText = `Забрать ${(betVal * mult).toFixed(1)}`;
+                el.btn.innerText = `Забрать ${(betVal * (1 + mult)).toFixed(1)}`;
                 el.btn.classList.add('is-live-cashout');
             }
         }
     }
 
-    // --- Логика ставок и подарков ---
     async function onAction() {
         if (state === 'wait' && !betQueued) {
             const amount = Number(document.getElementById('input-bet').value);
@@ -575,10 +574,8 @@
 
             let ok = false;
             if (selectedGift) {
-                // Если ставим подарком: списываем его из инвентаря
-                ok = await removeUserGift(selectedGift.id);
+                ok = await removeUserGift(selectedGift.index);
                 if (ok && selectedGift.price_stars > amount) {
-                    // Возвращаем разницу звездами, если подарок дороже ставки
                     const diff = selectedGift.price_stars - amount;
                     await adjustBalance(diff);
                 }
@@ -602,7 +599,6 @@
             el.betWrap.classList.add('locked');
             el.quickBets.classList.add('locked');
 
-            // Записываем ставку в базу для отображения всем игрокам в реальном времени
             await SB.from('crash_bets').insert({
                 user_id: currentUser.user_id,
                 username: currentUser.username,
@@ -616,7 +612,8 @@
         } else if (state === 'fly' && betQueued && !isCashedOut) {
             isCashedOut = true;
             betQueued = false;
-            const win = betVal * mult;
+            const currentMultiplier = 1 + mult;
+            const win = betVal * currentMultiplier;
 
             el.btn.classList.remove('is-live-cashout');
             el.btn.innerText = "Взято!";
@@ -625,15 +622,13 @@
 
             await adjustBalance(win);
 
-            // Обновляем статус в базе
             await SB.from('crash_bets')
-                .update({ cashed_out: true, multiplier: Number(mult.toFixed(2)), profit: Number(win.toFixed(2)) })
+                .update({ cashed_out: true, multiplier: Number(currentMultiplier.toFixed(2)), profit: Number(win.toFixed(2)) })
                 .eq('user_id', currentUser.user_id)
                 .eq('round_id', currentRoundId);
         }
     }
 
-    // --- Реальный времени список ставок (Realtime) ---
     function initRealtimeBets() {
         if (realtimeChannel) SB.removeChannel(realtimeChannel);
 
@@ -658,11 +653,11 @@
         }
     }
 
-    async function clearOldRoundBets() {
+    function clearOldRoundBets() {
         el.playersList.innerHTML = '';
     }
 
-    // --- Выбор подарка из инвентаря ---
+    // --- Интеграция с инвентарем из колонки inventory (текст / JSON) ---
     async function openInventoryModal() {
         if (state !== 'wait' || betQueued) return;
         const modal = document.getElementById('inventory-modal');
@@ -671,26 +666,42 @@
         modal.classList.add('show');
 
         try {
-            // Запрос инвентаря пользователя из Supabase
-            const { data } = await SB.from('user_inventory').select('id, nft_id, nft_catalog(name, image_url, price_stars)').eq('user_id', currentUser.user_id);
+            const { data } = await SB.from('users').select('inventory').eq('id', currentUser.user_id).single();
             listContainer.innerHTML = '';
-            if (!data || data.length === 0) {
+            
+            if (!data || !data.inventory) {
+                listContainer.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-400 py-4">Инвентарь пуст</div>';
+                return;
+            }
+
+            // Парсим содержимое инвентаря (поддерживает массив или JSON-строку)
+            let items = [];
+            try {
+                items = typeof data.inventory === 'string' ? JSON.parse(data.inventory) : data.inventory;
+            } catch(err) {
+                items = data.inventory.split(',').map(i => ({ name: i.trim(), price_stars: 100 }));
+            }
+
+            if (!Array.isArray(items) || items.length === 0) {
                 listContainer.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-400 py-4">Нет подарков</div>';
                 return;
             }
-            data.forEach(item => {
-                const cat = item.nft_catalog;
-                if (!cat) return;
+
+            items.forEach((item, index) => {
+                const itemName = item.name || item.title || `Подарок #${index + 1}`;
+                const itemPrice = Number(item.price_stars || item.price || 50);
+                const itemImg = item.image_url || item.img || 'img/star.png';
+
                 const elDiv = document.createElement('div');
                 elDiv.className = 'inv-item';
                 elDiv.innerHTML = `
-                    <img src="${cat.image_url}" alt="">
-                    <span>${cat.name}</span>
-                    <span class="text-xs text-yellow-400 font-bold">${cat.price_stars} ⭐️</span>
+                    <img src="${itemImg}" alt="" onerror="this.src='img/star.png'">
+                    <span>${itemName}</span>
+                    <span class="text-xs text-yellow-400 font-bold">${itemPrice} ⭐️</span>
                 `;
                 elDiv.onclick = () => {
-                    selectedGift = { id: item.id, price_stars: cat.price_stars };
-                    document.getElementById('input-bet').value = cat.price_stars;
+                    selectedGift = { index: index, price_stars: itemPrice };
+                    document.getElementById('input-bet').value = itemPrice;
                     closeInventoryModal();
                     tg.HapticFeedback?.selectionChanged();
                 };
@@ -705,10 +716,16 @@
         document.getElementById('inventory-modal').classList.remove('show');
     }
 
-    async function removeUserGift(invId) {
+    async function removeUserGift(itemIndex) {
         try {
-            const { error } = await SB.from('user_inventory').delete().eq('id', invId);
-            return !error;
+            const { data } = await SB.from('users').select('inventory').eq('id', currentUser.user_id).single();
+            if (!data || !data.inventory) return false;
+            
+            let items = typeof data.inventory === 'string' ? JSON.parse(data.inventory) : data.inventory;
+            items.splice(itemIndex, 1);
+
+            await SB.from('users').update({ inventory: JSON.stringify(items) }).eq('id', currentUser.user_id);
+            return true;
         } catch(e) { return false; }
     }
 
@@ -730,7 +747,7 @@
     function switchMode(m) {
         if (state === 'wait' && !betQueued) {
             cur = m;
-            selectedGift = null; // Сбрасываем подарок при смене валюты
+            selectedGift = null;
             document.querySelectorAll('.currency-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('mode-' + m).classList.add('active');
         }
