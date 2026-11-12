@@ -22,29 +22,42 @@ router = APIRouter()
 TON_PER_STAR = 1.3 / 100
 
 # Бамбук за каждый открытый платный кейс (включительно).
-# Не начисляется за русскую рулетку и бесплатный кейс.
 BAMBOO_MIN = 1
 BAMBOO_MAX = 10
 
 # ---------------- РУССКАЯ РУЛЕТКА ----------------
-# id подарков из nft_catalog: 2 дешёвых, 3 средних, 2 дорогих (но не самые топовые).
-# Цены и картинки берутся из БД, поэтому список можно менять свободно.
-RR_ITEMS = [
-    17,  # WhipCupcake     — дешёвый
-    9,   # LolPop         — дешёвый
-    48,  # IonicDryer     — средний
-    19,  # SnoopCigar     — средний
-    50,  # RareBird       — средний+
-    49,  # ToyBear        — дорогой
-    47,  # VintageCigar   — дорогой
+# Обычные гифты (доступны при шансе от 35% до 95%)
+RR_ITEMS_STANDARD = [
+    61,  # Star
+    17,  # WhipCupcake
+    9,   # LolPop
+    12,  # MoodPack
+    48,  # IonicDryer
+    19,  # SnoopCigar
+    35,  # TopHat
 ]
+
+# Дорогие / эксклюзивные гифты (можно крутить ТОЛЬКО при шансе >= 80%)
+RR_ITEMS_PREMIUM = [
+    34,  # CrystalBall
+    50,  # RareBird
+    49,  # ToyBear
+    47,  # VintageCigar
+    46,  # LowRider
+    44,  # SwissWatch
+    41,  # PerfumeBottle
+    52,  # NailBracelet
+    40,  # AstralShard
+]
+
+# Полный список для каталога в рулетке
+RR_ITEMS = RR_ITEMS_STANDARD + RR_ITEMS_PREMIUM
+
 RR_MIN_CHANCE = 10
+RR_STANDARD_MIN_CHANCE = 35  # Минимальный шанс для обычных гифтов
+RR_PREMIUM_MIN_CHANCE = 80   # Минимальный шанс для дорогих гифтов
 RR_MAX_CHANCE = 95
-# Шанс на слайдере = реальный шанс победы (проверяется честным random на сервере).
-# Сервис берёт ОТКРЫТУЮ комиссию, которая видна игроку:
-#   шанс >= RR_FEE_THRESHOLD    -> комиссия RR_FEE_HIGH_CHANCE %
-#   шанс <  RR_FEE_THRESHOLD    -> комиссия RR_FEE_LOW_CHANCE %
-# Цена = цена приза * шанс * (1 + комиссия).
+
 RR_FEE_THRESHOLD = 50
 RR_FEE_HIGH_CHANCE = 5    # %
 RR_FEE_LOW_CHANCE = 15    # %
@@ -116,7 +129,6 @@ ERRORS = {
     "failed": "Не удалось открыть кейс",
 }
 
-# Прямой клиент Supabase (для бамбука и списания звёзд в рулетке)
 _SB_URL = os.environ.get("SUPABASE_URL")
 _SB_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 _sb = create_client(_SB_URL, _SB_KEY) if (create_client and _SB_URL and _SB_KEY) else None
@@ -132,8 +144,8 @@ class InfoReq(Base):
 
 class OpenReq(Base):
     case_id: str
-    currency: str = "stars"  # stars | ton
-    count: int = 1            # сколько кейсов открыть за раз (1..5)
+    currency: str = "stars"
+    count: int = 1
 
 
 class SellReq(Base):
@@ -143,7 +155,7 @@ class SellReq(Base):
 class RRSpinReq(Base):
     item_id: int
     chance: int
-    currency: str = "stars"   # stars | ton  <-- Добавлено поле выбора валюты для рулетки
+    currency: str = "stars"
 
 
 def _one(res):
@@ -188,7 +200,6 @@ def _price_ton(stars: int) -> float:
     return round(stars * TON_PER_STAR, 2)
 
 
-# ---------------- Работа с балансами (атомарно, с проверкой записи) ----------------
 def _adjust(user_id: str, column: str, delta, min_value=None):
     if _sb is None:
         raise RuntimeError("supabase env missing")
@@ -229,7 +240,6 @@ def _spend_stars(user_id: str, cost: int) -> float:
 
 
 def _spend_ton(user_id: str, cost: float) -> float:
-    """Списание баланса TON для пользователя."""
     try:
         return _adjust(user_id, "ton_balance", -float(cost), min_value=0)
     except LookupError:
@@ -265,7 +275,6 @@ def _rr_fee(chance: int) -> int:
 
 
 def _rr_cost(price_stars, chance: int, currency: str = "stars") -> float:
-    """Цена прокрута (для Звёзд — целое число, для TON — округлено до 2 знаков с учётом курса)."""
     price = int(round(float(price_stars or 0)))
     base_stars = max(1, -(-(price * chance * (100 + _rr_fee(chance))) // 10000))
     if currency == "ton":
@@ -356,7 +365,7 @@ async def case_sell_ton(req: SellReq):
     return res
 
 
-# ---------------- Русская рулетка (бамбук здесь НЕ начисляется) ----------------
+# ---------------- Русская рулетка ----------------
 @router.post("/case/rr/info")
 async def rr_info(req: Base):
     validate_init_data(req.init_data)
@@ -365,6 +374,8 @@ async def rr_info(req: Base):
     return {
         "items": items,
         "min_chance": RR_MIN_CHANCE,
+        "standard_min_chance": RR_STANDARD_MIN_CHANCE,
+        "premium_min_chance": RR_PREMIUM_MIN_CHANCE,
         "max_chance": RR_MAX_CHANCE,
         "fee_threshold": RR_FEE_THRESHOLD,
         "fee_high_chance": RR_FEE_HIGH_CHANCE,
@@ -379,6 +390,15 @@ async def rr_spin(req: RRSpinReq):
 
     if req.item_id not in RR_ITEMS:
         raise HTTPException(404, "Подарок не найден")
+    
+    # Проверка для обычных гифтов (теперь минимум 35%)
+    if req.item_id in RR_ITEMS_STANDARD and req.chance < RR_STANDARD_MIN_CHANCE:
+        raise HTTPException(400, f"Этот приз можно крутить только при шансе от {RR_STANDARD_MIN_CHANCE}%!")
+
+    # Проверка для премиальных гифтов (остается от 80%)
+    if req.item_id in RR_ITEMS_PREMIUM and req.chance < RR_PREMIUM_MIN_CHANCE:
+        raise HTTPException(400, f"Этот приз можно крутить только при шансе от {RR_PREMIUM_MIN_CHANCE}%!")
+
     if not (RR_MIN_CHANCE <= req.chance <= RR_MAX_CHANCE):
         raise HTTPException(400, "Неверный шанс")
     if req.currency not in ("stars", "ton"):
@@ -389,14 +409,10 @@ async def rr_spin(req: RRSpinReq):
     if not item:
         raise HTTPException(404, "Подарок не найден")
 
-    # Считаем стоимость с учётом выбранной валюты (stars или ton)
     cost = _rr_cost(item["price_stars"], req.chance, currency=req.currency)
-    
-    # Шанс победы = ровно тот, что выбрал игрок (честный random на сервере)
     win = random.SystemRandom().random() * 100 < req.chance
 
     if win:
-        # Если выиграл, используем функцию open_case для списания средств и выдачи предмета в инвентарь
         _check(rpc("open_case", {
             "p_user_id": uid,
             "p_nft_id": req.item_id,
@@ -404,7 +420,6 @@ async def rr_spin(req: RRSpinReq):
             "p_price": cost,
         }))
     else:
-        # Если проиграл, просто списываем баланс выбранной валюты
         if req.currency == "ton":
             _spend_ton(uid, cost)
         else:
