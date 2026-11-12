@@ -182,7 +182,7 @@ input[type="range"].rr-slider::-webkit-slider-thumb {
     <div class="scrollable-content">
         <!-- Шапка -->
         <div class="top-row">
-            <div class="back-btn" onclick="location.href='cases.html'">
+            <div class="back-btn" onclick="location.href='case.html'">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
             </div>
             <div class="page-title">Русская <span>рулетка</span></div>
@@ -283,7 +283,7 @@ try {
     tg.BackButton.show();
     tg.BackButton.onClick(() => {
         if ($('rr-modal').classList.contains('open')) { closeRR(); return; }
-        location.href = 'cases.html';
+        location.href = 'case.html';
     });
 } catch (e) {}
 
