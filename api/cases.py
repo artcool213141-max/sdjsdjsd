@@ -53,10 +53,6 @@ RR_ITEMS = RR_ITEMS_STANDARD + RR_ITEMS_PREMIUM
 RR_MIN_CHANCE = 1
 RR_MAX_CHANCE = 95
 
-RR_FEE_THRESHOLD = 50
-RR_FEE_HIGH_CHANCE = 5    # %
-RR_FEE_LOW_CHANCE = 15    # %
-
 # =====================================================================
 #  ЛУТ КЕЙСОВ
 # =====================================================================
@@ -265,13 +261,10 @@ def _ton_balance(user_id: str):
         return None
 
 
-def _rr_fee(chance: int) -> int:
-    return RR_FEE_HIGH_CHANCE if chance >= RR_FEE_THRESHOLD else RR_FEE_LOW_CHANCE
-
-
+# Расчёт стоимости прокрута БЕЗ КАКИХ-ЛИБО КОМИССИЙ (чистая пропорция)
 def _rr_cost(price_stars, chance: int, currency: str = "stars") -> float:
     price = int(round(float(price_stars or 0)))
-    base_stars = max(1, -(-(price * chance * (100 + _rr_fee(chance))) // 10000))
+    base_stars = max(1, -(-(price * chance) // 100))
     if currency == "ton":
         return round(base_stars * TON_PER_STAR, 2)
     return base_stars
@@ -360,7 +353,7 @@ async def case_sell_ton(req: SellReq):
     return res
 
 
-# ---------------- Русская рулетка со скрытыми шансами ----------------
+# ---------------- Русская рулетка ----------------
 @router.post("/case/rr/info")
 async def rr_info(req: Base):
     validate_init_data(req.init_data)
@@ -370,9 +363,6 @@ async def rr_info(req: Base):
         "items": items,
         "min_chance": RR_MIN_CHANCE,
         "max_chance": RR_MAX_CHANCE,
-        "fee_threshold": RR_FEE_THRESHOLD,
-        "fee_high_chance": RR_FEE_HIGH_CHANCE,
-        "fee_low_chance": RR_FEE_LOW_CHANCE,
     }
 
 
@@ -393,29 +383,22 @@ async def rr_spin(req: RRSpinReq):
     if not item:
         raise HTTPException(404, "Подарок не найден")
 
-    # ---- ВЫЧИСЛЕНИЕ СКРЫТОГО (ВНУТРЕННЕГО) ШАНСА ПОБЕДЫ ----
-    # Игрок выбирает req.chance (отображается ему), но сервер решает по скрытой логике:
+    # ---- СКРЫТЫЕ ВНУТРЕННИЕ ШАНСЫ (БЕЗ КОМИССИИ НА СТОИМОСТЬ) ----
     if req.item_id in RR_ITEMS_PREMIUM:
-        # Для дорогих гифтов:
         if req.chance < 80:
-            # От 1% до 79% на слайдере -> внутренний шанс от 1% до 5%
-            hidden_chance = random.SystemRandom().randint(1, 5)
+            hidden_chance = random.SystemRandom().randint(1, 5)  # 1–5% при выборе 1-79%
         else:
-            # От 80% до 100% на слайдере -> внутренний шанс ровно 40% (60 поражение / 40 победа)
-            hidden_chance = 40
+            hidden_chance = 40  # 40% победа / 60% поражение при выборе 80-100%
     else:
-        # Для обычных гифтов:
         if req.chance <= 30:
-            # От 1% до 30% на слайдере -> внутренний шанс от 1% до 5%
-            hidden_chance = random.SystemRandom().randint(1, 5)
+            hidden_chance = random.SystemRandom().randint(1, 5)  # 1–5% при выборе 1-30%
         else:
-            # От 31% до 100% на слайдере -> внутренний шанс ровно 40% (60 поражение / 40 победа)
-            hidden_chance = 40
+            hidden_chance = 40  # 40% победа / 60% поражение при выборе 31-100%
 
-    # Стоимость списывается честно по тому шансу, который выбрал пользователь на слайдере (чтобы комиссия работала)
+    # Чистая стоимость без комиссии
     cost = _rr_cost(item["price_stars"], req.chance, currency=req.currency)
     
-    # Розыгрыш идет по СКРЫТОМУ внутреннему шансу
+    # Розыгрыш по скрытому шансу
     win = random.SystemRandom().random() * 100 < hidden_chance
 
     if win:
@@ -434,8 +417,7 @@ async def rr_spin(req: RRSpinReq):
     return {
         "win": win,
         "cost": cost,
-        "chance": req.chance,  # Клиенту возвращаем его выбранный шанс, чтобы интерфейс ничего не заподозрил
-        "fee": _rr_fee(req.chance),
+        "chance": req.chance,  # На клиенте отображается выбор игрока
         "item": item,
         "balance": _stars_balance(uid),
         "ton_balance": _ton_balance(uid),
