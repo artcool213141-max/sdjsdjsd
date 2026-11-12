@@ -31,19 +31,19 @@ BAMBOO_MAX = 10
 # Цены и картинки берутся из БД, поэтому список можно менять свободно.
 RR_ITEMS = [
     17,  # WhipCupcake     — дешёвый
-    9,   # LolPop          — дешёвый
-    48,  # IonicDryer      — средний
-    19,  # SnoopCigar      — средний
-    50,  # RareBird        — средний+
-    49,  # ToyBear         — дорогой
-    47,  # VintageCigar    — дорогой
+    9,   # LolPop         — дешёвый
+    48,  # IonicDryer     — средний
+    19,  # SnoopCigar     — средний
+    50,  # RareBird       — средний+
+    49,  # ToyBear        — дорогой
+    47,  # VintageCigar   — дорогой
 ]
 RR_MIN_CHANCE = 10
 RR_MAX_CHANCE = 95
 # Шанс на слайдере = реальный шанс победы (проверяется честным random на сервере).
 # Сервис берёт ОТКРЫТУЮ комиссию, которая видна игроку:
-#   шанс >= RR_FEE_THRESHOLD  -> комиссия RR_FEE_HIGH_CHANCE %
-#   шанс <  RR_FEE_THRESHOLD  -> комиссия RR_FEE_LOW_CHANCE %
+#   шанс >= RR_FEE_THRESHOLD    -> комиссия RR_FEE_HIGH_CHANCE %
+#   шанс <  RR_FEE_THRESHOLD    -> комиссия RR_FEE_LOW_CHANCE %
 # Цена = цена приза * шанс * (1 + комиссия).
 RR_FEE_THRESHOLD = 50
 RR_FEE_HIGH_CHANCE = 5    # %
@@ -133,7 +133,7 @@ class InfoReq(Base):
 class OpenReq(Base):
     case_id: str
     currency: str = "stars"  # stars | ton
-    count: int = 1           # сколько кейсов открыть за раз (1..5)
+    count: int = 1            # сколько кейсов открыть за раз (1..5)
 
 
 class SellReq(Base):
@@ -143,6 +143,7 @@ class SellReq(Base):
 class RRSpinReq(Base):
     item_id: int
     chance: int
+    currency: str = "stars"   # stars | ton  <-- Добавлено поле выбора валюты для рулетки
 
 
 def _one(res):
@@ -189,12 +190,6 @@ def _price_ton(stars: int) -> float:
 
 # ---------------- Работа с балансами (атомарно, с проверкой записи) ----------------
 def _adjust(user_id: str, column: str, delta, min_value=None):
-    """Меняет числовую колонку users.<column> на delta и возвращает НОВОЕ значение,
-    прочитанное из ответа Supabase (то есть реально записанное в БД).
-
-    Оптимистичная блокировка: UPDATE проходит только если значение не изменилось
-    между чтением и записью (защита от гонок). NULL в колонке обрабатывается
-    отдельно (IS NULL), иначе обновление молча не находило бы строку."""
     if _sb is None:
         raise RuntimeError("supabase env missing")
     for attempt in range(10):
@@ -219,13 +214,24 @@ def _adjust(user_id: str, column: str, delta, min_value=None):
 
 
 def _add_bamboo(user_id: str, amount: int) -> float:
-    """Начисляет бамбук в users.bamboo_balance, возвращает новый баланс из БД."""
     return _adjust(user_id, "bamboo_balance", int(amount))
 
 
 def _spend_stars(user_id: str, cost: int) -> float:
     try:
         return _adjust(user_id, "balance", -int(cost), min_value=0)
+    except LookupError:
+        raise HTTPException(404, ERRORS["user_not_found"])
+    except ValueError:
+        raise HTTPException(400, ERRORS["insufficient"])
+    except RuntimeError:
+        raise HTTPException(409, "Повторите попытку")
+
+
+def _spend_ton(user_id: str, cost: float) -> float:
+    """Списание баланса TON для пользователя."""
+    try:
+        return _adjust(user_id, "ton_balance", -float(cost), min_value=0)
     except LookupError:
         raise HTTPException(404, ERRORS["user_not_found"])
     except ValueError:
@@ -244,15 +250,27 @@ def _stars_balance(user_id: str):
         return None
 
 
+def _ton_balance(user_id: str):
+    if _sb is None:
+        return None
+    try:
+        rows = _sb.table("users").select("ton_balance").eq("id", user_id).execute().data
+        return float(rows[0].get("ton_balance") or 0) if rows else None
+    except Exception:
+        return None
+
+
 def _rr_fee(chance: int) -> int:
-    """Открытая комиссия сервиса в процентах для выбранного шанса."""
     return RR_FEE_HIGH_CHANCE if chance >= RR_FEE_THRESHOLD else RR_FEE_LOW_CHANCE
 
 
-def _rr_cost(price_stars, chance: int) -> int:
-    """Цена прокрута (целые звёзды, считается целочисленно — на фронте та же формула)."""
+def _rr_cost(price_stars, chance: int, currency: str = "stars") -> float:
+    """Цена прокрута (для Звёзд — целое число, для TON — округлено до 2 знаков с учётом курса)."""
     price = int(round(float(price_stars or 0)))
-    return max(1, -(-(price * chance * (100 + _rr_fee(chance))) // 10000))
+    base_stars = max(1, -(-(price * chance * (100 + _rr_fee(chance))) // 10000))
+    if currency == "ton":
+        return round(base_stars * TON_PER_STAR, 2)
+    return base_stars
 
 
 # ---------------- Кейсы ----------------
@@ -308,13 +326,11 @@ async def case_open(req: OpenReq):
             break
         nfts.append(cat[nft_id])
 
-    # Бамбук: от 1 до 10 за КАЖДЫЙ реально открытый кейс
-    # (начисляется только после успешного списания и выдачи приза).
     bamboo_each = [rng.randint(BAMBOO_MIN, BAMBOO_MAX) for _ in nfts]
     bamboo = sum(bamboo_each)
     bamboo_balance = None
     try:
-        bamboo_balance = _add_bamboo(uid, bamboo)  # значение уже прочитано из Supabase
+        bamboo_balance = _add_bamboo(uid, bamboo)
     except Exception as e:
         print("bamboo credit error:", repr(e))
         bamboo = 0
@@ -365,26 +381,34 @@ async def rr_spin(req: RRSpinReq):
         raise HTTPException(404, "Подарок не найден")
     if not (RR_MIN_CHANCE <= req.chance <= RR_MAX_CHANCE):
         raise HTTPException(400, "Неверный шанс")
+    if req.currency not in ("stars", "ton"):
+        raise HTTPException(400, "Неверная валюта")
 
     cat = _catalog()
     item = cat.get(req.item_id)
     if not item:
         raise HTTPException(404, "Подарок не найден")
 
-    cost = _rr_cost(item["price_stars"], req.chance)
+    # Считаем стоимость с учётом выбранной валюты (stars или ton)
+    cost = _rr_cost(item["price_stars"], req.chance, currency=req.currency)
+    
     # Шанс победы = ровно тот, что выбрал игрок (честный random на сервере)
     win = random.SystemRandom().random() * 100 < req.chance
 
     if win:
-        # open_case списывает цену и кладёт подарок в инвентарь
+        # Если выиграл, используем функцию open_case для списания средств и выдачи предмета в инвентарь
         _check(rpc("open_case", {
             "p_user_id": uid,
             "p_nft_id": req.item_id,
-            "p_currency": "stars",
+            "p_currency": req.currency,
             "p_price": cost,
         }))
     else:
-        _spend_stars(uid, cost)
+        # Если проиграл, просто списываем баланс выбранной валюты
+        if req.currency == "ton":
+            _spend_ton(uid, cost)
+        else:
+            _spend_stars(uid, cost)
 
     return {
         "win": win,
@@ -393,4 +417,5 @@ async def rr_spin(req: RRSpinReq):
         "fee": _rr_fee(req.chance),
         "item": item,
         "balance": _stars_balance(uid),
+        "ton_balance": _ton_balance(uid),
     }
