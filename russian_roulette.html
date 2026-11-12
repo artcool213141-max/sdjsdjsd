@@ -5,180 +5,297 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>PandaGift — Русская рулетка</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
-:root{--bg-dark:#07173f;--blue:#2f6bff;--blue-light:#8fc2ff;--gold:#ffd45e;--glass:rgba(255,255,255,.12);--glass-line:rgba(255,255,255,.18)}
-*{box-sizing:border-box}
-body{background:var(--bg-dark);color:#fff;font-family:'Inter',sans-serif;margin:0;height:100vh;width:100vw;overflow:hidden;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-#stars-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-.main-wrapper{background:radial-gradient(circle at 50% 6%,#ff6f86 0%,rgba(190,50,90,.3) 24%,transparent 58%),linear-gradient(180deg,#1f3fa8 0%,#132f86 42%,#08205f 100%);height:100vh;display:flex;flex-direction:column;position:relative;z-index:1}
-.scroll{position:relative;z-index:1;flex:1;overflow-y:auto;padding:18px 18px 40px;scrollbar-width:none}
-.scroll::-webkit-scrollbar{display:none}
-.it{font-weight:900;font-style:italic;text-transform:uppercase}
+:root {
+    --bg-dark: #07173f;
+    --blue: #2f6bff;
+    --blue-light: #8fc2ff;
+    --glass: rgba(255, 255, 255, 0.1);
+    --glass-line: rgba(255, 255, 255, 0.16);
+}
+* { box-sizing: border-box; }
+body {
+    background-color: var(--bg-dark);
+    color: white; font-family: 'Inter', sans-serif;
+    margin: 0; height: 100vh; width: 100vw; overflow: hidden;
+    user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+#stars-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 
-.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-.back-btn{width:40px;height:40px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--glass);border:1px solid var(--glass-line);backdrop-filter:blur(10px);cursor:pointer}
-.back-btn:active{transform:scale(.94)}
-.title{font-size:22px;text-shadow:0 4px 18px rgba(0,20,100,.55);padding-right:4px}
-.title span{color:#ff9aa9}
-.bals{display:flex;flex-direction:column;gap:4px}
-.pill{display:flex;align-items:center;gap:6px;min-width:96px;padding:3px 10px 3px 6px;border-radius:999px;background:var(--glass);border:1px solid #000;backdrop-filter:blur(10px)}
-.pill img{width:16px;height:16px;object-fit:contain}
-.pill span{font-weight:900;font-size:12px}
+.main-wrapper {
+    background:
+        radial-gradient(circle at 50% 8%, #4a86ff 0%, rgba(47,107,255,0.35) 26%, transparent 60%),
+        linear-gradient(180deg, #1f55d6 0%, #133ea6 42%, #08205f 100%);
+    height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 1;
+}
 
-.muted{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#b9d0ff}
-.label{margin:0 4px 10px}
+.scrollable-content {
+    position: relative; z-index: 1; flex: 1; overflow-y: auto;
+    padding: 20px 18px 100px 18px; scrollbar-width: none;
+}
+.scrollable-content::-webkit-scrollbar { display: none; }
 
-/* выбор подарка */
-.picker{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
-.pk{position:relative;border-radius:20px;padding:8px 6px 7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:5px;background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,.06));border:2px solid var(--glass-line);backdrop-filter:blur(10px);transition:transform .15s,border-color .15s,background .15s;animation:cardIn .4s ease both}
-.pk:active{transform:scale(.95)}
-.pk.sel{border-color:#fff;background:rgba(255,255,255,.26);box-shadow:0 0 0 3px rgba(255,255,255,.14),0 0 18px rgba(255,255,255,.35)}
-.pk img.pic{width:100%;aspect-ratio:1;object-fit:cover;border-radius:14px;display:block}
-.pk .pr{display:flex;align-items:center;gap:3px;font-weight:900;font-size:11px;color:var(--gold)}
-.pk .pr img{width:11px;height:11px;object-fit:contain}
-.picker .pk:nth-child(7){grid-column:2 / span 2}
-.picker .pk:nth-child(7) img.pic{max-width:calc(50% - 4px);margin:0 auto}
+/* Шапка */
+.top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.back-btn {
+    width: 40px; height: 40px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    background: var(--glass); border: 1px solid var(--glass-line); backdrop-filter: blur(10px); cursor: pointer; flex-shrink: 0;
+}
+.back-btn:active { transform: scale(0.94); }
+.page-title { font-size: 24px; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: -0.5px; text-shadow: 0 4px 18px rgba(0, 20, 100, 0.55); }
+.page-title span { color: var(--blue-light); }
 
-/* настройка */
-.hero{display:flex;flex-direction:column;align-items:center}
-.big{width:180px;height:180px;object-fit:cover;border-radius:30px;filter:drop-shadow(0 10px 22px rgba(0,20,90,.6));border:1px solid rgba(255,255,255,.2)}
-.name{font-weight:900;font-style:italic;text-transform:uppercase;font-size:22px;margin-top:12px;text-align:center;padding-right:4px}
-.row{display:flex;align-items:center;gap:6px}
-.row img{width:16px;height:16px;object-fit:contain}
-.chance{font-size:56px;font-weight:900;font-style:italic;line-height:1;padding-right:6px;text-shadow:0 4px 18px rgba(0,20,100,.6)}
-input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:999px;background:rgba(255,255,255,.22);outline:none;margin:0}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:#fff;border:4px solid var(--blue);box-shadow:0 0 14px rgba(120,170,255,.8);cursor:pointer}
-input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:#fff;border:4px solid var(--blue);box-shadow:0 0 14px rgba(120,170,255,.8);cursor:pointer}
-.panel{width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-radius:20px;background:var(--glass);border:1px solid var(--glass-line)}
-.btn{width:100%;padding:16px;border-radius:22px;font:900 15px 'Inter',sans-serif;font-style:italic;text-transform:uppercase;color:#fff;cursor:pointer;border:1px solid rgba(255,255,255,.4);background:linear-gradient(145deg,#5b94ff,#1d4ed8);box-shadow:0 8px 20px rgba(5,25,100,.55),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .15s}
-.btn:active{transform:scale(.96)}
-.btn.ghost{background:var(--glass);box-shadow:none;font-size:12px}
-.btn[disabled]{opacity:.55}
-.fee{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#9fbcf5;text-align:center;margin-top:10px;line-height:1.5}
-.fee b{color:#fff}
+.balances { display: flex; flex-direction: column; gap: 4px; }
+.bal-pill {
+    display: flex; align-items: center; gap: 6px; min-width: 96px; padding: 3px 10px 3px 6px;
+    border-radius: 999px; background: var(--glass); border: 1px solid #000; backdrop-filter: blur(10px);
+}
+.bal-pill img { width: 16px; height: 16px; object-fit: contain; }
+.bal-pill span { font-weight: 900; font-size: 12px; }
 
-/* прокрут и результат — на весь экран */
-.stage{position:fixed;inset:0;z-index:2000;display:none;flex-direction:column;align-items:center;padding:24px 20px 30px;overflow-y:auto;background:linear-gradient(180deg,#1a3fa0 0%,#0a2262 60%,#061748 100%)}
-.stage.show{display:flex}
-.tape{position:relative;width:100%;height:150px;overflow:hidden;margin:22px 0 6px;border-radius:22px;background:rgba(4,16,60,.55);border:1px solid var(--glass-line)}
-.tape::before,.tape::after{content:'';position:absolute;top:0;width:22%;height:100%;z-index:5;pointer-events:none}
-.tape::before{left:0;background:linear-gradient(to right,#0b2570 5%,transparent)}
-.tape::after{right:0;background:linear-gradient(to left,#0b2570 5%,transparent)}
-.pointer{position:absolute;left:50%;top:0;width:3px;height:100%;background:#fff;z-index:6;transform:translateX(-50%);box-shadow:0 0 14px #fff}
-.rail{position:absolute;left:0;top:0;height:100%;display:flex;align-items:center;will-change:transform}
-.tile{width:120px;height:120px;margin:0 10px;flex-shrink:0;border-radius:22px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
-.tile img{width:92px;height:92px;object-fit:cover;border-radius:16px}
-.tile svg{width:40px;height:40px;opacity:.4}
-.res-title{font-size:34px;font-weight:900;font-style:italic;text-transform:uppercase;padding-right:6px}
+/* Сетка подарков — строго 2 колонки, ровные карточки */
+.cases-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    width: 100%;
+}
+.case-card {
+    position: relative; padding: 14px 10px; border-radius: 20px; cursor: pointer; overflow: hidden;
+    background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+    border: 1px solid var(--glass-line); backdrop-filter: blur(10px);
+    transition: transform 0.2s, border-color 0.2s, background 0.2s;
+    display: flex; flex-direction: column; align-items: center;
+    width: 100%;
+}
+.case-card:active { transform: scale(0.96); border-color: #fff; background: rgba(255,255,255,0.22); }
+.case-img-box {
+    position: relative; width: 100%; height: 96px; display: flex; align-items: center; justify-content: center;
+}
+.case-img-box::before {
+    content: ''; position: absolute; width: 80px; height: 80px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(140,190,255,0.35) 0%, transparent 70%);
+}
+.case-img-box img {
+    position: relative; max-width: 86px; max-height: 86px; object-fit: contain;
+    filter: drop-shadow(0 6px 10px rgba(0, 20, 90, 0.45)); border-radius: 12px;
+}
+.case-foot { display: flex; flex-direction: column; align-items: center; margin-top: 8px; gap: 4px; width: 100%; text-align: center; }
+.case-name { font-weight: 900; font-size: 12px; font-style: italic; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+.case-price { display: flex; align-items: center; justify-content: center; gap: 4px; font-weight: 900; font-size: 12px; color: #ffd45e; }
+.case-price img { width: 13px; height: 13px; object-fit: contain; }
 
-.toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%) translateY(20px);background:rgba(0,0,0,.85);color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;font-weight:700;z-index:99999;opacity:0;pointer-events:none;transition:all .3s;display:flex;align-items:center;gap:8px;max-width:90vw;text-align:center}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-.toast img{width:18px;height:18px;object-fit:contain;flex-shrink:0}
-@keyframes cardIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
-#loader{position:fixed;inset:0;background:var(--bg-dark);z-index:9999;display:flex;align-items:center;justify-content:center;transition:opacity .25s}
-#loader.hidden{opacity:0;pointer-events:none}
-.ring{width:50px;height:50px;border:3px solid #12308a;border-left-color:var(--blue-light);border-radius:50%;animation:spin 1s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* Модальное окно рулетки */
+.rr-modal {
+    position: fixed; inset: 0; z-index: 2000; display: flex; flex-direction: column;
+    padding: 20px 20px 30px; overflow-y: auto;
+    background: linear-gradient(180deg, #1a3fa0 0%, #0a2262 60%, #061748 100%);
+    visibility: hidden; opacity: 0; transform: scale(0.97); pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0s linear 0.25s;
+}
+.rr-modal.open { visibility: visible; opacity: 1; transform: scale(1); pointer-events: auto; transition: opacity 0.25s ease, transform 0.25s ease; }
+.rr-top-mod { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+
+.rr-view { display: none; flex-direction: column; align-items: center; width: 100%; max-width: 400px; margin: 0 auto; }
+.rr-view.show { display: flex; }
+.rr-big-img { width: 150px; height: 150px; object-fit: contain; border-radius: 28px; filter: drop-shadow(0 10px 22px rgba(0, 20, 90, 0.6)); background: rgba(255,255,255,0.05); padding: 10px; }
+.rr-name { font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 20px; margin-top: 10px; text-align: center; }
+.rr-row { display: flex; align-items: center; gap: 6px; }
+.rr-row img { width: 16px; height: 16px; object-fit: contain; }
+.rr-muted { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #b9d0ff; }
+.rr-chance { font-size: 52px; font-weight: 900; font-style: italic; color: #fff; line-height: 1; text-shadow: 0 4px 18px rgba(0, 20, 100, 0.6); }
+
+/* Переключатель валют в модалке */
+.currency-toggle { display: flex; gap: 8px; width: 100%; margin: 16px 0; }
+.currency-toggle button {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 10px; border-radius: 14px; background: rgba(255,255,255,0.08); 
+    border: 2px solid transparent; color: #8fb0f0; font-weight: 800; font-size: 14px; cursor: pointer; transition: all 0.2s;
+}
+.currency-toggle button img { width: 18px; height: 18px; object-fit: contain; }
+.currency-toggle button.active { background: rgba(255,255,255,0.16); border-color: #fff; color: #fff; }
+
+input[type="range"].rr-slider {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 999px;
+    background: rgba(255,255,255,0.22); outline: none;
+}
+input[type="range"].rr-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%;
+    background: #fff; border: 4px solid var(--blue); box-shadow: 0 0 14px rgba(120, 170, 255, 0.8); cursor: pointer;
+}
+.rr-panel {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; border-radius: 20px; background: var(--glass); border: 1px solid var(--glass-line);
+    margin-bottom: 16px;
+}
+.rr-btn {
+    width: 100%; padding: 16px; border-radius: 22px; font-weight: 900; font-style: italic;
+    text-transform: uppercase; font-size: 15px; color: #fff; cursor: pointer; border: 1px solid rgba(255,255,255,0.4);
+    background: linear-gradient(145deg, #5b94ff, #1d4ed8);
+    box-shadow: 0 8px 20px rgba(5, 25, 100, 0.55), inset 0 1px 0 rgba(255,255,255,0.35);
+    transition: transform 0.15s;
+}
+.rr-btn:active { transform: scale(0.96); }
+.rr-btn.ghost { background: var(--glass); box-shadow: none; font-size: 12px; }
+.rr-btn[disabled] { opacity: 0.6; }
+
+/* Лента прокрутки */
+.rr-tape-box {
+    position: relative; width: 100%; height: 140px; overflow: hidden; margin: 18px 0 6px;
+    border-radius: 22px; background: rgba(4, 16, 60, 0.55); border: 1px solid var(--glass-line);
+}
+.rr-tape-box::before, .rr-tape-box::after { content: ''; position: absolute; top: 0; width: 22%; height: 100%; z-index: 5; pointer-events: none; }
+.rr-tape-box::before { left: 0; background: linear-gradient(to right, #0b2570 5%, transparent); }
+.rr-tape-box::after { right: 0; background: linear-gradient(to left, #0b2570 5%, transparent); }
+.rr-pointer { position: absolute; left: 50%; top: 0; width: 3px; height: 100%; background: #fff; z-index: 6; transform: translateX(-50%); box-shadow: 0 0 14px #fff; }
+.rr-rail { position: absolute; left: 0; top: 0; height: 100%; display: flex; align-items: center; will-change: transform; }
+.rr-tile {
+    width: 110px; height: 110px; margin: 0 8px; flex-shrink: 0; border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+}
+.rr-tile img { width: 76px; height: 76px; object-fit: contain; border-radius: 12px; }
+.rr-tile svg { width: 36px; height: 36px; opacity: 0.35; }
+.rr-result-title { font-size: 32px; font-weight: 900; font-style: italic; text-transform: uppercase; }
+
+/* Уведомления и лоадер */
+.toast-box {
+    position: fixed; left: 50%; bottom: 40px; transform: translateX(-50%) translateY(20px);
+    background: rgba(0,0,0,0.85); color: #fff; padding: 10px 20px; border-radius: 20px;
+    font-size: 14px; font-weight: 700; z-index: 99999; opacity: 0; pointer-events: none; transition: all 0.3s ease;
+    display: flex; align-items: center; gap: 8px;
+}
+.toast-box.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast-box img { width: 18px; height: 18px; object-fit: contain; }
+
+#loader { position: fixed; inset: 0; background: #0a2262; z-index: 9999; display: flex; align-items: center; justify-content: center; transition: opacity 0.25s; }
+#loader.hidden { opacity: 0; pointer-events: none; }
+.ring { width: 50px; height: 50px; border: 3px solid #12308a; border-left-color: #8fc2ff; border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
+
 <div id="loader"><div class="ring"></div></div>
 <canvas id="stars-canvas"></canvas>
 
 <div class="main-wrapper">
-  <div class="scroll">
-    <div class="top">
-      <div class="back-btn" onclick="goBack()">
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
-      </div>
-      <div class="title it">Русская <span>рулетка</span></div>
-      <div class="bals">
-        <div class="pill"><img src="img/star.png" alt="STAR"><span id="bal-stars">0</span></div>
-        <div class="pill"><img src="img/ton.png" alt="TON"><span id="bal-ton">0.00</span></div>
-      </div>
+    <div class="scrollable-content">
+        <!-- Шапка -->
+        <div class="top-row">
+            <div class="back-btn" onclick="location.href='cases.html'">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
+            </div>
+            <div class="page-title">Русская <span>рулетка</span></div>
+            <div class="balances">
+                <div class="bal-pill"><img id="header-bal-img" src="img/star.png" alt="STAR"><span id="header-bal">0</span></div>
+            </div>
+        </div>
+
+        <!-- Сетка подарков -->
+        <div class="cases-grid" id="rr-grid"></div>
+    </div>
+</div>
+
+<!-- МОДАЛЬНОЕ ОКНО РУЛЕТКИ -->
+<div id="rr-modal" class="rr-modal">
+    <div class="rr-top-mod">
+        <div class="back-btn" onclick="closeRR()">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path></svg>
+        </div>
+        <div class="rr-muted">Настройка прокрута</div>
+        <div class="bal-pill"><img id="mod-bal-img" src="img/star.png" alt="STAR"><span id="rr-bal">0</span></div>
     </div>
 
-    <div class="muted label it">Выбери подарок</div>
-    <div class="picker" id="picker"></div>
+    <!-- 1. Экран настройки -->
+    <div id="rr-setup" class="rr-view show">
+        <img id="rr-img" class="rr-big-img" src="img/star.png" alt="">
+        <div id="rr-title" class="rr-name"></div>
+        <div class="rr-row" style="margin:6px 0 16px">
+            <span class="rr-muted">Цена приза</span>
+            <img src="img/star.png" alt="">
+            <span id="rr-prize" class="font-black text-sm" style="color:#ffd45e"></span>
+        </div>
 
-    <div class="hero" id="setup" style="display:none">
-      <img id="big" class="big" src="img/star.png" alt="" onerror="imgErr(this)">
-      <div id="name" class="name"></div>
-      <div class="row" style="margin:8px 0 22px">
-        <span class="muted">Цена приза</span>
-        <img src="img/star.png" alt="">
-        <span id="prize" style="color:var(--gold);font-weight:900;font-size:14px"></span>
-      </div>
+        <div class="rr-muted">Твой шанс на победу</div>
+        <div id="rr-chance" class="rr-chance" style="margin:4px 0 12px">50%</div>
+        <input id="rr-slider" class="rr-slider" type="range" min="5" max="95" value="50" step="1" oninput="updateRR()">
+        <div style="display:flex; justify-content:space-between; width:100%; margin-top:6px">
+            <span class="rr-muted" style="font-size:9px">5% — дёшево</span>
+            <span class="rr-muted" style="font-size:9px">95% — дорого</span>
+        </div>
 
-      <div class="muted">Твой шанс на победу</div>
-      <div id="chance" class="chance" style="margin:8px 0 16px">50%</div>
-      <input id="slider" type="range" min="10" max="95" value="50" step="1" oninput="update()">
-      <div style="display:flex;justify-content:space-between;width:100%;margin-top:8px">
-        <span class="muted" style="font-size:9px">10% — дёшево</span>
-        <span class="muted" style="font-size:9px">95% — дорого</span>
-      </div>
+        <!-- Выбор валюты -->
+        <div class="currency-toggle">
+            <button id="btn-cur-stars" class="active" onclick="setCurrency('stars')">
+                <img src="img/star.png" alt=""> Звёзды
+            </button>
+            <button id="btn-cur-ton" onclick="setCurrency('ton')">
+                <img src="img/ton.png" alt=""> TON
+            </button>
+        </div>
 
-      <div class="panel" style="margin:22px 0 14px">
-        <span class="muted">Цена прокрута</span>
-        <div class="row"><img src="img/star.png" alt="" style="width:20px;height:20px"><span id="cost" style="font-weight:900;font-size:18px">0</span></div>
-      </div>
-      <button id="go" class="btn" onclick="spin()">Крутить</button>
-      <div id="feeNote" class="fee"></div>
+        <div class="rr-panel">
+            <span class="rr-muted">Цена прокрута</span>
+            <div class="rr-row">
+                <img id="cost-img" src="img/star.png" alt="" style="width:20px;height:20px">
+                <span id="rr-cost" class="font-black text-lg">0</span>
+            </div>
+        </div>
+        <button id="rr-go" class="rr-btn" onclick="spinRR()">Крутить</button>
     </div>
-  </div>
+
+    <!-- 2. Экран прокрутки рулетки -->
+    <div id="rr-spin" class="rr-view">
+        <div id="rr-spin-title" class="rr-name" style="margin-top:10px"></div>
+        <div class="rr-tape-box">
+            <div class="rr-pointer"></div>
+            <div class="rr-rail" id="rr-rail"></div>
+        </div>
+        <button class="rr-btn ghost" style="width:auto;padding:10px 28px;margin-top:16px" onclick="skipRR()">
+            Пропустить
+        </button>
+    </div>
+
+    <!-- 3. Экран результата -->
+    <div id="rr-result" class="rr-view" style="margin-top:30px;gap:14px">
+        <img id="rr-res-img" class="rr-big-img" style="width:130px;height:130px" src="img/star.png" alt="">
+        <div id="rr-res-lose" style="display:none">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#ff8a9a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><path d="M15 9l-6 6M9 9l6 6"></path></svg>
+        </div>
+        <div id="rr-res-text" class="rr-result-title"></div>
+        <div id="rr-res-sub" class="rr-muted" style="text-align:center;line-height:1.5"></div>
+        <button class="rr-btn" style="margin-top:10px" onclick="backToSetup()">Ещё раз</button>
+        <button class="rr-btn ghost" onclick="closeRR()">Выбрать другой приз</button>
+    </div>
 </div>
 
-<!-- прокрут -->
-<div id="st-spin" class="stage">
-  <div id="spin-title" class="name" style="margin-top:20px"></div>
-  <div class="tape"><div class="pointer"></div><div class="rail" id="rail"></div></div>
-  <button class="btn ghost" style="width:auto;padding:10px 28px;margin-top:22px" onclick="skip()">
-    Пропустить
-    <svg style="display:inline-block;vertical-align:-2px;margin-left:4px" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5l7 7-7 7"></path><path d="M13 5l7 7-7 7"></path></svg>
-  </button>
-</div>
+<div id="toast" class="toast-box"></div>
 
-<!-- результат -->
-<div id="st-res" class="stage" style="gap:16px;padding-top:70px">
-  <img id="res-img" class="big" style="width:160px;height:160px;animation:pop .5s cubic-bezier(.2,1.4,.4,1)" src="img/star.png" alt="" onerror="imgErr(this)">
-  <div id="res-lose" style="display:none;animation:pop .5s cubic-bezier(.2,1.4,.4,1)">
-    <svg width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="#ff8a9a" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><path d="M15 9l-6 6M9 9l6 6"></path></svg>
-  </div>
-  <div id="res-text" class="res-title"></div>
-  <div id="res-sub" class="muted" style="text-align:center;line-height:1.7"></div>
-  <button class="btn" style="margin-top:14px;max-width:340px" onclick="again()">Ещё раз</button>
-  <button class="btn ghost" style="max-width:340px" onclick="goBack()">К кейсам</button>
-</div>
-
-<div id="toast" class="toast"></div>
-
-<script src="music.js"></script>
 <script>
 const tg = window.Telegram.WebApp;
 const BACKEND_URL = 'https://sdjsdjsd.vercel.app';
 const $ = id => document.getElementById(id);
-try { tg.expand(); tg.ready(); tg.headerColor = '#1f3fa8'; tg.backgroundColor = '#08205f'; } catch (e) {}
-try { tg.BackButton.show(); tg.BackButton.onClick(goBack); } catch (e) {}
-
-const tgUser = tg.initDataUnsafe?.user;
-const uid = (tgUser && tgUser.id) ? tgUser.id : '12345';
-
-const fmt = n => Number(n || 0).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const haptic = (k, t) => { try { tg.HapticFeedback[k](t); } catch (e) {} };
-function goBack() { if (busy) return; location.href = 'case.html'; }
-function imgErr(img) { img.onerror = null; img.src = 'img/star.png'; }
-/* картинка подарка: image_url из каталога Supabase, иначе превью по id (как в кейсах) */
-const itemImg = it => it.image_url || `${BACKEND_URL}/inventory/preview/${it.id}`;
+const fmt = n => Number(n).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
 
-function toast(text, icon) {
+try { tg.expand(); tg.ready(); tg.headerColor = '#1f55d6'; tg.backgroundColor = '#08205f'; } catch (e) {}
+try {
+    tg.BackButton.show();
+    tg.BackButton.onClick(() => {
+        if ($('rr-modal').classList.contains('open')) { closeRR(); return; }
+        location.href = 'cases.html';
+    });
+} catch (e) {}
+
+function showToast(text, icon) {
     const t = $('toast');
-    t.innerHTML = (icon ? `<img src="${icon}" alt="">` : '') + `<span>${esc(String(text).slice(0, 160))}</span>`;
+    t.innerHTML = (icon ? `<img src="${icon}" alt="">` : '') + `<span>${esc(text)}</span>`;
     t.classList.add('show');
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => t.classList.remove('show'), 2600);
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
 async function post(path, body) {
@@ -189,186 +306,248 @@ async function post(path, body) {
     });
     let data = {};
     try { data = await res.json(); } catch (e) {}
-    if (!res.ok) throw new Error(data.detail || data.error || 'Ошибка сервера');
+    if (!res.ok) throw new Error(data.detail || 'Ошибка сервера');
     return data;
 }
 
-/* ---------- состояние ---------- */
-let items = [], active = null, busy = false, outcome = null, timer = null, stars = 0;
-let cfg = { min: 10, max: 95, thr: 50, feeHigh: 5, feeLow: 15 };
+let starsBalance = 0, tonBalance = 0;
+let selectedCurrency = 'stars';
+let rrItems = [], rrActive = null, rrMargin = 0.10, rrMin = 5, rrMax = 95;
+let rrBusy = false, rrOutcome = null, rrTimer = null;
 
-const feeFor = chance => chance >= cfg.thr ? cfg.feeHigh : cfg.feeLow;
-// та же целочисленная формула, что и на сервере
-const costFor = (price, chance) => Math.max(1, Math.ceil(Math.round(price) * chance * (100 + feeFor(chance)) / 10000));
+const GITHUB_IMAGES_URL = 'https://raw.githubusercontent.com/artcool213141-max/sdjsdjsd/main/';
+const itemImg = it => it.image_url || `${GITHUB_IMAGES_URL}${it.id}.png`;
+const TON_PER_STAR = 1.3 / 100;
 
-function setStars(v) { stars = Number(v) || 0; $('bal-stars').innerText = fmt(stars); }
+const rrCost = (priceStars, chance) => {
+    const baseStars = Math.max(1, Math.ceil(priceStars * (chance / 100) * (1 + rrMargin)));
+    if (selectedCurrency === 'ton') {
+        return Math.max(0.01, Number((baseStars * TON_PER_STAR).toFixed(2)));
+    }
+    return baseStars;
+};
 
-async function loadBalances() {
+function setCurrency(cur) {
+    selectedCurrency = cur;
+    $('btn-cur-stars').classList.toggle('active', cur === 'stars');
+    $('btn-cur-ton').classList.toggle('active', cur === 'ton');
+    
+    const icon = cur === 'ton' ? 'img/ton.png' : 'img/star.png';
+    $('mod-bal-img').src = icon;
+    $('cost-img').src = icon;
+    
+    updateBalanceDisplay();
+    if (rrActive) updateRR();
+}
+
+function updateBalanceDisplay() {
+    const val = selectedCurrency === 'ton' ? tonBalance : starsBalance;
+    const formatted = fmt(val);
+    $('header-bal').innerText = formatted;
+    $('rr-bal').innerText = formatted;
+}
+
+function setBalances(stars, ton) {
+    starsBalance = Number(stars) || 0;
+    tonBalance = Number(ton) || 0;
+    updateBalanceDisplay();
+}
+
+async function init() {
     try {
-        const r = await fetch(`${BACKEND_URL}/get_balance/${uid}?t=${Date.now()}`);
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        const d = await r.json();
-        setStars(d.balance);
-        $('bal-ton').innerText = fmt(d.ton_balance || 0);
-    } catch (e) { console.warn('balance', e); }
+        const uid = tg.initDataUnsafe?.user?.id || '12345';
+        const [balanceData, rrInfo] = await Promise.all([
+            fetch(`${BACKEND_URL}/get_balance/${uid}?t=${Date.now()}`).then(r => r.json()),
+            post('/case/rr/info', {})
+        ]);
+        
+        setBalances(balanceData.balance, balanceData.ton_balance);
+        rrMargin = Number(rrInfo.margin ?? 0.10);
+        rrMin = rrInfo.min_chance || 5;
+        rrMax = rrInfo.max_chance || 95;
+        rrItems = rrInfo.items || [];
+
+        renderGrid();
+        $('loader').classList.add('hidden');
+    } catch (e) {
+        showToast('Ошибка загрузки рулетки', 'img/star.png');
+        $('loader').classList.add('hidden');
+    }
+}
+init();
+
+function renderGrid() {
+    $('rr-grid').innerHTML = rrItems.map((it, i) => `
+        <div class="case-card" onclick="openRR(${i})">
+            <div class="case-img-box">
+                <img src="${esc(itemImg(it))}" alt="" onerror="this.onerror=null;this.src='img/star.png'">
+            </div>
+            <div class="case-foot">
+                <div class="case-name">${esc(it.name)}</div>
+                <div class="case-price"><img src="img/star.png" alt="">${fmt(it.price_stars)}</div>
+            </div>
+        </div>
+    `).join('');
 }
 
-async function loadInfo() {
-    try {
-        const d = await post('/case/rr/info', {});
-        items = (d.items || []).slice().sort((a, b) => Number(a.price_stars) - Number(b.price_stars));
-        cfg = {
-            min: d.min_chance || 10, max: d.max_chance || 95, thr: d.fee_threshold || 50,
-            feeHigh: d.fee_high_chance ?? 5, feeLow: d.fee_low_chance ?? 15
-        };
-    } catch (e) { toast('Не удалось загрузить подарки: ' + e.message, 'img/star.png'); }
-    renderPicker();
-    if (items.length) select(Math.min(2, items.length - 1));
+function showView(id) {
+    ['rr-setup', 'rr-spin', 'rr-result'].forEach(v => $(v).classList.toggle('show', v === id));
 }
 
-function renderPicker() {
-    $('picker').innerHTML = items.map((it, i) => `
-        <div class="pk" id="pk${i}" style="animation-delay:${i * 40}ms" onclick="select(${i})">
-            <img class="pic" src="${esc(itemImg(it))}" alt="" onerror="imgErr(this)">
-            <div class="pr"><img src="img/star.png" alt="">${fmt(it.price_stars)}</div>
-        </div>`).join('');
+function openRR(i) {
+    if (rrBusy) return;
+    try { tg.HapticFeedback.impactOccurred('light'); } catch (e) {}
+    rrActive = rrItems[i];
+    if (!rrActive) return;
+
+    $('rr-img').src = itemImg(rrActive);
+    $('rr-img').onerror = function() { this.onerror=null; this.src='img/star.png'; };
+    $('rr-title').innerText = rrActive.name;
+    $('rr-prize').innerText = fmt(rrActive.price_stars);
+    
+    const s = $('rr-slider');
+    s.min = rrMin; s.max = rrMax; s.value = 50;
+    
+    setCurrency('stars');
+    updateRR();
+    showView('rr-setup');
+    $('rr-modal').classList.add('open');
 }
 
-function select(i) {
-    if (busy || !items[i]) return;
-    haptic('selectionChanged');
-    active = items[i];
-    items.forEach((_, k) => $('pk' + k).classList.toggle('sel', k === i));
-    $('setup').style.display = 'flex';
-    $('big').src = itemImg(active);
-    $('name').innerText = active.name;
-    $('prize').innerText = fmt(active.price_stars);
-    const s = $('slider');
-    s.min = cfg.min; s.max = cfg.max;
-    if (+s.value < cfg.min || +s.value > cfg.max) s.value = 50;
-    update();
+function updateRR() {
+    const chance = parseInt($('rr-slider').value, 10);
+    $('rr-chance').innerText = chance + '%';
+    $('rr-cost').innerText = fmt(rrCost(rrActive.price_stars, chance));
 }
 
-function update() {
-    if (!active) return;
-    const chance = parseInt($('slider').value, 10);
-    $('chance').innerText = chance + '%';
-    $('cost').innerText = fmt(costFor(Number(active.price_stars), chance));
-    $('feeNote').innerHTML =
-        `Комиссия сервиса: <b>${feeFor(chance)}%</b> (${cfg.feeHigh}% при шансе от ${cfg.thr}%, ${cfg.feeLow}% при шансе ниже ${cfg.thr}%).<br>` +
-        `Шанс на слайдере — реальный шанс победы. Цена = цена приза × шанс + комиссия.`;
+function closeRR() {
+    if (rrBusy) return;
+    $('rr-modal').classList.remove('open');
+    rrActive = null;
 }
 
-/* ---------- прокрут ---------- */
-const TILE_W = 140, WIN_INDEX = 30, TILES = 45;
+function backToSetup() { showView('rr-setup'); }
+
+const TILE_W = 126;
 const XMARK = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>';
 
-function showStage(id) { ['st-spin', 'st-res'].forEach(s => $(s).classList.toggle('show', s === id)); }
+async function spinRR() {
+    if (rrBusy || !rrActive) return;
+    const chance = parseInt($('rr-slider').value, 10);
+    const cost = rrCost(rrActive.price_stars, chance);
+    
+    if (selectedCurrency === 'stars' && starsBalance < cost) {
+        showToast('Недостаточно звёзд', 'img/star.png'); return;
+    }
+    if (selectedCurrency === 'ton' && tonBalance < cost) {
+        showToast('Недостаточно TON', 'img/ton.png'); return;
+    }
 
-async function spin() {
-    if (busy || !active) return;
-    const chance = parseInt($('slider').value, 10);
-    const cost = costFor(Number(active.price_stars), chance);
-    if (stars < cost) { haptic('notificationOccurred', 'error'); toast('Недостаточно звёзд', 'img/star.png'); return; }
-
-    busy = true; $('go').disabled = true;
-    haptic('impactOccurred', 'medium');
+    rrBusy = true;
+    $('rr-go').disabled = true;
+    try { tg.HapticFeedback.impactOccurred('medium'); } catch (e) {}
 
     let out;
     try {
-        out = await post('/case/rr/spin', { item_id: active.id, chance });
+        out = await post('/case/rr/spin', { 
+            item_id: rrActive.id, 
+            chance: chance,
+            currency: selectedCurrency
+        });
     } catch (e) {
-        busy = false; $('go').disabled = false;
-        haptic('notificationOccurred', 'error');
-        toast(e.message || 'Ошибка', 'img/star.png');
-        loadBalances();
+        rrBusy = false; $('rr-go').disabled = false;
+        showToast(e.message || 'Ошибка', 'img/star.png');
         return;
     }
-    $('go').disabled = false;
-    outcome = out;
-    if (out.balance !== null && out.balance !== undefined) setStars(out.balance);
-    else setStars(stars - out.cost);
-
-    $('spin-title').innerText = active.name;
-    showStage('st-spin');
-
-    // доля плиток с призом = выбранному шансу; на победной позиции — реальный результат
-    let html = '';
-    for (let i = 0; i < TILES; i++) {
-        const prize = (i === WIN_INDEX) ? out.win : (Math.random() * 100 < chance);
-        html += `<div class="tile">${prize
-            ? `<img src="${esc(itemImg(active))}" alt="" onerror="imgErr(this)">`
-            : XMARK}</div>`;
+    $('rr-go').disabled = false;
+    rrOutcome = out;
+    
+    if (out.balance !== undefined && out.ton_balance !== undefined) {
+        setBalances(out.balance, out.ton_balance);
+    } else if (out.balance !== undefined) {
+        if (selectedCurrency === 'stars') setBalances(out.balance, tonBalance);
+        else setBalances(starsBalance, out.balance);
     }
-    const rail = $('rail');
+
+    $('rr-spin-title').innerText = rrActive.name;
+    showView('rr-spin');
+
+    const winIndex = 30;
+    let html = '';
+    for (let i = 0; i < 45; i++) {
+        const prize = (i === winIndex) ? out.win : (Math.random() * 100 < chance);
+        html += `<div class="rr-tile">${prize ? `<img src="${esc(itemImg(rrActive))}" alt="" onerror="this.onerror=null;this.src='img/star.png'">` : XMARK}</div>`;
+    }
+    const rail = $('rr-rail');
     rail.style.transition = 'none';
     rail.style.transform = 'translateX(0)';
     rail.innerHTML = html;
 
     setTimeout(() => {
         const half = rail.parentElement.clientWidth / 2;
-        const offset = WIN_INDEX * TILE_W - half + TILE_W / 2;
+        const offset = winIndex * TILE_W - half + TILE_W / 2;
         rail.style.transition = 'transform 5.5s cubic-bezier(0.15, 0, 0.05, 1)';
         rail.style.transform = `translateX(-${offset}px)`;
     }, 60);
 
-    clearTimeout(timer);
-    timer = setTimeout(finish, 5800);
+    clearTimeout(rrTimer);
+    rrTimer = setTimeout(finishRR, 5800);
 }
 
-function skip() { if (!busy) return; clearTimeout(timer); finish(); }
+function skipRR() {
+    if (!rrBusy) return;
+    clearTimeout(rrTimer);
+    finishRR();
+}
 
-function finish() {
-    if (!outcome) return;
-    const out = outcome; outcome = null;
+function finishRR() {
+    if (!rrOutcome) return;
+    const out = rrOutcome; rrOutcome = null;
     if (out.win) {
-        $('res-img').style.display = 'block';
-        $('res-img').src = itemImg(active || out.item);
-        $('res-lose').style.display = 'none';
-        $('res-text').innerText = 'Победа!';
-        $('res-text').style.color = '#8dffb0';
-        $('res-sub').innerText = `${out.item.name} добавлен в инвентарь`;
-        haptic('notificationOccurred', 'success');
+        $('rr-res-img').style.display = 'block';
+        $('rr-res-img').src = itemImg(rrActive || out.item);
+        $('rr-res-lose').style.display = 'none';
+        $('rr-res-text').innerText = 'Победа!';
+        $('rr-res-text').style.color = '#8dffb0';
+        $('rr-res-sub').innerText = `${out.item.name} добавлен в инвентарь`;
+        try { tg.HapticFeedback.notificationOccurred('success'); } catch (e) {}
     } else {
-        $('res-img').style.display = 'none';
-        $('res-lose').style.display = 'block';
-        $('res-text').innerText = 'Неудача';
-        $('res-text').style.color = '#ff8a9a';
-        $('res-sub').innerText = `Шанс был ${out.chance}% — в этот раз не повезло`;
-        haptic('notificationOccurred', 'error');
+        $('rr-res-img').style.display = 'none';
+        $('rr-res-lose').style.display = 'block';
+        $('rr-res-text').innerText = 'Неудача';
+        $('rr-res-text').style.color = '#ff8a9a';
+        $('rr-res-sub').innerText = `Шанс был ${out.chance}% — в этот раз не повезло`;
+        try { tg.HapticFeedback.notificationOccurred('error'); } catch (e) {}
     }
-    showStage('st-res');
-    busy = false;
+    showView('rr-result');
+    rrBusy = false;
 }
 
-function again() { $('st-res').classList.remove('show'); $('st-spin').classList.remove('show'); loadBalances(); }
-
-/* ---------- фон ---------- */
-const canvas = $('stars-canvas'), ctx = canvas.getContext('2d');
+// Фоновые звёзды
+const canvas = $('stars-canvas');
+const ctx = canvas.getContext('2d');
 let bubbles = [];
-function initBubbles() {
-    canvas.width = innerWidth; canvas.height = innerHeight;
-    bubbles = Array.from({ length: 30 }, () => ({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, size: Math.random() * 2.2 + .6, speed: Math.random() * .35 + .1, drift: (Math.random() - .5) * .25, opacity: Math.random() * .45 + .15, bright: Math.random() < .4 }));
+function initStars() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    bubbles = Array.from({ length: 30 }, () => ({
+        x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+        size: Math.random() * 2.2 + 0.6, speed: Math.random() * 0.35 + 0.1,
+        drift: (Math.random() - 0.5) * 0.25, opacity: Math.random() * 0.45 + 0.15, bright: Math.random() < 0.4
+    }));
 }
-function animateBubbles() {
+function animateStars() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     bubbles.forEach(s => {
-        ctx.beginPath(); ctx.globalAlpha = s.opacity; ctx.fillStyle = s.bright ? '#fff' : '#9cc4ff';
+        ctx.beginPath(); ctx.globalAlpha = s.opacity; ctx.fillStyle = s.bright ? '#ffffff' : '#9cc4ff';
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); ctx.fill();
         s.y -= s.speed; s.x += s.drift;
         if (s.y < -5) { s.y = canvas.height + 5; s.x = Math.random() * canvas.width; }
     });
-    requestAnimationFrame(animateBubbles);
+    requestAnimationFrame(animateStars);
 }
-initBubbles(); animateBubbles();
-addEventListener('resize', initBubbles);
-
-/* ---------- старт ---------- */
-(async () => {
-    await Promise.allSettled([loadBalances(), loadInfo()]);
-    $('loader').classList.add('hidden');
-})();
-setTimeout(() => $('loader').classList.add('hidden'), 4000);
+initStars(); animateStars();
+window.addEventListener('resize', initStars);
 </script>
 </body>
 </html>
