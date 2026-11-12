@@ -18,9 +18,9 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .chips{display:flex;justify-content:center;gap:12px;margin-top:6px}
 .chip{display:flex;align-items:center;gap:8px;background:rgba(10,24,70,.45);padding:6px 6px 6px 14px;border-radius:999px;font-weight:800;font-size:15px}
 .chip img{width:20px;height:20px;object-fit:contain}
-.chip .plus{width:28px;height:28px;border-radius:50%;border:none;background:#2f6bff;color:#fff;font-size:18px;line-height:1;cursor:pointer;padding:0}
+.chip .plus{width:28px;height:28px;border-radius:50%;border:none;background:#2f6bff;color:#fff;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
 
-/* рулетки (1–5 штук). Размеры задаёт JS через переменные */
+/* рулетки */
 .stage{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0;overflow:hidden}
 .rolls{display:flex;flex-direction:column;gap:8px}
 .roll{position:relative;height:var(--rh);overflow:hidden}
@@ -64,15 +64,15 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .actions.spinning{display:flex;flex-direction:column;justify-content:flex-end}
 .actions.spinning .skip{display:block}
 
-/* модалки (тёмные) */
+/* модалки */
 .ov{position:fixed;inset:0;z-index:6000;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(0,6,30,.78);backdrop-filter:blur(6px);opacity:0;transition:opacity .25s}
 .ov.show{display:flex}
 .ov.vis{opacity:1}
 .box{position:relative;width:100%;max-width:400px;max-height:88vh;overflow-y:auto;padding:22px 18px 18px;border-radius:28px;text-align:center;background:linear-gradient(180deg,#262628,#1b1b1d);border:1px solid var(--panel-line);box-shadow:0 20px 60px rgba(0,0,0,.6);transform:translateY(24px) scale(.94);transition:transform .3s cubic-bezier(.2,1.2,.4,1);scrollbar-width:none}
 .box::-webkit-scrollbar{display:none}
 .ov.vis .box{transform:none}
-.box h2{margin:0 0 18px;font-size:21px;font-weight:800;font-style:normal;text-transform:none}
-.x{position:absolute;right:14px;top:16px;width:30px;height:30px;border-radius:50%;border:none;background:transparent;color:#8d8e93;font-size:20px;cursor:pointer}
+.box h2{margin:0 0 18px;font-size:21px;font-weight:800}
+.x{position:absolute;right:14px;top:16px;width:30px;height:30px;border-radius:50%;border:none;background:transparent;color:#8d8e93;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
 .mbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;border:none;border-radius:20px;padding:18px;margin-top:12px;font:700 16px 'Montserrat',sans-serif;color:#fff;background:#4c4d51;cursor:pointer}
 .mbtn:active{transform:scale(.97)}
 .mbtn img{width:18px;height:18px;object-fit:contain}
@@ -96,7 +96,6 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .gi .mt{width:100%;aspect-ratio:1;border-radius:26px;background:linear-gradient(160deg,#5b34c9,#2c1670);border:1px solid rgba(160,130,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:800;font-size:18px}
 .gi .mt img{width:38px;height:38px;object-fit:contain}
 
-/* выбор призов после мульти-открытия */
 .sub{font-size:13px;font-weight:600;color:var(--muted);margin:-8px 0 16px}
 .pick{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 10px;margin-bottom:8px}
 .pi{position:relative;width:calc((100% - 20px) / 3);display:flex;flex-direction:column;align-items:center;padding:8px 6px 8px;border-radius:22px;border:2px solid transparent;background:rgba(255,255,255,.04);cursor:pointer;transition:all .18s}
@@ -122,7 +121,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .win-name .p{color:var(--gold)}
 .note{font-size:12px;font-weight:600;color:var(--muted);margin-top:4px}
 
-.toast{position:fixed;left:50%;bottom:130px;transform:translate(-50%,20px);background:#1f1f21;border:1px solid var(--panel-line);font-weight:700;font-size:13px;padding:12px 18px;border-radius:18px;z-index:9000;opacity:0;pointer-events:none;transition:all .25s;max-width:88vw;text-align:center;word-break:break-word;display:flex;align-items:center;justify-content:center;gap:4px}
+.toast{position:fixed;left:50%;bottom:130px;transform:translate(-50%,20px);background:#1f1f21;border:1px solid var(--panel-line);font-weight:700;font-size:13px;padding:12px 18px;border-radius:18px;z-index:9000;opacity:0;pointer-events:none;transition:all .25s;max-width:88vw;text-align:center;word-break:break-word;display:flex;align-items:center;justify-content:center;gap:8px}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .toast img{width:18px;height:18px;object-fit:contain;flex-shrink:0}
 
@@ -142,8 +141,8 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
     <span id="case-title" hidden></span>
 
     <div class="chips">
-        <div class="chip"><img src="img/star.png" alt="Stars"><span id="bal-stars">0</span><button class="plus" onclick="location.href='index.html'">+</button></div>
-        <div class="chip"><img src="img/ton.png" alt="TON"><span id="bal-ton">0</span><button class="plus" onclick="location.href='index.html'">+</button></div>
+        <div class="chip"><img src="img/star.png" alt="Stars"><span id="bal-stars">0</span><button class="plus" onclick="location.href='index.html'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+        <div class="chip"><img src="img/ton.png" alt="TON"><span id="bal-ton">0</span><button class="plus" onclick="location.href='index.html'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
         <div class="chip"><img src="img/bambyk.png" alt="Бамбук"><span id="bal-bamboo">0</span></div>
     </div>
 
@@ -180,7 +179,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 </div>
 
 <div class="ov" id="ov-settings"><div class="box">
-    <button class="x" onclick="closeOv('ov-settings')">✕</button>
+    <button class="x" onclick="closeOv('ov-settings')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <h2>Настройки кейса</h2>
     <div class="set">
         <div><b>Демо</b><small>Все кейсы бесплатные, но призы не начисляются</small></div>
@@ -190,7 +189,7 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 </div></div>
 
 <div class="ov" id="ov-prizes"><div class="box">
-    <button class="x" onclick="closeOv('ov-prizes')">✕</button>
+    <button class="x" onclick="closeOv('ov-prizes')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     <h2>Возможные призы</h2>
     <div class="grid" id="prizes"></div>
     <button class="mbtn" onclick="closeOv('ov-prizes')">Закрыть</button>
@@ -206,8 +205,6 @@ const $ = id => document.getElementById(id);
 const GAP = 8, WIN_INDEX = 48, TOTAL = 60;
 const META = { bear:'Bear', ring:'Ring', lip:'Lip', halloween:'Halloween', loot:'Loot', helmet:'Helmet', pepe:'Pepe', gorilla:'Gorilla Case' };
 
-// размеры рулеток в зависимости от количества: cw — ширина ячейки, pic — картинка, rh — высота рулетки,
-// rad — скругление, ov — на сколько плашка цены заходит на картинку, pf/pp — шрифт/отступы плашки, mt — плитка денег
 const CFG = {
     1: { cw: 148, pic: 136, rh: 196, rad: 30, ov: 24, pf: 15, pp: '9px 18px', mt: 172, pill: true  },
     2: { cw: 112, pic: 100, rh: 150, rad: 24, ov: 18, pf: 12, pp: '6px 12px', mt: 126, pill: true  },
@@ -220,13 +217,12 @@ const CASE_ID = new URLSearchParams(location.search).get('id');
 if (!CASE_ID || CASE_ID === 'free') location.replace(CASE_ID === 'free' ? 'event.html' : 'case.html');
 
 const S = { items: [], priceStars: 0, priceTon: 0, busy: false, stars: 0, ton: 0, bamboo: 0, demo: false, count: 1 };
-let L = { n: 1, cw: 148 };       // текущая раскладка рулеток
-let skipFn = null;               // функция «пропустить», пока крутятся рулетки
+let L = { n: 1, cw: 148 };
+let skipFn = null;
 
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 function haptic(kind, type) { try { tg.HapticFeedback[kind](type); } catch (e) {} }
 
-/* тост: с иконкой (для бамбука) или без. toast(t) — совместимость со старыми вызовами */
 function showToast(text, icon) {
     const el = $('toast');
     el.innerHTML = (icon ? `<img src="${icon}" alt="">` : '') + `<span>${esc(String(text).slice(0, 160))}</span>`;
@@ -256,7 +252,6 @@ async function api(path, body) {
     return data;
 }
 
-/* ---------- данные ---------- */
 function applyBalances(d) {
     if (d.balance !== undefined) { S.stars = Number(d.balance) || 0; $('bal-stars').innerText = fmt(S.stars); }
     if (d.ton_balance !== undefined) { S.ton = Number(d.ton_balance) || 0; $('bal-ton').innerText = fmt(S.ton); }
@@ -282,7 +277,6 @@ async function loadCase() {
     drawSpinBtn();
 }
 
-/* ---------- выбор количества и кнопки ---------- */
 function drawCnt() { document.querySelectorAll('#cnt button').forEach(b => b.classList.toggle('on', +b.dataset.n === S.count)); }
 document.querySelectorAll('#cnt button').forEach(b => b.onclick = () => {
     if (S.busy || +b.dataset.n === S.count) return;
@@ -310,7 +304,6 @@ function beginSpin() { S.busy = true; const a = $('actions'); a.style.minHeight 
 function endSpin() { S.busy = false; skipFn = null; const a = $('actions'); a.classList.remove('spinning'); a.style.minHeight = ''; idleRolls(); drawSpinBtn(); }
 function skip() { if (skipFn) skipFn(); }
 
-/* ---------- призы (окно «Призы») ---------- */
 function sorted() { return S.items.slice().sort((a, b) => valueOf(b) - valueOf(a)); }
 function drawPrizes() {
     $('prizes').innerHTML = sorted().map(it => isMoney(it) ? `
@@ -321,7 +314,6 @@ function drawPrizes() {
         </div>`).join('');
 }
 
-/* ---------- рулетки ---------- */
 function cellItem(it, win) {
     if (isMoney(it)) return `<div class="cell${win ? ' win' : ''}"><div class="mtile"><img src="${curIcon(it.currency)}" alt="">${fmt(it.amount)}</div></div>`;
     return `<div class="cell${win ? ' win' : ''}"><img class="pic" src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)"><div class="pill"><img src="img/star.png" alt="">${fmt(it.price_stars)}</div></div>`;
@@ -330,7 +322,6 @@ function filler() { const p = S.items; return cellItem(p[Math.floor(Math.random(
 function layoutRolls(n) {
     const C0 = CFG[n] || CFG[1];
     const R = $('rolls');
-    // свободная высота под рулетки: уменьшаем всё пропорционально, чтобы не перекрывать интерфейс
     const H = $('stage').clientHeight;
     const gap = n >= 4 ? 6 : 8;
     let f = H > 0 ? Math.min(1, (H - gap * (n - 1) - 6) / (n * C0.rh)) : 1;
@@ -371,7 +362,7 @@ function idleRolls() {
         st.style.transform = `translateX(${Math.round(w / 2 - L.cw / 2 - STEP * 3)}px)`;
     });
 }
-// анимация прокрута — как в case.html, только для нескольких лент сразу
+
 function runRolls(wons, onDone) {
     const strips = layoutRolls(wons.length);
     const STEP = L.cw + GAP;
@@ -396,7 +387,6 @@ function runRolls(wons, onDone) {
         fin();
     };
     setTimeout(fin, (5.2 + (wons.length - 1) * 0.3) * 1000 + 450);
-    // тики при проезде ячеек (по первой ленте)
     const t0 = Date.now();
     let lastTick = -1;
     const tick = setInterval(() => {
@@ -407,7 +397,6 @@ function runRolls(wons, onDone) {
     }, 60);
 }
 
-/* ---------- открытие ---------- */
 async function spin(cur) {
     cur = cur === 'ton' ? 'ton' : 'stars';
     if (S.busy || !S.items.length) return;
@@ -421,14 +410,14 @@ async function spin(cur) {
         const have = cur === 'ton' ? S.ton : S.stars;
         if (have < price) {
             haptic('notificationOccurred', 'error');
-            toast(cur === 'ton' ? 'Недостаточно TON. Пополните баланс на главной.' : 'Недостаточно Stars. Пополните баланс на главной.');
+            toast(cur === 'ton' ? 'Недостаточно TON.' : 'Недостаточно Stars.');
             return;
         }
         beginSpin();
         try { r = await api('/case/open', { case_id: CASE_ID, currency: cur, count: n }); }
         catch (e) { haptic('notificationOccurred', 'error'); toast(e.message); endSpin(); loadBalances(); return; }
         wons = (r.nfts && r.nfts.length) ? r.nfts : [r.nft];
-        if (wons.length < n) toast(`Открыто ${wons.length} из ${n}: не хватило средств`);
+        if (wons.length < n) toast(`Открыто ${wons.length} из ${n}`);
     }
     runRolls(wons, () => {
         if (!S.demo) {
@@ -440,27 +429,21 @@ async function spin(cur) {
     });
 }
 
-/* ---------- модалки ---------- */
 function showOv(id) { const m = $(id); m.classList.add('show'); requestAnimationFrame(() => m.classList.add('vis')); }
 function closeOv(id) { const m = $(id); m.classList.remove('vis'); setTimeout(() => m.classList.remove('show'), 250); }
 function openSettings() { drawSettings(); showOv('ov-settings'); }
 function openPrizes() { showOv('ov-prizes'); }
 function drawSettings() { $('demo-sw').classList.toggle('on', S.demo); }
 function toggleDemo() { if (S.busy) return; S.demo = !S.demo; drawSettings(); drawSpinBtn(); haptic('impactOccurred', 'light'); }
+function closeWin() { closeOv('ov-win'); endSpin(); }
 
-function closeWin() {
-    closeOv('ov-win');
-    endSpin();
-}
-
-/* одиночный выигрыш (1 кейс) */
 let curNft = null;
 function showWin(n, demo) {
     if (isMoney(n)) {
         $('win-box').innerHTML = `
             <div class="win-t it">${demo ? 'Демо-выигрыш' : 'Вы выиграли!'}</div>
             <div class="win-money"><img src="${curIcon(n.currency)}" alt="">+${fmt(n.amount)}</div>
-            <div class="note">${demo ? 'Приз не начислен: это демо-режим' : 'Зачислено на ваш баланс'}</div>
+            <div class="note">${demo ? 'Приз не начислен' : 'Зачислено на баланс'}</div>
             <button class="mbtn" onclick="closeWin()">Продолжить</button>`;
         showOv('ov-win');
         return;
@@ -472,7 +455,6 @@ function showWin(n, demo) {
         <div class="win-t it">Демо-выигрыш</div>
         <img class="win-img" src="${imgUrl(n.id)}" alt="" onerror="onImgErr(this)">
         <div class="win-name"><span>${esc(n.name || 'NFT')}</span><img src="img/star.png" alt=""><span class="p">${fmt(price)}</span></div>
-        <div class="note">Приз не начислен: это демо-режим</div>
         <button class="mbtn" onclick="closeWin()">Продолжить</button>` : `
         <div class="win-t it">Вы выиграли!</div>
         <img class="win-img" src="${imgUrl(n.id)}" alt="" onerror="onImgErr(this)">
@@ -506,7 +488,6 @@ async function sellNft(cur) {
     }
 }
 
-/* выбор призов (2–5 кейсов): тап по подарку — подсветка белым, затем продать или продолжить */
 const P = { list: [], sel: new Set(), demo: false, busy: false };
 function showPick(list, demo) {
     P.list = list.slice(); P.sel = new Set(); P.demo = demo; P.busy = false;
@@ -536,24 +517,23 @@ function drawPick() {
     const cards = P.list.map((it, i) => isMoney(it) ? `
         <div class="pi static"><div class="mt2"><img src="${curIcon(it.currency)}" alt="">+${fmt(it.amount)}</div><div class="nm">Зачислено</div></div>` : `
         <div class="pi${P.sel.has(i) ? ' sel' : ''}" onclick="togglePick(${i})">
-            <div class="ck">✓</div>
+            <div class="ck"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></div>
             <img class="pic" src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)">
             <div class="pill"><img src="img/star.png" alt="">${fmt(it.price_stars)}</div>
             <div class="nm">${esc(it.name || 'NFT')}</div>
         </div>`).join('');
     $('win-box').innerHTML = P.demo ? `
         <div class="win-t it">Демо-выигрыш</div>
-        <div class="sub">Призы не начислены: это демо-режим</div>
+        <div class="sub">Призы не начислены</div>
         <div class="pick">${cards}</div>
         <button class="mbtn" onclick="closeWin()">Продолжить</button>` : `
         <div class="win-t it">Вы выиграли!</div>
-        <div class="sub">Нажми на подарки, которые хочешь продать</div>
+        <div class="sub">Нажми на подарки для продажи</div>
         <div class="pick">${cards}</div>
         <button class="selall" onclick="toggleAll()">${allSel ? 'Снять выбор' : 'Выбрать все'}</button>
-        <button class="mbtn main" ${sel.length && !P.busy ? '' : 'disabled'} onclick="sellPick('stars')">${sel.length ? `Продать за <img src="img/star.png" alt=""> ${fmt(sumS)}` : 'Выбери подарки для продажи'}</button>
+        <button class="mbtn main" ${sel.length && !P.busy ? '' : 'disabled'} onclick="sellPick('stars')">${sel.length ? `Продать за <img src="img/star.png" alt=""> ${fmt(sumS)}` : 'Выбери подарки'}</button>
         ${canTon ? `<button class="mbtn ton" ${P.busy ? 'disabled' : ''} onclick="sellPick('ton')">Продать за <img src="img/ton.png" alt=""> ${fmt(sumT)}</button>` : ''}
-        <button class="mbtn" ${P.busy ? 'disabled' : ''} onclick="closeWin()">Продолжить</button>
-        ${P.list.some(it => !isMoney(it)) ? '<div class="note">Невыбранные подарки останутся в инвентаре</div>' : ''}`;
+        <button class="mbtn" ${P.busy ? 'disabled' : ''} onclick="closeWin()">Продолжить</button>`;
 }
 async function sellPick(cur) {
     if (P.busy || P.demo || !P.sel.size) return;
@@ -576,7 +556,6 @@ async function sellPick(cur) {
     if (!selectable().length) closeWin(); else drawPick();
 }
 
-/* ---------- фон ---------- */
 const canvas = $('stars-canvas'), ctx = canvas.getContext('2d');
 let bubbles = [];
 function initBubbles() {
@@ -596,7 +575,6 @@ function animateBubbles() {
 initBubbles(); animateBubbles();
 addEventListener('resize', initBubbles);
 
-/* ---------- старт ---------- */
 window.onload = async () => {
     try { tg.expand(); tg.ready(); tg.headerColor = '#173f9c'; tg.backgroundColor = '#173f9c'; } catch (e) {}
     try { tg.BackButton.show(); tg.BackButton.onClick(() => { location.href = 'case.html'; }); } catch (e) {}
