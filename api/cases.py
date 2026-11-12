@@ -27,7 +27,6 @@ BAMBOO_MAX = 10
 
 # ---------------- РУССКАЯ РУЛЕТКА ----------------
 RR_ITEMS_STANDARD = [
-    61,  # Star
     17,  # WhipCupcake
     9,   # LolPop
     12,  # MoodPack
