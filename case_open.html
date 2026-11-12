@@ -41,33 +41,41 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .mtile{width:var(--mt);height:var(--mt);margin:0 calc((var(--cw) - var(--mt)) / 2);flex-shrink:0;border-radius:calc(var(--mt) * .2);background:linear-gradient(160deg,#5b34c9,#2c1670);border:1px solid rgba(160,130,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-weight:800;font-size:calc(var(--mt) * .14)}
 .mtile img{width:calc(var(--mt) * .32);height:calc(var(--mt) * .32);object-fit:contain}
 
-/* Стили для кастомной плитки звезды */
-.star-drop-tile, .star-drop-tile-grid {
+/* Аккуратная кастомная звезда в рулетке (в точности повторяет размеры обычных подарков) */
+.cell img.star-pic {
+    width: var(--pic);
+    height: var(--pic);
+    object-fit: contain;
+    border-radius: var(--rad);
+    background: linear-gradient(160deg, #3c3c8c, #1e1e50);
+    border: 1px solid rgba(160, 130, 255, 0.55);
+    margin-bottom: calc(var(--ov) * -1);
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 8px 18px rgba(0, 15, 80, 0.5);
+    padding: 12px;
+}
+
+/* Сетка призов: чтобы звезда выглядела ровно как остальные карточки `.gi` */
+.gi{display:flex;flex-direction:column;align-items:center}
+.gi img.pic{width:100%;aspect-ratio:1;object-fit:cover;border-radius:22px;display:block;margin-bottom:-22px;position:relative;z-index:1;box-shadow:0 6px 14px rgba(0,0,0,.4)}
+.gi .star-gi-pic {
     width: 100%;
     aspect-ratio: 1;
+    object-fit: contain;
     border-radius: 22px;
     background: linear-gradient(160deg, #3c3c8c, #1e1e50);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0px;
-    box-shadow: 0 8px 18px rgba(0, 15, 80, 0.4);
+    border: 1px solid rgba(160, 130, 255, 0.55);
+    display: block;
+    margin-bottom: -22px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 6px 14px rgba(0,0,0,.4);
+    padding: 18px;
 }
-.star-drop-tile img, .star-drop-tile-grid img {
-    width: 80px;
-    height: 80px;
-    object-fit: contain;
-    margin-top: 10px; /* Чуть опускаем картинку */
-}
-.star-drop-tile span, .star-drop-tile-grid span {
-    font-size: 15px;
-    font-weight: 900;
-    color: #fff;
-    margin-top: auto; 
-    margin-bottom: 6px; /* Поднимаем цифру ближе к звезде */
-}
+.gi .pill{background:#3a3b3f;font-size:14px;padding:9px 14px;width:100%;justify-content:center;border-radius:999px}
+.gi .mt{width:100%;aspect-ratio:1;border-radius:26px;background:linear-gradient(160deg,#5b34c9,#2c1670);border:1px solid rgba(160,130,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:800;font-size:18px}
+.gi .mt img{width:38px;height:38px;object-fit:contain}
 
 /* кнопки */
 .actions{padding:0 18px}
@@ -118,11 +126,6 @@ body{background:var(--bg-dark);color:#fff;font-family:'Montserrat',sans-serif;ma
 .sw.on::after{transform:translateX(24px)}
 
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 10px}
-.gi{display:flex;flex-direction:column;align-items:center}
-.gi img.pic{width:100%;aspect-ratio:1;object-fit:cover;border-radius:22px;display:block;margin-bottom:-22px;position:relative;z-index:1;box-shadow:0 6px 14px rgba(0,0,0,.4)}
-.gi .pill{background:#3a3b3f;font-size:14px;padding:9px 14px;width:100%;justify-content:center;border-radius:999px}
-.gi .mt{width:100%;aspect-ratio:1;border-radius:26px;background:linear-gradient(160deg,#5b34c9,#2c1670);border:1px solid rgba(160,130,255,.55);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-weight:800;font-size:18px}
-.gi .mt img{width:38px;height:38px;object-fit:contain}
 
 .sub{font-size:13px;font-weight:600;color:var(--muted);margin:-8px 0 16px}
 .pick{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 10px;margin-bottom:8px}
@@ -265,7 +268,6 @@ function fmt(n) { return Number(n || 0).toLocaleString('ru-RU', { maximumFractio
 
 let catalogItemsCache = {};
 
-// Функция генерации ссылки на картинку дропа (принудительно подставляет твою звезду для ID 61 и 62)
 function imgUrl(id) {
     if (Number(id) === 61 || Number(id) === 62) {
         return CUSTOM_STAR_URL;
@@ -361,7 +363,7 @@ function skip() { if (skipFn) skipFn(); }
 
 function sorted() { return S.items.slice().sort((a, b) => valueOf(b) - valueOf(a)); }
 
-// Рендеринг призов в модалке (с поддержкой красивой плашки для кастомной звезды)
+// Отрендерить возможные призы в модалке (высота и пропорции единые с остальными)
 function drawPrizes() {
     $('prizes').innerHTML = sorted().map(it => {
         if (isMoney(it)) {
@@ -370,10 +372,8 @@ function drawPrizes() {
         if (Number(it.id) === 61 || Number(it.id) === 62) {
             return `
             <div class="gi">
-                <div class="star-drop-tile-grid">
-                    <img src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)">
-                    <span>${fmt(it.price_stars)}</span>
-                </div>
+                <img class="star-gi-pic" src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)">
+                <div class="pill"><img src="img/star.png" alt="">${fmt(it.price_stars)}</div>
             </div>`;
         }
         return `
@@ -384,16 +384,14 @@ function drawPrizes() {
     }).join('');
 }
 
-// Рендеринг ячейки рулетки
+// Рендеринг ячейки рулетки (теперь звезда летает ровно в том же размере и формате, что и все подарки)
 function cellItem(it, win) {
     if (isMoney(it)) return `<div class="cell${win ? ' win' : ''}"><div class="mtile"><img src="${curIcon(it.currency)}" alt="">+${fmt(it.amount)}</div></div>`;
     
     if (Number(it.id) === 61 || Number(it.id) === 62) {
         return `<div class="cell${win ? ' win' : ''}">
-            <div class="star-drop-tile">
-                <img src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)">
-                <span>${fmt(it.price_stars)}</span>
-            </div>
+            <img class="star-pic" src="${imgUrl(it.id)}" alt="" onerror="onImgErr(this)">
+            <div class="pill"><img src="img/star.png" alt="">${fmt(it.price_stars)}</div>
         </div>`;
     }
 
