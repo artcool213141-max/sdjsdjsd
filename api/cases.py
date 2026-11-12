@@ -27,6 +27,7 @@ BAMBOO_MAX = 10
 
 # ---------------- РУССКАЯ РУЛЕТКА ----------------
 RR_ITEMS_STANDARD = [
+    61,  # Star
     17,  # WhipCupcake
     9,   # LolPop
     12,  # MoodPack
@@ -172,6 +173,8 @@ def _catalog() -> dict:
     data = rpc("get_catalog", {})
     if isinstance(data, dict):
         data = data.get("items") or data.get("catalog") or []
+    
+    # Теперь читаем напрямую из базы данных без всякого хардкода
     return {
         x["id"]: {
             "id": x["id"],
