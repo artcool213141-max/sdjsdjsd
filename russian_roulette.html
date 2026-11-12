@@ -25,15 +25,13 @@ body {
 #stars-canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 
 .main-wrapper {
-    background:
-        radial-gradient(circle at 50% 8%, #4a86ff 0%, rgba(47,107,255,0.35) 26%, transparent 60%),
-        linear-gradient(180deg, #1f55d6 0%, #133ea6 42%, #08205f 100%);
+    background: linear-gradient(180deg, #1f55d6 0%, #133ea6 42%, #08205f 100%);
     height: 100vh; display: flex; flex-direction: column; position: relative; z-index: 1;
 }
 
 .scrollable-content {
     position: relative; z-index: 1; flex: 1; overflow-y: auto;
-    padding: 20px 18px 100px 18px; scrollbar-width: none;
+    padding: 20px 16px 100px 16px; scrollbar-width: none;
 }
 .scrollable-content::-webkit-scrollbar { display: none; }
 
@@ -55,10 +53,10 @@ body {
 .bal-pill img { width: 16px; height: 16px; object-fit: contain; }
 .bal-pill span { font-weight: 900; font-size: 12px; }
 
-/* Сетка подарков — строго 2 колонки, ровные карточки */
+/* Сетка подарков (строго 2 колонки) */
 .cases-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     width: 100%;
 }
@@ -68,7 +66,6 @@ body {
     border: 1px solid var(--glass-line); backdrop-filter: blur(10px);
     transition: transform 0.2s, border-color 0.2s, background 0.2s;
     display: flex; flex-direction: column; align-items: center;
-    width: 100%;
 }
 .case-card:active { transform: scale(0.96); border-color: #fff; background: rgba(255,255,255,0.22); }
 .case-img-box {
@@ -315,8 +312,13 @@ let selectedCurrency = 'stars';
 let rrItems = [], rrActive = null, rrMargin = 0.10, rrMin = 5, rrMax = 95;
 let rrBusy = false, rrOutcome = null, rrTimer = null;
 
-const GITHUB_IMAGES_URL = 'https://raw.githubusercontent.com/artcool213141-max/sdjsdjsd/main/';
-const itemImg = it => it.image_url || `${GITHUB_IMAGES_URL}${it.id}.png`;
+// Исправлено: теперь картинка берется из image_url бэкенда, либо через локальный превью-эндпоинт сервера
+const itemImg = it => {
+    if (it.image_url) return it.image_url;
+    if (it.id) return `${BACKEND_URL}/inventory/preview/${it.id}`;
+    return 'img/star.png';
+};
+
 const TON_PER_STAR = 1.3 / 100;
 
 const rrCost = (priceStars, chance) => {
