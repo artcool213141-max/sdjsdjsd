@@ -126,6 +126,7 @@ async def handle_start(chat_id: int, user_id: int, payload: str):
             "parse_mode": "HTML",
             "reply_markup": sub_keyboard(missing, payload),
         })
+        await ensure_callbacks_allowed()
     else:
         await tg_call("sendMessage", {
             "chat_id": chat_id,
@@ -157,60 +158,97 @@ async def webhook_info():
         return r.json()
 
 
+async def ensure_callbacks_allowed():
+    """Самолечение: если вебхук настроен без callback_query, кнопки «Я подписался»
+    будут вечно крутить загрузку. Проверяем и переустанавливаем вебхук."""
+    try:
+        async with httpx.AsyncClient(timeout=8) as client:
+            r = await client.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getWebhookInfo")
+            info = (r.json() or {}).get("result") or {}
+            allowed = info.get("allowed_updates") or []
+            url = info.get("url")
+            print("webhook info: url=", url, "allowed=", allowed,
+                  "last_error=", info.get("last_error_message"))
+            if url and allowed and "callback_query" not in allowed:
+                payload = {
+                    "url": url,
+                    "allowed_updates": ["message", "callback_query", "pre_checkout_query"],
+                }
+                if WEBHOOK_SECRET:
+                    payload["secret_token"] = WEBHOOK_SECRET
+                rr = await client.post(
+                    f"https://api.telegram.org/bot{BOT_TOKEN}/setWebhook", json=payload)
+                print("webhook re-set:", rr.json())
+    except Exception as e:
+        print("ensure_callbacks_allowed exception:", repr(e))
+
+
 async def handle_check(cq: dict):
     user_id = cq["from"]["id"]
     payload = clean_payload((cq.get("data") or "")[4:])
     msg = cq.get("message") or {}
     print("handle_check: user", user_id)
+    answered = False
 
-    # Проверяем подписку по каждому каналу, отличая «не подписан» от «не смогли проверить»
-    missing = []
-    had_error = False
-    for ch in MANDATORY_CHANNELS:
-        m = await is_member(ch["id"], user_id)
-        print("handle_check: channel", ch["id"], "->", m)
-        if m is True:
-            continue
-        if m is None:
-            had_error = True
-            if SKIP_CHECK_ERRORS:
+    try:
+        missing = []
+        had_error = False
+        for ch in MANDATORY_CHANNELS:
+            m = await is_member(ch["id"], user_id)
+            print("handle_check: channel", ch["id"], "->", m)
+            if m is True:
                 continue
-        missing.append(ch)
+            if m is None:
+                had_error = True
+                if SKIP_CHECK_ERRORS:
+                    continue
+            missing.append(ch)
 
-    if missing:
-        # ЯВНОЕ всплывающее окно, чтобы кнопка не выглядела «проигнорированной»
-        if had_error:
-            alert = "⚠️ Не удалось проверить подписку: бот не видит канал. Сообщите администратору."
-        else:
-            alert = "❌ Вы ещё не подписаны на канал. Подпишитесь и нажмите кнопку снова."
+        if missing:
+            if had_error:
+                alert = "⚠️ Не удалось проверить подписку: бот не видит канал. Сообщите администратору."
+            else:
+                alert = "❌ Вы ещё не подписаны на канал. Подпишитесь и нажмите кнопку снова."
+            answered = True
+            await tg_call("answerCallbackQuery", {
+                "callback_query_id": cq["id"],
+                "text": alert,
+                "show_alert": True,
+            })
+            return
+
+        answered = True
         await tg_call("answerCallbackQuery", {
             "callback_query_id": cq["id"],
-            "text": alert,
-            "show_alert": True,
+            "text": "✅ Подписка подтверждена!",
+            "show_alert": False,
         })
-        return
 
-    await tg_call("answerCallbackQuery", {
-        "callback_query_id": cq["id"],
-        "text": "✅ Подписка подтверждена!",
-        "show_alert": False,
-    })
-
-    if msg.get("chat") and msg.get("message_id"):
-        await tg_call("editMessageText", {
-            "chat_id": msg["chat"]["id"],
-            "message_id": msg["message_id"],
-            "text": OPEN_TEXT,
-            "parse_mode": "HTML",
-            "reply_markup": open_keyboard(payload),
-        })
-    else:
-        await tg_call("sendMessage", {
-            "chat_id": user_id,
-            "text": OPEN_TEXT,
-            "parse_mode": "HTML",
-            "reply_markup": open_keyboard(payload),
-        })
+        if msg.get("chat") and msg.get("message_id"):
+            await tg_call("editMessageText", {
+                "chat_id": msg["chat"]["id"],
+                "message_id": msg["message_id"],
+                "text": OPEN_TEXT,
+                "parse_mode": "HTML",
+                "reply_markup": open_keyboard(payload),
+            })
+        else:
+            await tg_call("sendMessage", {
+                "chat_id": user_id,
+                "text": OPEN_TEXT,
+                "parse_mode": "HTML",
+                "reply_markup": open_keyboard(payload),
+            })
+    except Exception as e:
+        print("handle_check exception:", repr(e))
+    finally:
+        # Что бы ни случилось — обязательно останавливаем «вечную загрузку» на кнопке
+        if not answered:
+            await tg_call("answerCallbackQuery", {
+                "callback_query_id": cq["id"],
+                "text": "Ошибка проверки, попробуйте ещё раз",
+                "show_alert": True,
+            })
 
 
 def kb(rows):
