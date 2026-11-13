@@ -7,6 +7,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Подключаем скрипт для анимаций .tgs (Lottie) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         :root {
@@ -74,7 +76,7 @@
             letter-spacing: 0.15em; color: #cfe0ff; margin: 0 0 16px 4px;
         }
 
-        /* Горизонтальная карточка игры (в стиле карточек с главной) */
+        /* Горизонтальная карточка игры */
         .game-card {
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%);
             border: 1px solid var(--glass-line);
@@ -91,7 +93,15 @@
             cursor: pointer;
         }
         .game-card:active { transform: scale(0.97); border-color: #fff; background: rgba(255, 255, 255, 0.24); }
-        .game-card img { width: 50px; height: 50px; object-fit: contain; filter: drop-shadow(0 4px 6px rgba(0, 20, 90, 0.4)); }
+        
+        /* Стили для анимаций вместо картинок */
+        .game-anim {
+            width: 50px;
+            height: 50px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 4px 6px rgba(0, 20, 90, 0.4));
+        }
+
         .card-title { font-weight: 900; font-style: italic; text-transform: uppercase; font-size: 16px; line-height: 1; letter-spacing: -0.3px; }
         .card-desc { font-size: 10px; font-weight: 700; color: #cfe0ff; text-transform: uppercase; opacity: 0.95; margin-top: 5px; }
 
@@ -131,11 +141,53 @@
         <h1 class="games-title"></h1>
 
         <!-- МИНЫ -->
-        <div onclick="openMines()" class="game-card">
-            <img src="img/bomb.png" alt="Мины">
+        <div onclick="openPage('mines.html')" class="game-card">
+            <div id="anim-mine" class="game-anim"></div>
             <div>
                 <div class="card-title">Мины</div>
                 <div class="card-desc">Что бы не проиграть, не попадайся на бомбы...</div>
+            </div>
+            <div class="ml-auto opacity-50">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- КРАШ -->
+        <div onclick="openPage('crash.html')" class="game-card">
+            <div id="anim-crash" class="game-anim"></div>
+            <div>
+                <div class="card-title">Краш</div>
+                <div class="card-desc">Успей забрать коэффициент до падения ракеты</div>
+            </div>
+            <div class="ml-auto opacity-50">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- РОЛЛС -->
+        <div onclick="openPage('rolls.html')" class="game-card">
+            <div id="anim-rolls" class="game-anim"></div>
+            <div>
+                <div class="card-title">Роллс</div>
+                <div class="card-desc">Крути колесо фортуны и забирай общий банк</div>
+            </div>
+            <div class="ml-auto opacity-50">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </div>
+        </div>
+
+        <!-- ПЛИНКО -->
+        <div onclick="openPage('plinko.html')" class="game-card">
+            <div id="anim-plinko" class="game-anim"></div>
+            <div>
+                <div class="card-title">Плинко</div>
+                <div class="card-desc">Бросай шарик и наблюдай, куда упадет множитель</div>
             </div>
             <div class="ml-auto opacity-50">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -165,10 +217,43 @@
             window.location.href = 'index.html';
         }
 
-        function openMines() {
+        function openPage(url) {
             if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
-            window.location.href = 'mines.html?v=' + Date.now();
+            window.location.href = url + '?v=' + Date.now();
         }
+
+        // Запуск Lottie-анимаций из .tgs файлов
+        lottie.loadAnimation({
+            container: document.getElementById('anim-mine'),
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            path: 'mine.tgs'
+        });
+
+        lottie.loadAnimation({
+            container: document.getElementById('anim-crash'),
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            path: 'crash.tgs'
+        });
+
+        lottie.loadAnimation({
+            container: document.getElementById('anim-rolls'),
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            path: 'rolls.tgs'
+        });
+
+        lottie.loadAnimation({
+            container: document.getElementById('anim-plinko'),
+            renderer: 'svg',
+            loop: true,
+            autoplay: true,
+            path: 'plinko.tgs'
+        });
 
         async function loadBalance() {
             const userId = tg.initDataUnsafe?.user?.id || 8015661230;
@@ -187,7 +272,7 @@
 
         loadBalance();
 
-        // Поднимающиеся пузырьки (только оформление)
+        // Поднимающиеся пузырьки (оформление)
         (function makeSparks() {
             const box = document.getElementById('sparks');
             for (let i = 0; i < 22; i++) {
