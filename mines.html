@@ -221,6 +221,20 @@
             border: 1px solid rgba(255, 255, 255, 0.4);
             box-shadow: 0 6px 16px rgba(5, 25, 100, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35);
         }
+
+        /* Шапка как в Crash */
+        .top-head { position:sticky; top:0; z-index:50; flex:0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:8px;
+            padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px; background:rgba(7,18,55,.75); border-bottom:1px solid rgba(255,255,255,.1); backdrop-filter:blur(10px); }
+        .th-left { display:flex; align-items:center; gap:10px; min-width:0; }
+        .back-btn { width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.1); cursor:pointer; flex:0 0 auto; }
+        .back-btn:active { transform:scale(.92); }
+        .brand { font-weight:900; font-style:italic; letter-spacing:-.03em; font-size:1.15rem; text-transform:uppercase; white-space:nowrap; }
+        .brand span { color:var(--blue-light); }
+        .brand .tag { margin-left:6px; font-size:.6rem; font-weight:900; letter-spacing:.08em; padding:2px 7px; border-radius:6px; background:var(--blue); color:#fff; vertical-align:2px; font-style:normal; }
+        .balances { display:flex; gap:6px; }
+        .pill { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.1); padding:6px 10px; border-radius:999px; font-weight:800; font-size:.82rem; }
+        .pill img { width:15px; height:15px; object-fit:contain; }
+        .num { font-variant-numeric:tabular-nums; }
     </style>
 </head>
 <body>
@@ -228,32 +242,21 @@
     <canvas id="stars-canvas"></canvas>
 
     <div class="main-wrapper">
+        <!-- ШАПКА -->
+        <header class="top-head">
+                <div class="th-left">
+                    <div class="back-btn" onclick="location.href='index.html'">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+                    </div>
+                    <div class="brand">Panda<span>Gift</span><span class="tag">MINES</span></div>
+                </div>
+                <div class="balances">
+                    <div class="pill"><span id="bal-stars" class="num">0.00</span><img src="img/star.png" alt="STAR"></div>
+                    <div class="pill"><span id="bal-ton" class="num">0.00</span><img src="img/ton.png" alt="TON"></div>
+                </div>
+        </header>
+
         <div class="scrollable-content">
-            <!-- ШАПКА -->
-            <div class="flex justify-between items-center mb-2">
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <img id="user-avatar" src="img/pepe.png" class="w-12 h-12 rounded-2xl object-cover bg-gray-900" style="border:2px solid rgba(255,255,255,0.6)">
-                        <div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 border-2 border-black rounded-full" style="background:#8fc2ff"></div>
-                    </div>
-                    <div>
-                        <div id="display-name" class="text-[13px] font-black text-white tracking-wide uppercase italic">ИГРОК</div>
-                        <div id="display-id" class="text-[10px] font-bold opacity-80" style="color:#cfe0ff">ID: 00000000</div>
-                    </div>
-                </div>
-
-                <div class="balance-container-v2">
-                    <div class="balance-item-v2">
-                        <img src="img/star.png" alt="STAR">
-                        <span id="bal-stars">0.00</span>
-                    </div>
-                    <div class="balance-item-v2">
-                        <img src="img/ton.png" alt="TON">
-                        <span id="bal-ton">0.00</span>
-                    </div>
-                </div>
-            </div>
-
             <!-- ИГРОВАЯ ЗОНА -->
             <div class="mines-wrapper">
                 <div id="stats-area" class="invisible mb-3">
@@ -328,11 +331,6 @@
 
     // Инициализация профиля и балансов
     async function initUser() {
-        document.getElementById('display-name').innerText = (user.first_name || user.username || 'Игрок').toUpperCase();
-        document.getElementById('display-id').innerText = `ID: ${user.id}`;
-        if (user.photo_url) {
-            document.getElementById('user-avatar').src = user.photo_url;
-        }
         await syncBalances();
     }
 
