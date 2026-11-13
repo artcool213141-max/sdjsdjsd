@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>PandaGift - Rolls</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap');
+
+:root{
+  --bg:#07173f; --blue:#2f6bff; --blue-light:#8fc2ff; --soft:#cfe0ff;
+  --gold:#ffd24a; --danger:#ff5a5a; --success:#43d9a3; --muted:#8d9bc4;
+  --panel:#0f2354; --line:rgba(255,255,255,.1);
+  --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;overflow-x:hidden;background:var(--bg);color:#fff;font-family:'Montserrat',sans-serif}
+body{min-height:100vh;min-height:100dvh;background:linear-gradient(180deg,#112a6e 0%,#0b1d52 100%)}
+.num{font-variant-numeric:tabular-nums}
+
+/* header */
+header{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:calc(10px + var(--safe-top)) 14px 10px;background:rgba(7,18,55,.75);border-bottom:1px solid var(--line);z-index:50;backdrop-filter:blur(8px)}
+.left{display:flex;align-items:center;gap:10px;min-width:0}
+.back-btn{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1);cursor:pointer;flex:0 0 auto}
+.back-btn:active{transform:scale(.92)}
+.brand{font-weight:900;font-style:italic;letter-spacing:-.03em;font-size:1.15rem;text-transform:uppercase}
+.brand span{color:var(--blue-light)}
+.tag{margin-left:6px;font-size:.62rem;font-weight:900;letter-spacing:.1em;padding:3px 8px;border-radius:999px;background:var(--blue);color:#fff;vertical-align:2px}
+.balances{display:flex;gap:6px}
+.pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid var(--line);padding:6px 10px;border-radius:999px;font-weight:800;font-size:.82rem}
+.pill img{width:16px;height:16px;object-fit:contain}
+
+/* history */
+.history{display:flex;gap:6px;padding:8px 14px;overflow-x:auto;scrollbar-width:none;background:rgba(7,18,55,.4);border-bottom:1px solid var(--line);min-height:38px;align-items:center}
+.history::-webkit-scrollbar{display:none}
+.hchip{flex:0 0 auto;display:flex;gap:5px;align-items:center;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(255,255,255,.07);border:1px solid var(--line);white-space:nowrap}
+.hchip b{color:var(--gold)}
+.hempty{font-size:11px;font-weight:700;color:var(--muted)}
+
+/* stage */
+.stage{position:relative;padding:14px 14px 10px;display:flex;flex-direction:column;align-items:center;gap:12px;
+  background:radial-gradient(ellipse at 50% 100%,rgba(47,107,255,.32),transparent 65%)}
+.pot{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.pp{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid var(--line);font-weight:800;font-size:12px}
+.pp img{width:14px;height:14px;object-fit:contain}
+.pp.total{border-color:rgba(255,210,74,.45);color:var(--gold)}
+
+.wheel-wrap{position:relative;width:clamp(240px,72vw,310px);aspect-ratio:1;margin-top:8px}
+.pointer{position:absolute;top:-10px;left:50%;transform:translateX(-50%);z-index:10;width:0;height:0;
+  border-left:13px solid transparent;border-right:13px solid transparent;border-top:22px solid #fff;filter:drop-shadow(0 3px 6px rgba(0,0,0,.6))}
+.wheel{position:absolute;inset:0;border-radius:50%;border:6px solid #0b1d52;
+  box-shadow:0 0 44px rgba(47,107,255,.5),inset 0 0 26px rgba(0,0,0,.45);
+  background:conic-gradient(#14295f 0 360deg);will-change:transform}
+.wav{position:absolute;width:11%;aspect-ratio:1;border-radius:50%;transform:translate(-50%,-50%);overflow:hidden;border:2px solid #fff;
+  display:flex;align-items:center;justify-content:center;font-weight:900;font-size:11px;color:#fff;box-shadow:0 0 8px rgba(0,0,0,.55)}
+.wav img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:34%;aspect-ratio:1;border-radius:50%;z-index:5;
+  background:radial-gradient(circle at 50% 30%,#16348a,#0b1d52);border:3px solid var(--blue-light);box-shadow:0 0 22px rgba(47,107,255,.55);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.hub .timer{font-size:clamp(1.3rem,6.4vw,1.8rem);font-weight:900;line-height:1}
+.hub .label{margin-top:4px;font-size:8.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--blue-light)}
+.status{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);text-align:center;
+  background:rgba(7,23,63,.8);border:1px solid rgba(255,255,255,.15);padding:5px 14px;border-radius:999px;max-width:92%}
+.status.live{color:var(--success);border-color:rgba(67,217,163,.4)}
+.status.warn{color:var(--gold);border-color:rgba(255,210,74,.4)}
+.status.err{color:var(--danger);border-color:rgba(255,90,90,.4)}
+.chance{font-size:12px;font-weight:800;color:var(--muted);min-height:16px}
+.chance b{color:var(--blue-light)}
+
+/* panel */
+.panel{background:var(--panel);border-top:1px solid var(--line);padding:10px 14px calc(10px + var(--safe-bottom));display:flex;flex-direction:column;gap:8px;z-index:60}
+.modes{display:flex;gap:8px}
+.mode{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 0;border-radius:10px;font-size:11px;font-weight:800;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--line);cursor:pointer;transition:.15s}
+.mode img{width:14px;height:14px}
+.mode.active{background:var(--blue);color:#fff;border-color:var(--blue-light);box-shadow:0 0 12px rgba(47,107,255,.4)}
+.row{display:flex;gap:8px;align-items:stretch}
+.field{flex:1;background:rgba(7,23,63,.7);border:1px solid var(--line);border-radius:12px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.field label{font-size:9px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:1px}
+.field input{background:transparent;border:0;outline:0;color:var(--blue-light);font:900 1.1rem 'Montserrat',sans-serif;width:100%;padding:0}
+.locked{opacity:.45;pointer-events:none}
+.gift-btn{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:0 12px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);font-size:11px;font-weight:800;color:var(--soft);cursor:pointer;max-width:44%}
+.gift-btn.sel{border-color:var(--gold);color:var(--gold)}
+.gift-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quick{display:flex;gap:6px}
+.quick div{flex:1;text-align:center;padding:6px 0;border-radius:8px;font-size:11px;font-weight:700;color:var(--soft);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);cursor:pointer}
+.quick div:active{background:rgba(255,255,255,.18)}
+.worth{font-size:11px;font-weight:700;color:var(--muted);text-align:center;min-height:14px}
+.worth b{color:var(--gold)}
+.btn-main{width:100%;padding:14px 0;border:0;border-radius:14px;background:var(--blue);color:#fff;font:900 1rem 'Montserrat',sans-serif;text-transform:uppercase;box-shadow:0 6px 18px rgba(47,107,255,.4);cursor:pointer;transition:transform .1s}
+.btn-main:active{transform:scale(.97)}
+.btn-main:disabled{filter:grayscale(.6);opacity:.45;box-shadow:none;cursor:default}
+
+/* players */
+.players{background:#1b2132;border-top:1px solid var(--line);padding:14px 12px calc(24px + var(--safe-bottom));min-height:40dvh}
+.players-head{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--muted);padding:0 6px 8px}
+#plist{display:flex;flex-direction:column;gap:6px}
+.pempty{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:6px 0}
+.prow{display:flex;align-items:center;gap:10px;padding:7px 9px;border-radius:12px;background:rgba(255,255,255,.045);border-left:4px solid var(--pc,#2f6bff);animation:slideUp .35s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes slideUp{from{opacity:0;transform:translateY(22px) scale(.97)}to{opacity:1;transform:none}}
+.prow.me{box-shadow:inset 0 0 0 1px var(--blue-light)}
+.prow.win{background:linear-gradient(135deg,rgba(255,210,74,.2),rgba(47,107,255,.22));box-shadow:inset 0 0 0 1px rgba(255,210,74,.6)}
+.prow.lost{opacity:.5}
+.av{position:relative;width:36px;height:36px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;flex:0 0 auto;color:#fff}
+.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pmid{flex:1;min-width:0}
+.pname{font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pbreak{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:11px;font-weight:800;color:var(--gold)}
+.pbreak span{display:inline-flex;align-items:center;gap:3px}
+.pbreak img{width:12px;height:12px;object-fit:contain}
+.ppct{flex:0 0 auto;font-size:15px;font-weight:900;color:var(--blue-light)}
+
+/* modal / toast */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.show{display:flex}
+.modal{background:#112557;border:1px solid rgba(255,255,255,.15);border-radius:20px;width:100%;max-width:380px;max-height:78vh;display:flex;flex-direction:column;padding:16px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:14px}
+.modal-head button{background:none;border:0;color:var(--muted);font:700 12px 'Montserrat',sans-serif;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;overflow-y:auto;padding:4px;margin-top:12px}
+.inv{background:rgba(7,23,63,.6);border:1px solid var(--line);border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;cursor:pointer}
+.inv:active{transform:scale(.96)}
+.inv.off{opacity:.4;pointer-events:none}
+.inv img{width:52px;height:52px;object-fit:contain;border-radius:10px}
+.inv .n{font-size:10px;font-weight:700;color:var(--soft);line-height:1.15;word-break:break-word}
+.inv .p{font-size:11px;font-weight:800;color:var(--gold)}
+.empty{grid-column:1/-1;text-align:center;font-size:12px;color:var(--muted);padding:18px 0}
+
+.winbox{text-align:center;max-width:320px;align-items:center;gap:6px;padding:22px 18px;border-color:rgba(255,210,74,.55);box-shadow:0 0 50px rgba(47,107,255,.5)}
+.winbox .wav2{position:relative;width:78px;height:78px;border-radius:50%;overflow:hidden;border:3px solid var(--gold);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:30px;margin-bottom:4px;box-shadow:0 0 22px rgba(255,210,74,.5)}
+.winbox .wav2 img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.winbox .cap{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.winbox .wn{font-size:1.25rem;font-weight:900;color:var(--gold);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.winbox .wp{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;font-weight:900;font-size:1rem;align-items:center}
+.winbox .wp span{display:inline-flex;align-items:center;gap:4px}
+.winbox .wp img{width:16px;height:16px;object-fit:contain}
+.winbox .me-line{margin-top:4px;font-weight:900;color:var(--success)}
+
+#toast{position:fixed;left:50%;top:calc(70px + var(--safe-top));transform:translate(-50%,-20px);z-index:2000;opacity:0;pointer-events:none;
+  background:#0b1d52;border:1px solid var(--blue-light);padding:10px 18px;border-radius:12px;font-weight:800;font-size:13px;transition:.25s;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.win{border-color:var(--success);color:var(--success)}
+#toast.lose{border-color:var(--danger);color:var(--danger)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="left">
+    <div class="back-btn" onclick="location.href='index.html'">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+    </div>
+    <div class="brand">Panda<span>Gift</span><span class="tag">ROLLS</span></div>
+  </div>
+  <div class="balances">
+    <div class="pill"><span id="val-stars" class="num">0</span><img src="img/star.png" alt=""></div>
+    <div class="pill"><span id="val-ton" class="num">0.00</span><img src="img/ton.png" alt=""></div>
+  </div>
+</header>
+
+<div id="history" class="history"><span class="hempty">Победителей пока нет</span></div>
+
+<div class="stage">
+  <div class="pot">
+    <div class="pp"><img src="img/star.png" alt=""><span id="pot-stars" class="num">0</span></div>
+    <div class="pp"><img src="img/ton.png" alt=""><span id="pot-ton" class="num">0</span></div>
+    <div class="pp">🎁 <span id="pot-gifts" class="num">0</span></div>
+    <div class="pp total">≈ <span id="pot-total" class="num">0</span> <img src="img/star.png" alt=""></div>
+  </div>
+
+  <div class="wheel-wrap">
+    <div class="pointer"></div>
+    <div class="wheel" id="wheel"></div>
+    <div class="hub">
+      <div class="timer num" id="timer">--</div>
+      <div class="label" id="hub-label">Подключение</div>
+    </div>
+  </div>
+
+  <div id="status" class="status">Подключение…</div>
+  <div id="chance" class="chance"></div>
+</div>
+
+<div class="panel">
+  <div class="modes">
+    <div id="mode-stars" class="mode active" onclick="switchMode('stars')"><img src="img/star.png" alt=""> STARS</div>
+    <div id="mode-ton" class="mode" onclick="switchMode('ton')"><img src="img/ton.png" alt=""> TON</div>
+  </div>
+  <div class="row">
+    <div class="field" id="bet-wrap">
+      <label>Ставка</label>
+      <input type="number" id="input-bet" class="num" value="10" min="0" step="any" inputmode="decimal">
+    </div>
+    <div class="gift-btn" id="gift-btn" onclick="openInventory()">🎁 <span id="gift-label">Подарок</span></div>
+  </div>
+  <div class="quick" id="quick"></div>
+  <div class="worth" id="worth"></div>
+  <button id="btn-main" class="btn-main" onclick="placeBet()" disabled>Подключение…</button>
+</div>
+
+<section class="players">
+  <div class="players-head"><span>Игроки раунда</span><span>Шанс</span></div>
+  <div id="plist"></div>
+  <div id="pempty" class="pempty">Ставок пока нет — будь первым</div>
+</section>
+
+<div id="inv-modal" class="overlay" onclick="if(event.target===this)closeInventory()">
+  <div class="modal">
+    <div class="modal-head"><span>Выберите подарок для ставки</span><button onclick="closeInventory()">Закрыть</button></div>
+    <div id="inv-grid" class="grid"></div>
+  </div>
+</div>
+
+<div id="win-modal" class="overlay" onclick="if(event.target===this)hideWinner()">
+  <div class="modal winbox">
+    <div class="wav2" id="win-av"></div>
+    <div class="cap">Победитель</div>
+    <div class="wn" id="win-name"></div>
+    <div class="wp" id="win-prize"></div>
+    <div class="me-line" id="win-me"></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ================= КОНФИГ ================= */
+// Если API лежит на другом домене, чем эта страница — впиши его: 'https://xxx.vercel.app'
+const API_BASE = '';
+
+const tg = window.Telegram.WebApp;
+try { tg.ready(); tg.expand(); tg.disableVerticalSwipes?.(); } catch(e){}
+
+const tgUser = tg.initDataUnsafe?.user;
+const UID = tgUser ? String(tgUser.id) : '12345';
+const UNAME = tgUser ? (tgUser.first_name || tgUser.username || 'Игрок') : 'Тестовый игрок';
+const AVATAR = (tgUser && tgUser.photo_url) || '';
+
+const PALETTE = ['#2f6bff','#43d9a3','#ffd24a','#ff5a8a','#a06bff','#ff8a3d','#35c9e8','#e86bff','#9be04a','#ff6b5a'];
+const FREE_SPIN_DPS = 1100;   // скорость «разгона» колеса, пока сервер выбирает победителя (град/сек)
+
+/* ================= СОСТОЯНИЕ ================= */
+let S = null, offset = 0, busy = false, apiDown = false, cur = 'stars';
+let selectedGift = null, me = { balance: 0, ton: 0 };
+let pollTimer = null, lastApiError = '', baseIdx = 0;
+let lastRoundKey = '', lastSig = '', shownRound = null, lastPhaseKey = '';
+let rot = 0, spinMode = 'idle', lastT = performance.now();
+let players = [];
+
+const $ = id => document.getElementById(id);
+const el = {
+  wheel: $('wheel'), timer: $('timer'), hub: $('hub-label'), status: $('status'), chance: $('chance'),
+  btn: $('btn-main'), bet: $('input-bet'), betWrap: $('bet-wrap'), quick: $('quick'), worth: $('worth'),
+  giftBtn: $('gift-btn'), giftLabel: $('gift-label'), plist: $('plist'), pempty: $('pempty'), history: $('history')
+};
+
+/* ================= УТИЛИТЫ ================= */
+const srvNow = () => Date.now() + offset;
+const round2 = n => Math.round(n * 100) / 100;
+function setText(node, v){ if (node.textContent !== v) node.textContent = v; }
+function haptic(kind, type){ try { tg.HapticFeedback?.[kind]?.(type); } catch(e){} }
+function toast(msg, kind=''){
+  if (/^HTTP \d+|Failed to fetch|NetworkError|Load failed|нет ответа/i.test(msg)) msg = 'Rolls временно недоступны, попробуйте позже';
+  const t = $('toast'); t.className = kind; t.textContent = msg; void t.offsetWidth; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2800);
+}
+function fmtAmt(v, c){ v = Number(v); return c === 'ton' ? v.toFixed(2) : String(+v.toFixed(2)); }
+const ratio = () => (S && S.stars_per_ton) || 140;
+
+const BASES = API_BASE ? [API_BASE] : ['', '/api', 'https://sdjsdjsd.vercel.app'];
+async function api(path, opts = {}){
+  let lastErr = null;
+  for (let k = 0; k < BASES.length; k++) {
+    const i = (baseIdx + k) % BASES.length;
+    const url = BASES[i] + path;
+    try {
+      const res = await fetch(url, {
+        method: opts.method || 'GET',
+        headers: { 'Content-Type': 'application/json', 'x-init-data': tg.initData || '' },
+        body: opts.body ? JSON.stringify(opts.body) : undefined
+      });
+      let data = null; try { data = await res.json(); } catch(e){}
+      const notFound = res.status === 404 && !(data && data.detail && data.detail !== 'Not Found');
+      if (notFound || (data === null && !res.ok)) { lastErr = new Error('HTTP ' + res.status + ' ' + url); continue; }
+      if (!res.ok) {
+        let d = data && (data.detail ?? data.error);
+        if (d && typeof d !== 'string') d = JSON.stringify(d);
+        const err = new Error(d || ('HTTP ' + res.status)); err.server = true; throw err;
+      }
+      baseIdx = i; return data;
+    } catch(e){
+      if (e.server) throw e;
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('нет ответа');
+}
+
+/* ================= ФАЗА (по серверным часам) ================= */
+function phase(){
+  if (!S) return { state: 'load' };
+  const n = srvNow();
+  if (n < S.spin_at) return { state: 'wait', round: S.round_id, left: S.spin_at - n };
+  if (n < S.spin_end) return { state: 'spin', round: S.round_id };
+  if (n < S.end_at) return { state: 'show', round: S.round_id };
+  const left = S.end_at + S.bet_window_ms - n;
+  if (left > 0) return { state: 'wait', round: S.round_id + 1, left, predicted: true };
+  return { state: 'load' };
+}
+const curBets = st => (st.predicted || !S) ? [] : (S.bets || []);
+const distinct = list => new Set(list.map(b => b.uk)).size;
+
+/* ================= ОПРОС СЕРВЕРА ================= */
+async function poll(){
+  clearTimeout(pollTimer);
+  const t0 = Date.now();
+  try {
+    const r = await api(`/rolls/state?user_id=${encodeURIComponent(UID)}`);
+    offset = r.server_time - (t0 + Date.now()) / 2;
+    r.spin_end = r.spin_end;
+    S = r; apiDown = false;
+    renderHistory(r.history || []);
+  } catch(e){
+    apiDown = true; lastApiError = String(e.message || e).slice(0, 60); console.error('poll:', e);
+  }
+  const ph = phase();
+  let delay = 1000;
+  if (ph.state === 'wait') delay = Math.max(250, Math.min(900, ph.left + 40));
+  else if (ph.state === 'spin') delay = 300;
+  else if (ph.state === 'show') delay = Math.max(200, Math.min(1200, S.end_at - srvNow() + 60));
+  if (apiDown) delay = 2000;
+  pollTimer = setTimeout(poll, delay);
+}
+
+async function refreshMe(){
+  try {
+    const r = await api(`/rolls/me/${encodeURIComponent(UID)}`);
+    me.balance = r.balance; me.ton = r.ton_balance; paintBalances();
+    return r;
+  } catch(e){ console.error('me:', e); }
+}
+function paintBalances(){
+  setText($('val-stars'), String(Math.floor(me.balance)));
+  setText($('val-ton'), Number(me.ton).toFixed(2));
+}
+
+/* ================= ИСТОРИЯ ПОБЕДИТЕЛЕЙ ================= */
+let lastHist = '';
+function renderHistory(list){
+  const key = JSON.stringify(list);
+  if (key === lastHist) return;
+  lastHist = key;
+  el.history.innerHTML = '';
+  if (!list.length) { el.history.innerHTML = '<span class="hempty">Победителей пока нет</span>'; return; }
+  list.forEach(h => {
+    const c = document.createElement('div'); c.className = 'hchip';
+    const n = document.createElement('span'); n.textContent = h.username;
+    const b = document.createElement('b'); b.className = 'num'; b.textContent = '+' + Math.round(h.pot_value) + '⭐';
+    c.append(n, b); el.history.appendChild(c);
+  });
+}
+
+/* ================= АВАТАРЫ ================= */
+function avatarFill(node, name, url, color){
+  node.textContent = (String(name || '?').trim().charAt(0) || '?').toUpperCase();
+  const hue = [...String(name || '?')].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+  node.style.background = color || `linear-gradient(135deg,hsl(${hue} 80% 62%),hsl(${(hue + 50) % 360} 75% 52%))`;
+  if (url) {
+    const i = document.createElement('img'); i.src = url; i.alt = ''; i.referrerPolicy = 'no-referrer';
+    i.onerror = () => i.remove(); node.appendChild(i);
+  }
+}
+
+/* ================= КОЛЕСО / ИГРОКИ ================= */
+function buildBoard(bets, result){
+  const total = bets.reduce((a, b) => a + b.value_stars, 0);
+  const map = new Map();
+  bets.forEach(b => {
+    let p = map.get(b.uk);
+    if (!p) { p = { uk: b.uk, name: b.username, avatar: b.avatar_url, idx: map.size, value: 0, stars: 0, ton: 0, gifts: 0, mine: false }; map.set(b.uk, p); }
+    p.value += b.value_stars; p.mine = p.mine || b.mine;
+    if (b.currency === 'stars') p.stars += b.amount;
+    else if (b.currency === 'ton') p.ton += b.amount;
+    else p.gifts++;
+  });
+  players = [...map.values()];
+
+  // --- банк ---
+  setText($('pot-stars'), fmtAmt(bets.filter(b => b.currency === 'stars').reduce((a, b) => a + b.amount, 0), 'stars'));
+  setText($('pot-ton'), fmtAmt(bets.filter(b => b.currency === 'ton').reduce((a, b) => a + b.amount, 0), 'ton'));
+  setText($('pot-gifts'), String(bets.filter(b => b.currency === 'gift').length));
+  setText($('pot-total'), String(Math.round(total)));
+
+  // --- колесо ---
+  el.wheel.querySelectorAll('.wav').forEach(n => n.remove());
+  if (!bets.length || total <= 0) {
+    el.wheel.style.background = 'conic-gradient(#14295f 0 360deg)';
+  } else {
+    let acc = 0; const stops = [];
+    bets.forEach(b => {
+      const s = acc / total * 360; acc += b.value_stars; const e = acc / total * 360;
+      const color = PALETTE[map.get(b.uk).idx % PALETTE.length];
+      stops.push(`${color} ${s}deg ${Math.max(s, e - 0.5)}deg`, `#0b1d52 ${Math.max(s, e - 0.5)}deg ${e}deg`);
+      if (e - s >= 13) {
+        const mid = (s + e) / 2 * Math.PI / 180;
+        const a = document.createElement('div'); a.className = 'wav';
+        a.style.left = (50 + 36 * Math.sin(mid)) + '%'; a.style.top = (50 - 36 * Math.cos(mid)) + '%';
+        a.style.borderColor = color;
+        avatarFill(a, b.username, b.avatar_url, color);
+        el.wheel.appendChild(a);
+      }
+    });
+    el.wheel.style.background = `conic-gradient(${stops.join(',')})`;
+  }
+
+  // --- список игроков ---
+  el.plist.innerHTML = '';
+  const winUk = result && result.status === 'win' ? result.winner_uk : null;
+  players.sort((a, b) => b.value - a.value).forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'prow' + (p.mine ? ' me' : '') + (winUk ? (p.uk === winUk ? ' win' : ' lost') : '');
+    row.style.setProperty('--pc', PALETTE[p.idx % PALETTE.length]);
+    const av = document.createElement('div'); av.className = 'av'; avatarFill(av, p.name, p.avatar);
+    const mid = document.createElement('div'); mid.className = 'pmid';
+    const nm = document.createElement('div'); nm.className = 'pname'; nm.textContent = p.name;
+    const br = document.createElement('div'); br.className = 'pbreak';
+    if (p.stars > 0) br.insertAdjacentHTML('beforeend', `<span><img src="img/star.png" alt="">${fmtAmt(p.stars, 'stars')}</span>`);
+    if (p.ton > 0) br.insertAdjacentHTML('beforeend', `<span><img src="img/ton.png" alt="">${fmtAmt(p.ton, 'ton')}</span>`);
+    if (p.gifts > 0) br.insertAdjacentHTML('beforeend', `<span>🎁 ×${p.gifts}</span>`);
+    mid.append(nm, br);
+    const pct = document.createElement('div'); pct.className = 'ppct num';
+    pct.textContent = (total > 0 ? p.value / total * 100 : 0).toFixed(1) + '%';
+    row.append(av, mid, pct); el.plist.appendChild(row);
+  });
+  el.pempty.style.display = players.length ? 'none' : 'block';
+
+  const mine = players.find(p => p.mine);
+  el.chance.innerHTML = mine && total > 0 ? `Твой шанс: <b>${(mine.value / total * 100).toFixed(1)}%</b>` : '';
+}
+
+/* ================= ВРАЩЕНИЕ ================= */
+function setRot(deg, transition){
+  el.wheel.style.transition = transition || 'none';
+  el.wheel.style.transform = `rotate(${deg}deg)`;
+}
+function finalRot(from, angle, extraTurns){
+  return Math.ceil(from / 360) * 360 + extraTurns * 360 + (360 - angle);
+}
+function applyResult(res){
+  const remain = S.spin_end - srvNow();
+  if (remain < 500) {                       // зашли уже под конец — сразу в финальную позицию
+    rot = finalRot(0, res.angle, 3); setRot(rot); spinMode = 'done'; return;
+  }
+  rot = finalRot(rot, res.angle, remain > 2500 ? 3 : 1);
+  setRot(rot, `transform ${Math.max(900, remain)}ms cubic-bezier(.12,.8,.2,1)`);
+  spinMode = 'ease';
+}
+function resetWheel(){ rot = 0; spinMode = 'idle'; setRot(0); }
+
+/* ================= РЕЖИМЫ / СТАВКА ================= */
+function renderQuick(){
+  const vals = cur === 'ton' ? [0.1, 0.5, 1, 5] : [10, 50, 100, 500];
+  el.quick.innerHTML = '';
+  vals.forEach(v => { const d = document.createElement('div'); d.textContent = '+' + v; d.onclick = () => addBet(v); el.quick.appendChild(d); });
+  [['½', halveBet], ['2×', doubleBet], ['MAX', maxBet]].forEach(([t, f]) => {
+    const d = document.createElement('div'); d.textContent = t; d.onclick = f; el.quick.appendChild(d);
+  });
+}
+function refreshMode(){
+  $('mode-stars').classList.toggle('active', cur === 'stars');
+  $('mode-ton').classList.toggle('active', cur === 'ton');
+  renderQuick(); updateWorth();
+}
+function refreshGiftUI(){
+  el.giftBtn.classList.toggle('sel', !!selectedGift);
+  setText(el.giftLabel, selectedGift ? selectedGift.name : 'Подарок');
+  el.bet.readOnly = !!selectedGift;
+}
+function updateWorth(){
+  const a = selectedGift ? Number(selectedGift.price_stars) : Number(el.bet.value || 0);
+  const v = selectedGift ? a : (cur === 'ton' ? a * ratio() : a);
+  el.worth.innerHTML = a > 0 ? `Вес ставки ≈ <b>${Math.round(v * 10) / 10} ⭐</b>` + (cur === 'ton' && !selectedGift ? ` · 1 TON = ${ratio()} ⭐` : '') : '';
+}
+el.bet.addEventListener('input', updateWorth);
+function clearGift(){ selectedGift = null; refreshGiftUI(); updateWorth(); }
+function switchMode(m){ if (busy) return; cur = m; clearGift(); el.bet.value = m === 'ton' ? 0.5 : 10; refreshMode(); }
+function addBet(v){ if (busy) return; clearGift(); el.bet.value = round2(Number(el.bet.value || 0) + v); updateWorth(); }
+function doubleBet(){ if (busy) return; clearGift(); el.bet.value = round2(Number(el.bet.value || 0) * 2) || 1; updateWorth(); }
+function halveBet(){ if (busy) return; clearGift(); el.bet.value = Math.max(cur === 'ton' ? 0.01 : 1, round2(Number(el.bet.value || 0) / 2)); updateWorth(); }
+function maxBet(){ if (busy) return; clearGift(); el.bet.value = cur === 'ton' ? Number(me.ton).toFixed(2) : Math.floor(me.balance); updateWorth(); }
+
+/* ================= ПОДАРКИ ================= */
+async function openInventory(){
+  const grid = $('inv-grid');
+  grid.innerHTML = '<div class="empty">Загрузка…</div>';
+  $('inv-modal').classList.add('show');
+  try {
+    const r = await api(`/rolls/me/${encodeURIComponent(UID)}`);
+    me.balance = r.balance; me.ton = r.ton_balance; paintBalances();
+    grid.innerHTML = '';
+    const gifts = (r.gifts || []).filter(g => String(g.name || '').trim().toLowerCase() !== 'star');
+    if (!gifts.length) { grid.innerHTML = '<div class="empty">В инвентаре пока нет подарков</div>'; return; }
+    gifts.forEach(g => {
+      const d = document.createElement('div');
+      d.className = 'inv' + (g.price_stars > 0 ? '' : ' off');
+      const img = document.createElement('img'); img.loading = 'lazy'; img.src = g.image_url || 'img/star.png';
+      img.onerror = () => { img.onerror = null; img.src = 'img/star.png'; };
+      const n = document.createElement('div'); n.className = 'n'; n.textContent = g.name;
+      const p = document.createElement('div'); p.className = 'p'; p.textContent = g.price_stars > 0 ? g.price_stars + ' ⭐' : 'нет цены';
+      d.append(img, n, p);
+      d.onclick = () => {
+        selectedGift = g; cur = 'stars'; refreshMode();
+        el.bet.value = g.price_stars; refreshGiftUI(); updateWorth();
+        closeInventory(); haptic('selectionChanged');
+      };
+      grid.appendChild(d);
+    });
+  } catch(e){
+    grid.innerHTML = '';
+    const d = document.createElement('div'); d.className = 'empty'; d.style.color = 'var(--danger)';
+    d.textContent = 'Ошибка: ' + e.message; grid.appendChild(d);
+  }
+}
+function closeInventory(){ $('inv-modal').classList.remove('show'); }
+
+/* ================= ДЕЙСТВИЯ ================= */
+async function placeBet(){
+  if (busy) return;
+  const st = phase();
+  if (st.state !== 'wait') return;
+  if (st.left < 1100) return toast('Раунд вот-вот стартует');
+  const amount = Number(el.bet.value);
+  if (!selectedGift && (!amount || amount <= 0)) return toast('Введите ставку', 'lose');
+  busy = true; el.btn.disabled = true; setText(el.btn, '…');
+  try {
+    const r = await api('/rolls/bet', { method: 'POST', body: {
+      user_id: UID, username: UNAME, avatar_url: AVATAR || null,
+      currency: selectedGift ? 'gift' : cur, amount,
+      gift_key: selectedGift ? selectedGift.key : null
+    }});
+    me.balance = r.balance; me.ton = r.ton_balance; paintBalances();
+    haptic('impactOccurred', 'medium');
+    if (selectedGift) clearGift();
+  } catch(e){
+    toast(e.message, 'lose');
+  }
+  busy = false;
+  poll();
+}
+
+/* ================= ПОБЕДИТЕЛЬ ================= */
+function showWinner(res){
+  const p = res.pot || {};
+  const keep = 1 - ((S && S.fee_pct) || 0) / 100;
+  const parts = [];
+  if (p.pot_stars > 0) parts.push(`<span><img src="img/star.png" alt="">${fmtAmt(p.pot_stars * keep, 'stars')}</span>`);
+  if (p.pot_ton > 0) parts.push(`<span><img src="img/ton.png" alt="">${fmtAmt(p.pot_ton * keep, 'ton')}</span>`);
+  if (p.pot_gifts > 0) parts.push(`<span>🎁 ×${p.pot_gifts}</span>`);
+  const av = $('win-av'); av.innerHTML = ''; avatarFill(av, res.winner_username, res.winner_avatar);
+  $('win-name').textContent = res.winner_username;
+  $('win-prize').innerHTML = parts.length ? '+ ' + parts.join(' ') : '';
+  $('win-me').textContent = res.winner_mine ? 'Это ты! Выигрыш уже на балансе 🎉' : '';
+  $('win-modal').classList.add('show');
+  haptic('notificationOccurred', res.winner_mine ? 'success' : 'warning');
+  if (res.winner_mine) refreshMe();
+}
+function hideWinner(){ $('win-modal').classList.remove('show'); }
+
+/* ================= ГЛАВНЫЙ ЦИКЛ ================= */
+function frame(now){
+  const dt = Math.min(0.1, (now - lastT) / 1000); lastT = now;
+  const st = phase();
+  const bets = curBets(st);
+  const res = (S && !st.predicted) ? S.result : null;
+
+  // новый раунд → сброс колеса и окна победителя
+  const rkey = st.state === 'load' ? lastRoundKey : st.round + (st.predicted ? 'p' : '');
+  if (rkey !== lastRoundKey) { lastRoundKey = rkey; resetWheel(); hideWinner(); lastSig = ''; }
+
+  // перерисовка доски только при изменениях
+  const sig = bets.map(b => b.id).join(',') + '|' + (res ? (res.status + ':' + (res.winner_bet_id || '')) : '');
+  if (sig !== lastSig) { lastSig = sig; buildBoard(bets, res); }
+
+  const phKey = st.state + ':' + (st.round ?? '') + (st.predicted ? 'p' : '');
+  if (phKey !== lastPhaseKey) { lastPhaseKey = phKey; if (st.state === 'wait' || st.state === 'show') refreshMe(); }
+
+  const spinnable = distinct(bets) >= 2;
+  const total = bets.reduce((a, b) => a + b.value_stars, 0);
+
+  /* --- вращение --- */
+  if (st.state === 'spin' && spinnable) {
+    if (res && res.status === 'win' && spinMode !== 'ease' && spinMode !== 'done') applyResult(res);
+    else if (!res && (spinMode === 'idle' || spinMode === 'free')) {
+      spinMode = 'free'; rot += FREE_SPIN_DPS * dt; setRot(rot);
+    }
+  } else if (st.state === 'show' && res && res.status === 'win' && spinMode !== 'ease' && spinMode !== 'done') {
+    rot = finalRot(0, res.angle, 3); setRot(rot); spinMode = 'done';
+  }
+  if (st.state === 'show' && spinMode === 'ease' && S && srvNow() > S.spin_end) spinMode = 'done';
+
+  /* --- победитель --- */
+  if (st.state === 'show' && res && res.status === 'win' && shownRound !== st.round && srvNow() >= S.spin_end - 150) {
+    shownRound = st.round; showWinner(res);
+  }
+  if (st.state === 'show' && res && res.status === 'refund' && shownRound !== st.round) {
+    shownRound = st.round; toast('Мало игроков — ставки возвращены', 'win'); refreshMe();
+  }
+
+  /* --- тексты --- */
+  el.status.classList.toggle('live', st.state === 'spin' && spinnable);
+  el.status.classList.toggle('warn', st.state === 'wait' && bets.length > 0 && !spinnable);
+  el.status.classList.toggle('err', apiDown);
+
+  if (st.state === 'load') {
+    setText(el.status, apiDown ? 'Rolls временно недоступны' : 'Подключение…');
+    setText(el.timer, '--'); setText(el.hub, 'Ожидание');
+    if (!busy) { setText(el.btn, apiDown ? 'Недоступно, попробуйте позже' : 'Подключение…'); el.btn.disabled = true; }
+  } else if (st.state === 'wait') {
+    const sec = Math.max(0, Math.ceil(st.left / 1000));
+    setText(el.timer, String(sec)); setText(el.hub, 'Ставки');
+    setText(el.status, !bets.length ? 'Приём ставок · нужны минимум 2 игрока'
+      : (spinnable ? `Колесо стартует через ${sec}с` : 'Ждём второго игрока'));
+    if (!busy) {
+      const open = st.left >= 1100;
+      el.btn.disabled = !open;
+      setText(el.btn, open ? 'Сделать ставку' : 'Ставки закрыты');
+    }
+  } else if (st.state === 'spin') {
+    setText(el.timer, spinnable ? '🎲' : '—'); setText(el.hub, spinnable ? 'Крутим' : 'Возврат');
+    setText(el.status, spinnable ? 'Колесо крутится…' : (bets.length ? 'Нужно 2 игрока — ставки вернутся' : 'Раунд без ставок'));
+    if (!busy) { setText(el.btn, 'Ждите следующий раунд'); el.btn.disabled = true; }
+  } else {
+    setText(el.timer, '✓'); setText(el.hub, 'Итог');
+    setText(el.status, res && res.status === 'win' ? `Победитель: ${res.winner_username}`
+      : res && res.status === 'refund' ? 'Ставки возвращены' : 'Раунд завершён');
+    if (!busy) { setText(el.btn, 'Скоро новый раунд'); el.btn.disabled = true; }
+  }
+
+  el.betWrap.classList.toggle('locked', busy);
+  requestAnimationFrame(frame);
+}
+
+/* ================= СТАРТ ================= */
+el.status.addEventListener('click', () => { if (apiDown) alert('Диагностика: ' + lastApiError + '\nСтраница: ' + location.origin); });
+refreshMode(); refreshGiftUI();
+refreshMe();
+poll();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
