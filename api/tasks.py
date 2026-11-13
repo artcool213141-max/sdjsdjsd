@@ -60,7 +60,8 @@ def ensure_user(user: dict):
 
 async def is_member(channel: str, user_id: int):
     try:
-        async with httpx.AsyncClient(timeout=10) as c:
+        # Уменьшаем таймаут до 3 секунд, чтобы бот не висел
+        async with httpx.AsyncClient(timeout=3.0) as c:
             r = await c.get(
                 f"https://api.telegram.org/bot{BOT_TOKEN}/getChatMember",
                 params={"chat_id": channel, "user_id": user_id},
@@ -68,7 +69,8 @@ async def is_member(channel: str, user_id: int):
         data = r.json()
         if not data.get("ok"):
             print("getChatMember error:", channel, data.get("description"))
-            return None
+            # Если бот не админ или ошибка канала — считаем, что не подписан (False), а не зависаем (None)
+            return False
         res = data["result"]
         st = res.get("status")
         if st in ("member", "administrator", "creator"):
@@ -78,7 +80,8 @@ async def is_member(channel: str, user_id: int):
         return False
     except Exception as e:
         print("is_member exception:", repr(e))
-        return None
+        # При любой ошибке сети тоже возвращаем False, чтобы кнопка сразу реагировала
+        return False
 
 
 @router.get("/tasks/env_check")
