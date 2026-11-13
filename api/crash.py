@@ -28,7 +28,7 @@ _key = os.environ.get("SUPABASE_SERVICE_KEY")
 sb: Optional[Client] = create_client(_url, _key) if _url and _key else None
 
 # ---------------- настройки ----------------
-BET_WINDOW_MS = 10_000      # окно ставок между полётами
+BET_WINDOW_MS = 5_000       # окно ставок между полётами
 CRASH_SHOW_MS = 3_000       # сколько показывать крах
 BET_CUTOFF_MS = 300         # за сколько мс до взлёта ставки уже не принимаем
 GROWTH = 0.25               # m(t) = e^(GROWTH * t_sec)
@@ -182,6 +182,17 @@ def _slug(link) -> Optional[str]:
     return m.group(1).lower() if m else None
 
 
+def nft_image(link) -> str:
+    """Превью NFT-подарка по ссылке t.me/nft/<Name>-<num>."""
+    sl = _slug(link)
+    return f"https://nft.fragment.com/gift/{sl}.medium.webp" if sl else ""
+
+
+def is_star(name) -> bool:
+    """Подарки с именем Star — это просто звёзды, как подарок их не показываем и не ставим."""
+    return str(name or "").strip().lower() == "star"
+
+
 def inv_parse(raw):
     """users.inventory (text) -> (items, mode). Поддерживает JSON-массив и список через запятую."""
     if raw is None:
@@ -239,17 +250,23 @@ def resolve_item(item) -> dict:
             found = next((c for c in cat if str(c["name"]).lower() == s.lower()), None)
         extra = {"name": s}
     price = found["price_stars"] if found else (extra.get("price_stars") or extra.get("price") or 0)
+    img = ""
+    if found:
+        img = found.get("image_url") or nft_image(found.get("link"))
+    if not img:
+        img = extra.get("image_url") or extra.get("img") or nft_image(extra.get("link")) or ""
     return {
         "key": item_key(item),
         "id": found["id"] if found else None,
         "name": (found["name"] if found else (extra.get("name") or extra.get("title"))) or "Подарок",
         "price_stars": float(price or 0),
-        "image_url": (found.get("image_url") if found else None) or extra.get("image_url") or extra.get("img") or "",
+        "image_url": img,
     }
 
 
 def new_item_like(cat: dict, items: list, mode: str):
     """Формирует запись нового подарка в том же стиле, как уже лежат в инвентаре."""
+    img = cat.get("image_url") or nft_image(cat.get("link"))
     sample = items[0] if items else None
     if isinstance(sample, dict):
         out = {}
@@ -266,7 +283,7 @@ def new_item_like(cat: dict, items: list, mode: str):
             elif lk == "price_ton":
                 out[k] = cat.get("price_ton")
             elif lk in ("image_url", "img", "image"):
-                out[k] = cat.get("image_url")
+                out[k] = img
         return out
     if sample is not None:
         if isinstance(sample, int) or str(sample).isdigit():
@@ -274,7 +291,7 @@ def new_item_like(cat: dict, items: list, mode: str):
         return cat["name"]
     return {
         "id": cat["id"], "name": cat["name"], "link": cat.get("link"),
-        "price_stars": cat["price_stars"], "image_url": cat.get("image_url"),
+        "price_stars": cat["price_stars"], "image_url": img,
     }
 
 
@@ -309,8 +326,9 @@ def give_back_item(user_id: str, item) -> bool:
 
 
 def pick_prize(value: float, orig_name: Optional[str]):
-    """Самый дорогой подарок, цена которого <= выигрыша. Остаток выдаём звёздами."""
-    cands = [c for c in get_catalog() if 0 < float(c["price_stars"]) <= value]
+    """Самый дорогой подарок, цена которого <= выигрыша. Остаток выдаём звёздами.
+    Подарки Star не выдаём — выигрыш в этом случае придёт обычными звёздами."""
+    cands = [c for c in get_catalog() if 0 < float(c["price_stars"]) <= value and not is_star(c["name"])]
     if not cands:
         return None
     return max(cands, key=lambda c: (float(c["price_stars"]), str(c["name"]) == str(orig_name)))
@@ -338,10 +356,11 @@ def payout_bet(bet: dict, m: float):
         rest = value
         g = pick_prize(value, bet.get("gift_name"))
         if g and add_gift(uid, g):
+            gimg = g.get("image_url") or nft_image(g.get("link"))
             rest = r2(value - float(g["price_stars"]))
-            res["gift"] = {"name": g["name"], "image_url": g.get("image_url"), "price_stars": float(g["price_stars"])}
+            res["gift"] = {"name": g["name"], "image_url": gimg, "price_stars": float(g["price_stars"])}
             upd["payout_gift_name"] = g["name"]
-            upd["payout_gift_image"] = g.get("image_url")
+            upd["payout_gift_image"] = gimg
         if rest > 0:
             adjust(uid, rest, 0)
         res["stars"] = rest
@@ -465,6 +484,8 @@ def me(user_id: str, x_init_data: Optional[str] = Header(None)):
     gifts = []
     for it in items:
         g = resolve_item(it)
+        if is_star(g["name"]):
+            continue  # Star — не подарок для ставок
         gifts.append(g)
     return {
         "balance": float(row.get("balance") or 0),
@@ -519,6 +540,9 @@ def place_bet(req: BetReq, x_init_data: Optional[str] = Header(None)):
             raise HTTPException(status_code=400, detail="Подарок не найден в инвентаре")
         gift_item = got[1]
         gift_info = resolve_item(gift_item)
+        if is_star(gift_info["name"]):
+            give_back_item(uid, gift_item)
+            raise HTTPException(status_code=400, detail="Этот подарок нельзя поставить")
         if gift_info["price_stars"] <= 0:
             give_back_item(uid, gift_item)
             raise HTTPException(status_code=400, detail="У этого подарка нет цены в каталоге")
