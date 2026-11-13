@@ -1,766 +1,678 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>PandaGift - Crash Game</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Подключаем Lottie для анимации crach.tgs -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>PandaGift - Crash Game</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap');
 
-        :root {
-            --bg-dark: #07173f;
-            --blue: #2f6bff;
-            --blue-light: #8fc2ff;
-            --soft: #cfe0ff;
-            --gold: #ffd24a;
-            --accent: #2f6bff;
-            --accent-glow: rgba(47, 107, 255, 0.45);
-            --panel: #1f1f21;
-            --panel2: #173278;
-            --panel-line: rgba(255, 255, 255, 0.1);
-            --danger: #ff5a5a;
-            --success: #43d9a3;
-            --muted: #8d8e93;
-            --safe-top: env(safe-area-inset-top, 0px);
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
-        }
+:root{
+  --bg:#07173f; --blue:#2f6bff; --blue-light:#8fc2ff; --soft:#cfe0ff;
+  --gold:#ffd24a; --danger:#ff5a5a; --success:#43d9a3; --muted:#8d9bc4;
+  --panel:#0f2354; --line:rgba(255,255,255,.1);
+  --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg);color:#fff;font-family:'Montserrat',sans-serif}
+body{display:flex;flex-direction:column;height:100vh;height:100dvh;background:linear-gradient(180deg,#112a6e 0%,#0b1d52 100%)}
+.num{font-variant-numeric:tabular-nums}
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+/* ---------- header ---------- */
+header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:calc(10px + var(--safe-top)) 14px 10px;background:rgba(7,18,55,.75);border-bottom:1px solid var(--line);z-index:50}
+.left{display:flex;align-items:center;gap:10px;min-width:0}
+.back-btn{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1);cursor:pointer;flex:0 0 auto}
+.back-btn:active{transform:scale(.92)}
+.brand{font-weight:900;font-style:italic;letter-spacing:-.03em;font-size:1.15rem;text-transform:uppercase}
+.brand span{color:var(--blue-light)}
+.balances{display:flex;gap:6px}
+.pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid var(--line);padding:6px 10px;border-radius:999px;font-weight:800;font-size:.82rem}
+.pill img{width:16px;height:16px;object-fit:contain}
 
-        html, body {
-            background: var(--bg-dark);
-            color: #fff;
-            font-family: 'Montserrat', sans-serif;
-            margin: 0;
-            height: 100%;
-            overflow: hidden;
-            overscroll-behavior: none;
-        }
+/* ---------- history ---------- */
+.history{flex:0 0 auto;display:flex;gap:6px;padding:8px 14px;overflow-x:auto;scrollbar-width:none;background:rgba(7,18,55,.4);border-bottom:1px solid var(--line);min-height:38px}
+.history::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(255,255,255,.07);border:1px solid var(--line)}
+.chip.hi{color:var(--success);border-color:rgba(67,217,163,.35)}
+.chip.lo{color:var(--danger);border-color:rgba(255,90,90,.3)}
+.chip.top{color:var(--gold);border-color:rgba(255,210,74,.4)}
 
-        body {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            height: 100dvh;
-            background: linear-gradient(180deg, #173f9c 0%, #1c4cc0 45%, #173f9c 100%);
-        }
+/* ---------- scene ---------- */
+.scene{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;
+  background:
+   radial-gradient(ellipse at 50% 110%,rgba(47,107,255,.35),transparent 60%),
+   linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+   linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+  background-size:auto,40px 40px,40px 40px}
+.scene.moving{animation:grid 2.4s linear infinite}
+@keyframes grid{to{background-position:0 0,-80px 80px,-80px 80px}}
+#trail{position:absolute;inset:0;width:100%;height:100%;z-index:3}
 
-        .num { font-variant-numeric: tabular-nums; }
+.status{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:20;white-space:nowrap;
+  font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--soft);
+  background:rgba(7,23,63,.8);border:1px solid rgba(255,255,255,.15);padding:5px 14px;border-radius:999px;backdrop-filter:blur(6px)}
+.status.live{color:var(--success);border-color:rgba(67,217,163,.4)}
+.status.crash{color:var(--danger);border-color:rgba(255,90,90,.4)}
 
-        header {
-            padding-top: calc(12px + var(--safe-top));
-            padding-bottom: 12px;
-            padding-left: 16px;
-            padding-right: 16px;
-            background: rgba(10, 24, 70, 0.6);
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-            position: relative;
-            z-index: 110;
-            flex: 0 0 auto;
-        }
+#multiplier{position:absolute;left:50%;top:21%;transform:translate(-50%,-50%);z-index:20;pointer-events:none;
+  font-size:clamp(2.8rem,15vw,4.4rem);font-weight:900;letter-spacing:-.02em;text-shadow:0 0 30px rgba(47,107,255,.6);transition:color .15s}
+#multiplier.idle{color:rgba(255,255,255,.35);text-shadow:none}
+#multiplier.crashed{color:var(--danger);text-shadow:0 0 40px rgba(255,90,90,.55)}
 
-        .back-btn {
-            width: 34px; height: 34px; border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            background: rgba(255,255,255,0.1);
-            color: #fff;
-            transition: background 0.15s, transform 0.15s;
-        }
-        .back-btn:active { transform: scale(0.92); }
+#rocket{position:absolute;z-index:10;width:130px;height:130px;pointer-events:none;left:0;top:0;opacity:.35;transition:opacity .25s;will-change:transform}
+#rocket.on{opacity:1}
+#rocket.hidden{opacity:0}
+#lottie{width:100%;height:100%}
+#fallback-rocket{display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:72px;transform:rotate(-45deg)}
+#boom{position:absolute;z-index:11;font-size:84px;pointer-events:none;display:none;animation:boom .5s ease-out}
+@keyframes boom{from{transform:scale(.2);opacity:0}60%{transform:scale(1.25);opacity:1}to{transform:scale(1);opacity:.9}}
 
-        .brand {
-            font-weight: 900; font-style: italic; letter-spacing: -0.03em;
-            font-size: 1.25rem; text-transform: uppercase; color: #fff;
-        }
-        .brand span { color: var(--blue-light); }
+.players{position:absolute;right:10px;top:50px;z-index:25;display:flex;flex-direction:column;gap:4px;width:136px;max-height:42%;overflow-y:auto;scrollbar-width:none}
+.players::-webkit-scrollbar{display:none}
+.bet-pill{background:rgba(7,23,63,.8);border:1px solid rgba(255,255,255,.08);padding:4px 8px;border-radius:8px;font-size:10px;font-weight:700;display:flex;justify-content:space-between;gap:6px}
+.bet-pill b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:62px}
+.bet-pill.cashed{border-color:var(--success);color:var(--success)}
+.bet-pill.me{border-color:var(--blue-light)}
+.players-title{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;text-align:right}
 
-        .balance-pill {
-            display: flex; align-items: center; gap: 6px;
-            background: rgba(10,24,70,.45);
-            border: 1px solid rgba(255,255,255,0.12);
-            padding: 6px 10px 6px 8px;
-            border-radius: 999px;
-            font-weight: 800;
-            font-size: 0.85rem;
-            color: #fff;
-        }
-        .currency-logo { width: 18px; height: 18px; object-fit: contain; }
+/* ---------- control panel ---------- */
+.panel{flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);padding:10px 14px calc(10px + var(--safe-bottom));display:flex;flex-direction:column;gap:8px;z-index:60}
+.modes{display:flex;gap:8px}
+.mode{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 0;border-radius:10px;font-size:11px;font-weight:800;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--line);cursor:pointer;transition:.15s}
+.mode img{width:14px;height:14px}
+.mode.active{background:var(--blue);color:#fff;border-color:var(--blue-light);box-shadow:0 0 12px rgba(47,107,255,.4)}
+.row{display:flex;gap:8px;align-items:stretch}
+.field{flex:1;background:rgba(7,23,63,.7);border:1px solid var(--line);border-radius:12px;padding:6px 12px;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.field label{font-size:9px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:1px;display:flex;justify-content:space-between}
+.field input{background:transparent;border:0;outline:0;color:var(--blue-light);font:900 1.15rem 'Montserrat',sans-serif;width:100%;padding:0}
+.field.auto{flex:0 0 36%}
+.field.auto input{color:var(--gold)}
+.locked{opacity:.45;pointer-events:none}
+.gift-btn{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:0 12px;border-radius:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);font-size:11px;font-weight:800;color:var(--soft);cursor:pointer;max-width:42%}
+.gift-btn.sel{border-color:var(--gold);color:var(--gold)}
+.gift-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.quick{display:flex;gap:6px}
+.quick div{flex:1;text-align:center;padding:6px 0;border-radius:8px;font-size:11px;font-weight:700;color:var(--soft);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);cursor:pointer}
+.quick div:active{background:rgba(255,255,255,.18)}
+.btn-main{width:100%;padding:15px 0;border:0;border-radius:14px;background:var(--blue);color:#fff;font:900 1rem 'Montserrat',sans-serif;text-transform:uppercase;box-shadow:0 6px 18px rgba(47,107,255,.4);cursor:pointer;transition:transform .1s,background .15s}
+.btn-main:active{transform:scale(.97)}
+.btn-main:disabled{filter:grayscale(.6);opacity:.45;box-shadow:none;cursor:default}
+.btn-main.cash{background:var(--success);color:#07173f;box-shadow:0 6px 18px rgba(67,217,163,.45)}
+.btn-main.placed{background:#223875;color:var(--blue-light);border:1px solid rgba(47,107,255,.5);box-shadow:none}
 
-        .game-container {
-            position: relative;
-            flex: 1 1 auto;
-            min-height: 0;
-            width: 100%;
-            overflow: hidden;
-            background-image:
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
+/* ---------- modal / toast ---------- */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.show{display:flex}
+.modal{background:#112557;border:1px solid rgba(255,255,255,.15);border-radius:20px;width:100%;max-width:380px;max-height:78vh;display:flex;flex-direction:column;padding:16px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:14px}
+.modal-head button{background:none;border:0;color:var(--muted);font:700 12px 'Montserrat',sans-serif;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;overflow-y:auto;padding:4px;margin-top:12px}
+.inv{background:rgba(7,23,63,.6);border:1px solid var(--line);border-radius:12px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;cursor:pointer}
+.inv:active{transform:scale(.96)}
+.inv.off{opacity:.4;pointer-events:none}
+.inv img{width:52px;height:52px;object-fit:contain}
+.inv .n{font-size:10px;font-weight:700;color:var(--soft);line-height:1.15;word-break:break-word}
+.inv .p{font-size:11px;font-weight:800;color:var(--gold)}
+.empty{grid-column:1/-1;text-align:center;font-size:12px;color:var(--muted);padding:18px 0}
 
-        .grid-moving { animation: scrollGrid 3s linear infinite; }
-        @keyframes scrollGrid {
-            from { background-position: 0 0; }
-            to { background-position: -80px 80px; }
-        }
-
-        .status-strip {
-            position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-            z-index: 30;
-            font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
-            color: var(--soft);
-            background: rgba(7, 23, 63, 0.75);
-            border: 1px solid rgba(255,255,255,0.15);
-            padding: 5px 14px;
-            border-radius: 999px;
-            backdrop-filter: blur(6px);
-        }
-        .status-strip.is-live { color: var(--success); border-color: rgba(67,217,163,0.4); }
-        .status-strip.is-crash { color: var(--danger); border-color: rgba(255,90,90,0.4); }
-
-        /* Четкое отображение контейнера анимации crach.tgs */
-        #rocket-wrap {
-            position: absolute;
-            left: 50%;
-            bottom: 20%;
-            transform: translate(-50%, 50%);
-            z-index: 10;
-            width: 180px;
-            height: 180px;
-            pointer-events: none;
-            transition: transform 0.2s ease-out;
-        }
-        .flying { animation: floatRocket 2s ease-in-out infinite alternate; }
-        @keyframes floatRocket {
-            from { transform: translate(-50%, 50%) scale(1); }
-            to { transform: translate(-50%, 45%) scale(1.05); }
-        }
-
-        #multiplier {
-            position: absolute; left: 50%;
-            top: calc(38% - 30px);
-            transform: translate(-50%, -50%);
-            font-size: clamp(3rem, 14vw, 4.2rem);
-            font-weight: 900; z-index: 20;
-            text-shadow: 0 0 30px var(--accent-glow);
-            color: #fff;
-            letter-spacing: -0.02em;
-        }
-        #multiplier.crashed { color: var(--danger); text-shadow: 0 0 40px rgba(255,90,90,0.5); }
-
-        .live-drop {
-            position: absolute; left: 12px; top: 48px; z-index: 25;
-            display: flex; flex-direction: column; gap: 5px;
-            max-width: 70px;
-        }
-        .drop-item {
-            background: rgba(7, 23, 63, 0.85);
-            border: 1px solid rgba(255,255,255,0.1);
-            padding: 4px 6px; border-radius: 6px; text-align: center;
-            font-weight: 800; font-size: 11px;
-        }
-
-        .players-list {
-            position: absolute; right: 12px; top: 48px; z-index: 25;
-            display: flex; flex-direction: column; gap: 4px;
-            max-width: 130px; width: 100%;
-            max-height: 160px; overflow-y: auto;
-            scrollbar-width: none;
-        }
-        .players-list::-webkit-scrollbar { display: none; }
-        .player-bet-pill {
-            background: rgba(7, 23, 63, 0.8);
-            border: 1px solid rgba(255,255,255,0.08);
-            padding: 4px 8px; border-radius: 8px;
-            font-size: 10px; font-weight: 700;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .player-bet-pill.cashed { border-color: var(--success); color: var(--success); }
-
-        .ui-panel {
-            flex: 0 0 auto;
-            width: 100%;
-            background: #112557;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            padding: 12px 16px calc(12px + var(--safe-bottom));
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 100;
-        }
-
-        .mode-row { display: flex; gap: 8px; }
-        .currency-btn {
-            flex: 1;
-            background: rgba(10,24,70,0.6);
-            padding: 8px 0;
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
-            cursor: pointer;
-            text-align: center;
-            font-size: 11px;
-            font-weight: 800;
-            color: var(--muted);
-            display: flex; align-items: center; justify-content: center; gap: 6px;
-            transition: all 0.15s;
-        }
-        .currency-btn img { width: 14px; height: 14px; }
-        .currency-btn.active {
-            border-color: var(--blue-light);
-            background: var(--blue);
-            color: #fff;
-            box-shadow: 0 0 12px rgba(47,107,255,0.4);
-        }
-
-        .bet-row { display: flex; gap: 8px; align-items: stretch; }
-
-        .bet-input-wrap {
-            flex: 1;
-            background: rgba(7, 23, 63, 0.7);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 6px 12px;
-            display: flex; flex-direction: column; justify-content: center;
-        }
-        .bet-input-wrap .label {
-            font-size: 9px; font-weight: 700; text-transform: uppercase;
-            color: var(--muted); margin-bottom: 1px;
-        }
-        input#input-bet {
-            background: transparent; border: none; outline: none;
-            color: var(--blue-light); font-weight: 900; font-size: 1.25rem;
-            width: 100%; padding: 0;
-        }
-        .bet-input-wrap.locked { opacity: 0.45; pointer-events: none; }
-
-        .gift-bet-btn {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 12px; padding: 0 12px;
-            font-size: 11px; font-weight: 800; color: var(--soft);
-            display: flex; align-items: center; gap: 6px; cursor: pointer;
-        }
-
-        .quick-bets { display: flex; gap: 6px; }
-        .quick-btn {
-            flex: 1; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 8px; color: var(--soft); font-size: 11px; font-weight: 700; padding: 5px 0;
-            text-align: center;
-        }
-        .quick-btn:active { background: rgba(255,255,255,0.15); }
-
-        .btn-main {
-            background: var(--blue);
-            color: #fff;
-            font-weight: 950;
-            width: 100%;
-            padding: 14px 0;
-            border: none;
-            border-radius: 14px;
-            font-size: 1rem;
-            text-transform: uppercase;
-            box-shadow: 0 6px 18px rgba(47, 107, 255, 0.4);
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        .btn-main:active { transform: scale(0.97); }
-        .btn-main:disabled { filter: grayscale(0.7); opacity: 0.4; box-shadow: none; }
-        .btn-main.is-live-cashout { background: var(--success); box-shadow: 0 6px 18px rgba(67, 217, 163, 0.4); color: #07173f; }
-        .btn-main.is-bet-placed { background: #223875; color: var(--blue-light); border: 1px solid rgba(47,107,255,0.5); }
-
-        .modal-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.7);
-            z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px;
-        }
-        .modal-overlay.show { display: flex; }
-        .modal-box {
-            background: #112557; border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 20px; width: 100%; max-width: 360px; max-height: 80vh;
-            display: flex; flex-direction: column; overflow: hidden; padding: 16px;
-        }
-        .inventory-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-            overflow-y: auto; padding: 4px; margin-top: 10px;
-        }
-        .inv-item {
-            background: rgba(7, 23, 63, 0.6); border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px; padding: 8px; display: flex; flex-direction: column;
-            align-items: center; cursor: pointer; text-align: center;
-        }
-        .inv-item img { width: 50px; height: 50px; object-fit: contain; margin-bottom: 6px; }
-        .inv-item span { font-size: 10px; font-weight: 700; color: var(--soft); }
-    </style>
+#toast{position:fixed;left:50%;top:calc(70px + var(--safe-top));transform:translate(-50%,-20px);z-index:2000;opacity:0;pointer-events:none;
+  background:#0b1d52;border:1px solid var(--blue-light);padding:10px 18px;border-radius:12px;font-weight:800;font-size:13px;transition:.25s;max-width:88vw;text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.win{border-color:var(--success);color:var(--success)}
+#toast.lose{border-color:var(--danger);color:var(--danger)}
+</style>
 </head>
 <body>
 
-    <header>
-        <div class="flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div onclick="location.href='index.html'" class="back-btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                    </svg>
-                </div>
-                <div class="brand">Panda<span>Gift</span></div>
-            </div>
-            <div class="flex gap-2">
-                <div class="balance-pill">
-                    <span id="val-stars" class="num">0</span>
-                    <img src="img/star.png" class="currency-logo" alt="star">
-                </div>
-                <div class="balance-pill">
-                    <span id="val-ton" class="num">0.00</span>
-                    <img src="img/ton.png" class="currency-logo" alt="ton">
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <div id="main-scene" class="game-container">
-        <div id="live-drop" class="live-drop"></div>
-        <div id="players-list" class="players-list"></div>
-        <div id="status-strip" class="status-strip">Взлёт через 10с</div>
-        <div id="multiplier" class="num">0.00x</div>
-        <!-- Контейнер для анимации crach.tgs -->
-        <div id="rocket-wrap">
-            <div id="lottie-rocket" style="width:100%;height:100%;"></div>
-        </div>
+<header>
+  <div class="left">
+    <div class="back-btn" onclick="location.href='index.html'">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" width="16" height="16"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
     </div>
+    <div class="brand">Panda<span>Gift</span></div>
+  </div>
+  <div class="balances">
+    <div class="pill"><span id="val-stars" class="num">0</span><img src="img/star.png" alt=""></div>
+    <div class="pill"><span id="val-ton" class="num">0.00</span><img src="img/ton.png" alt=""></div>
+  </div>
+</header>
 
-    <div class="ui-panel">
-        <div class="mode-row">
-            <div id="mode-stars" onclick="switchMode('stars')" class="currency-btn active">
-                <img src="img/star.png" alt=""> STARS
-            </div>
-            <div id="mode-ton" onclick="switchMode('ton')" class="currency-btn">
-                <img src="img/ton.png" alt=""> TON
-            </div>
-        </div>
+<div id="history" class="history"></div>
 
-        <div class="bet-row">
-            <div class="bet-input-wrap" id="bet-input-wrap">
-                <span class="label">Ставка</span>
-                <input type="number" id="input-bet" class="num" value="10">
-            </div>
-            <div class="gift-bet-btn" onclick="openInventoryModal()">
-                🎁 Подарок
-            </div>
-        </div>
+<div id="scene" class="scene">
+  <canvas id="trail"></canvas>
+  <div id="status" class="status">Загрузка…</div>
+  <div id="multiplier" class="num idle">1.00x</div>
+  <div id="rocket">
+    <div id="lottie" style="width:100%;height:100%"></div>
+    <div id="fallback-rocket">🚀</div>
+  </div>
+  <div id="boom">💥</div>
+  <div class="players" id="players-wrap">
+    <div class="players-title">Ставки раунда</div>
+    <div id="players" style="display:flex;flex-direction:column;gap:4px"></div>
+  </div>
+</div>
 
-        <div class="quick-bets" id="quick-bets">
-            <div class="quick-btn" onclick="setBet(10)">10</div>
-            <div class="quick-btn" onclick="setBet(50)">50</div>
-            <div class="quick-btn" onclick="setBet(100)">100</div>
-            <div class="quick-btn" onclick="setBet(500)">500</div>
-            <div class="quick-btn" onclick="halveBet()">½</div>
-            <div class="quick-btn" onclick="doubleBet()">2×</div>
-        </div>
+<div class="panel">
+  <div class="modes">
+    <div id="mode-stars" class="mode active" onclick="switchMode('stars')"><img src="img/star.png" alt=""> STARS</div>
+    <div id="mode-ton" class="mode" onclick="switchMode('ton')"><img src="img/ton.png" alt=""> TON</div>
+  </div>
 
-        <button id="btn-main" onclick="onAction()" class="btn-main">Сделать ставку</button>
+  <div class="row">
+    <div class="field" id="bet-wrap">
+      <label>Ставка</label>
+      <input type="number" id="input-bet" class="num" value="10" min="0" step="any" inputmode="decimal">
     </div>
-
-    <!-- Модальное окно выбора подарка из инвентаря-строки -->
-    <div id="inventory-modal" class="modal-overlay">
-        <div class="modal-box">
-            <div class="flex justify-between items-center mb-2">
-                <span class="font-extrabold text-sm">Выберите подарок для ставки</span>
-                <button onclick="closeInventoryModal()" class="text-xs text-gray-400 font-bold">Закрыть</button>
-            </div>
-            <div id="inventory-list" class="inventory-grid"></div>
-        </div>
+    <div class="field auto" id="auto-wrap">
+      <label>Авто-вывод</label>
+      <input type="number" id="input-auto" class="num" placeholder="—" min="1.01" step="0.1" inputmode="decimal">
     </div>
+    <div class="gift-btn" id="gift-btn" onclick="openInventory()">🎁<span id="gift-label">Gifts </span></div>
+  </div>
+
+  <div class="quick" id="quick"></div>
+
+  <button id="btn-main" class="btn-main" onclick="onAction()" disabled>Загрузка…</button>
+</div>
+
+<div id="inv-modal" class="overlay" onclick="if(event.target===this)closeInventory()">
+  <div class="modal">
+    <div class="modal-head"><span>Выберите подарок для ставки</span><button onclick="closeInventory()">Закрыть</button></div>
+    <div id="inv-grid" class="grid"></div>
+  </div>
+</div>
+<div id="toast"></div>
 
 <script>
-    const tg = window.Telegram.WebApp;
-    const SB_URL = "https://xjucalpaoqlrtmofmden.supabase.co";
-    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqdWNhbHBhb3FscnRtb2ZtZGVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDIzODcsImV4cCI6MjA5MjAxODM4N30.3jfEF1lSa1YTBYgc4O8ZtJVpfkJN9SBGmqYn8-Sn7Zo";
-    const SB = supabase.createClient(SB_URL, SB_KEY);
+/* ================= КОНФИГ ================= */
+const tg = window.Telegram.WebApp;
+try { tg.ready(); tg.expand(); tg.disableVerticalSwipes?.(); } catch(e){}
 
-    const BET_WINDOW_MS = 10000;
-    const CRASH_DISPLAY_MS = 3000;
+const SB_URL = "https://xjucalpaoqlrtmofmden.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqdWNhbHBhb3FscnRtb2ZtZGVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0NDIzODcsImV4cCI6MjA5MjAxODM4N30.3jfEF1lSa1YTBYgc4O8ZtJVpfkJN9SBGmqYn8-Sn7Zo";
+const SB = supabase.createClient(SB_URL, SB_KEY);
 
-    let currentUser = null, cur = 'stars', state = 'wait', mult = 0.00;
-    let betQueued = false, betVal = 0, isCashedOut = false;
-    let crashPoint = 2.00;
-    let currentRoundId = Math.floor(Date.now() / 1000);
-    let historyLogged = false;
-    let selectedGift = null;
+// Раунды идут по часам: все игроки видят один и тот же раунд в одно и то же время.
+// Слот: [0 .. полёт] полёт раунда r -> 3с крах -> остаток = окно ставок на раунд r+1.
+const SLOT_MS   = 24000;
+const CRASH_MS  = 3000;
+const GROWTH    = 0.25;   // m(t) = e^(GROWTH * t), t в секундах
+const COL = { stars: 'balance', ton: 'ton_balance' };   // реальные колонки в таблице users
 
-    let phaseStart = Date.now();
-    let roundTimer = null;
-    let realtimeChannel = null;
+/* ================= СОСТОЯНИЕ ================= */
+let currentUser = null;
+let cur = 'stars';
+let selectedGift = null;            // { rawKey, name, price_stars, image }
+let myBet = null;                   // { round, amount, cur, gift, cashed }
+let balances = { stars: 0, ton: 0 };
+let busy = false;
+let lastKey = '';                   // "state:round" — для событий смены фазы
+let lastHistoryRound = null;
+let lastFetchRound = null;
+let realtimeChannel = null;
+let lottieAnim = null;
+let catalog = [];
 
-    const el = {
-        mult: document.getElementById('multiplier'),
-        rocketWrap: document.getElementById('rocket-wrap'),
-        scene: document.getElementById('main-scene'),
-        btn: document.getElementById('btn-main'),
-        strip: document.getElementById('status-strip'),
-        betWrap: document.getElementById('bet-input-wrap'),
-        quickBets: document.getElementById('quick-bets'),
-        playersList: document.getElementById('players-list')
-    };
+const $ = id => document.getElementById(id);
+const el = {
+  scene: $('scene'), mult: $('multiplier'), rocket: $('rocket'), boom: $('boom'),
+  status: $('status'), btn: $('btn-main'), bet: $('input-bet'), auto: $('input-auto'),
+  betWrap: $('bet-wrap'), autoWrap: $('auto-wrap'), quick: $('quick'), players: $('players'),
+  history: $('history'), giftBtn: $('gift-btn'), giftLabel: $('gift-label'), trail: $('trail')
+};
 
-    // Загрузка анимации crach.tgs через Lottie
-    let lottieAnim = null;
-    try {
-        lottieAnim = lottie.loadAnimation({
-            container: document.getElementById('lottie-rocket'),
-            renderer: 'svg',
-            loop: true,
-            autoplay: true,
-            path: 'crach.tgs'
-        });
-    } catch(e) { console.log('Lottie load error:', e); }
+/* ================= УТИЛИТЫ ================= */
+function toast(msg, kind=''){
+  const t = $('toast'); t.className = kind; t.textContent = msg; void t.offsetWidth;
+  t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function setText(node, v){ if (node.textContent !== v) node.textContent = v; }
+function round2(n){ return Math.round(n * 100) / 100; }
+function fmt(n, c){ return c === 'ton' ? Number(n).toFixed(2) : String(Math.floor(Number(n))); }
+function haptic(kind, type){ try { tg.HapticFeedback?.[kind]?.(type); } catch(e){} }
 
-    async function checkAuth() {
-        if (tg.initDataUnsafe?.user) {
-            currentUser = { user_id: String(tg.initDataUnsafe.user.id), username: tg.initDataUnsafe.user.first_name || 'Игрок' };
-        } else {
-            currentUser = { user_id: '12345', username: 'Тестовый игрок' };
-        }
-        syncBalances();
-        fetchHistory();
-        initRealtimeBets();
+/* ================= ДЕТЕРМИНИРОВАННЫЙ РАУНД ================= */
+function seededRandom(seed){
+  let t = seed += 0x6D2B79F5;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+function crashPointOf(round){
+  const r = seededRandom(round), r2 = seededRandom(round + 7919);
+  const v = r > 0.93 ? (2 + r2 * 10) : (1.01 + r2 * 1.5);
+  return Math.floor(v * 100) / 100;
+}
+function flightMs(cp){ return Math.log(cp) / GROWTH * 1000; }
+
+function clock(){
+  const now = Date.now();
+  const r = Math.floor(now / SLOT_MS);
+  const t = now - r * SLOT_MS;
+  const cp = crashPointOf(r);
+  const fl = flightMs(cp);
+  if (t < fl)            return { state:'fly',   round:r,     mult:Math.min(cp, Math.exp(GROWTH * t / 1000)), cp };
+  if (t < fl + CRASH_MS) return { state:'crash', round:r,     mult:cp, cp };
+  return                        { state:'wait',  round:r + 1, mult:1, cp:null, left:SLOT_MS - t };
+}
+
+/* ================= ROCKET (crach.tgs) ================= */
+async function loadRocket(){
+  const showFallback = () => { $('lottie').style.display='none'; $('fallback-rocket').style.display='flex'; };
+  try {
+    const res = await fetch('crach.tgs');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const buf = await res.arrayBuffer();
+    const u8 = new Uint8Array(buf);
+    let json;
+    if (u8[0] === 0x1f && u8[1] === 0x8b) {           // .tgs = gzip(JSON)
+      if (window.pako) json = JSON.parse(pako.ungzip(u8, { to:'string' }));
+      else json = await new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).json();
+    } else {
+      json = JSON.parse(new TextDecoder().decode(u8));
     }
+    lottieAnim = lottie.loadAnimation({
+      container: $('lottie'), renderer: 'svg', loop: true, autoplay: true, animationData: json
+    });
+    lottieAnim.addEventListener('data_failed', showFallback);
+  } catch(e){
+    console.error('crach.tgs не загрузился:', e);
+    showFallback();
+  }
+}
 
-    async function syncBalances() {
-        try {
-            const { data } = await SB.from('users').select('*').eq('id', currentUser.user_id).single();
-            if (data) {
-                document.getElementById('val-stars').innerText = Math.floor(Number(data.stars || 0));
-                document.getElementById('val-ton').innerText = Number(data.ton_balance || 0).toFixed(2);
-            }
-        } catch(e) {}
+/* ================= ТРАЕКТОРИЯ + СЛЕД ================= */
+const ctx = el.trail.getContext('2d');
+let W = 0, H = 0;
+function resize(){
+  const r = el.scene.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  W = r.width; H = r.height;
+  el.trail.width = W * dpr; el.trail.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+
+function progressOf(m){ return 1 - Math.exp(-Math.log(Math.max(1, m)) * 1.05); }
+function pathPoint(p){
+  return { x: W * (0.16 + 0.66 * p), y: H * (0.80 - 0.46 * Math.pow(p, 0.8)) };
+}
+function drawTrail(m){
+  ctx.clearRect(0, 0, W, H);
+  if (m <= 1) return;
+  const p = progressOf(m), steps = 48, pts = [];
+  for (let i = 0; i <= steps; i++) pts.push(pathPoint(p * i / steps));
+  const g = ctx.createLinearGradient(0, H, 0, 0);
+  g.addColorStop(0, 'rgba(47,107,255,0)'); g.addColorStop(1, 'rgba(47,107,255,.30)');
+  ctx.beginPath(); ctx.moveTo(pts[0].x, H);
+  pts.forEach(q => ctx.lineTo(q.x, q.y));
+  ctx.lineTo(pts[pts.length-1].x, H); ctx.closePath(); ctx.fillStyle = g; ctx.fill();
+  ctx.beginPath(); pts.forEach((q,i)=> i ? ctx.lineTo(q.x,q.y) : ctx.moveTo(q.x,q.y));
+  ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.strokeStyle = '#8fc2ff';
+  ctx.shadowColor = 'rgba(47,107,255,.9)'; ctx.shadowBlur = 14; ctx.stroke(); ctx.shadowBlur = 0;
+}
+function placeRocket(m){
+  const q = pathPoint(m > 1 ? progressOf(m) : 0);
+  const size = el.rocket.offsetWidth || 130;
+  el.rocket.style.transform = `translate(${q.x - size/2}px, ${q.y - size/2}px)`;
+  return q;
+}
+
+/* ================= БАЛАНС ================= */
+async function syncBalances(){
+  if (!currentUser) return;
+  try {
+    const { data } = await SB.from('users').select('balance, ton_balance').eq('id', currentUser.user_id).maybeSingle();
+    if (data) {
+      balances.stars = Number(data.balance || 0);
+      balances.ton   = Number(data.ton_balance || 0);
     }
+  } catch(e){ console.error('syncBalances', e); }
+  setText($('val-stars'), String(Math.floor(balances.stars)));
+  setText($('val-ton'), balances.ton.toFixed(2));
+}
+async function adjustBalance(currency, delta){
+  const col = COL[currency];
+  try {
+    const { data, error } = await SB.from('users').select(col).eq('id', currentUser.user_id).maybeSingle();
+    if (error || !data) return false;
+    const next = round2(Number(data[col] || 0) + delta);
+    if (next < 0) return false;
+    const { error: e2 } = await SB.from('users').update({ [col]: next }).eq('id', currentUser.user_id);
+    if (e2) return false;
+    await syncBalances();
+    return true;
+  } catch(e){ console.error('adjustBalance', e); return false; }
+}
 
-    async function adjustBalance(delta) {
-        const col = cur === 'stars' ? 'stars' : 'ton_balance';
-        try {
-            const { data } = await SB.from('users').select(col).eq('id', currentUser.user_id).single();
-            const currentVal = Number(data?.[col] || 0);
-            const newVal = currentVal + delta;
-            if (newVal < 0) return false;
+/* ================= ИНВЕНТАРЬ (users.inventory = text) ================= */
+async function loadCatalog(){
+  try {
+    const { data } = await SB.from('nft_catalog').select('id,name,link,price_stars,price_ton,image_url').eq('active', true);
+    catalog = data || [];
+  } catch(e){ console.error('catalog', e); }
+}
+function slugOf(link){ const m = String(link||'').match(/t\.me\/nft\/([A-Za-z0-9_-]+)/); return m ? m[1].toLowerCase() : null; }
 
-            await SB.from('users').update({ [col]: newVal }).eq('id', currentUser.user_id);
-            syncBalances();
-            return true;
-        } catch(e) { return false; }
+function resolveGift(item){
+  let found = null, extra = {};
+  if (item && typeof item === 'object') {
+    extra = item;
+    const id = item.nft_id ?? item.catalog_id ?? item.gift_id ?? item.id;
+    if (id != null) found = catalog.find(c => String(c.id) === String(id));
+    if (!found && item.link) found = catalog.find(c => slugOf(c.link) === slugOf(item.link));
+    if (!found && (item.name || item.title)) found = catalog.find(c => c.name.toLowerCase() === String(item.name || item.title).toLowerCase());
+  } else {
+    const s = String(item).trim();
+    if (/^\d+$/.test(s)) found = catalog.find(c => String(c.id) === s);
+    if (!found && slugOf(s)) found = catalog.find(c => slugOf(c.link) === slugOf(s));
+    if (!found) found = catalog.find(c => c.name.toLowerCase() === s.toLowerCase());
+    extra = { name: s };
+  }
+  return {
+    key: JSON.stringify(item),
+    name: found?.name || extra.name || extra.title || 'Подарок',
+    price_stars: Number(found?.price_stars ?? extra.price_stars ?? extra.price ?? 0),
+    image: found?.image_url || extra.image_url || extra.img || 'img/star.png'
+  };
+}
+function parseInventory(raw){
+  if (raw == null || String(raw).trim() === '') return { items: [], mode: 'json' };
+  if (Array.isArray(raw)) return { items: raw, mode: 'json' };
+  try {
+    const p = JSON.parse(raw);
+    if (Array.isArray(p)) return { items: p, mode: 'json' };
+    if (p && typeof p === 'object') return { items: [p], mode: 'json' };
+  } catch(e){}
+  return { items: String(raw).split(/[,\n;]+/).map(s => s.trim()).filter(Boolean), mode: 'csv' };
+}
+function serializeInventory(items, mode){ return mode === 'json' ? JSON.stringify(items) : items.join(','); }
+
+async function openInventory(){
+  const st = clock();
+  if (st.state !== 'wait' || myBet || busy) return toast('Подарок можно выбрать только в окне ставок');
+  const grid = $('inv-grid');
+  grid.innerHTML = '<div class="empty">Загрузка…</div>';
+  $('inv-modal').classList.add('show');
+  try {
+    if (!catalog.length) await loadCatalog();
+    const { data } = await SB.from('users').select('inventory').eq('id', currentUser.user_id).maybeSingle();
+    const { items } = parseInventory(data?.inventory);
+    grid.innerHTML = '';
+    if (!items.length) { grid.innerHTML = '<div class="empty">Инвентарь пуст</div>'; return; }
+    items.forEach(it => {
+      const g = resolveGift(it);
+      const d = document.createElement('div');
+      d.className = 'inv' + (g.price_stars > 0 ? '' : ' off');
+      const img = document.createElement('img'); img.src = g.image; img.onerror = () => { img.src = 'img/star.png'; };
+      const n = document.createElement('div'); n.className = 'n'; n.textContent = g.name;
+      const p = document.createElement('div'); p.className = 'p'; p.textContent = g.price_stars > 0 ? g.price_stars + ' ⭐' : 'нет цены';
+      d.append(img, n, p);
+      d.onclick = () => {
+        selectedGift = g;
+        cur = 'stars'; refreshMode();
+        el.bet.value = g.price_stars;
+        refreshGiftUI();
+        closeInventory();
+        haptic('selectionChanged');
+      };
+      grid.appendChild(d);
+    });
+  } catch(e){
+    console.error(e);
+    grid.innerHTML = '<div class="empty" style="color:var(--danger)">Ошибка загрузки</div>';
+  }
+}
+function closeInventory(){ $('inv-modal').classList.remove('show'); }
+
+async function removeGiftFromInventory(g){
+  try {
+    const { data } = await SB.from('users').select('inventory').eq('id', currentUser.user_id).maybeSingle();
+    const { items, mode } = parseInventory(data?.inventory);
+    const idx = items.findIndex(it => JSON.stringify(it) === g.key);
+    if (idx < 0) return false;
+    items.splice(idx, 1);
+    const { error } = await SB.from('users').update({ inventory: serializeInventory(items, mode) }).eq('id', currentUser.user_id);
+    return !error;
+  } catch(e){ return false; }
+}
+
+/* ================= UI: режимы, ставки ================= */
+function canEdit(){ return clock().state === 'wait' && !myBet && !busy; }
+
+function renderQuick(){
+  const vals = cur === 'ton' ? [0.1, 0.5, 1, 5] : [10, 50, 100, 500];
+  el.quick.innerHTML = '';
+  vals.forEach(v => { const d = document.createElement('div'); d.textContent = v; d.onclick = () => setBet(v); el.quick.appendChild(d); });
+  [['½', halveBet], ['2×', doubleBet], ['MAX', maxBet]].forEach(([t, f]) => {
+    const d = document.createElement('div'); d.textContent = t; d.onclick = f; el.quick.appendChild(d);
+  });
+}
+function refreshMode(){
+  $('mode-stars').classList.toggle('active', cur === 'stars');
+  $('mode-ton').classList.toggle('active', cur === 'ton');
+  renderQuick();
+}
+function refreshGiftUI(){
+  el.giftBtn.classList.toggle('sel', !!selectedGift);
+  setText(el.giftLabel, selectedGift ? selectedGift.name : 'Подарок');
+  el.bet.readOnly = !!selectedGift;
+}
+function switchMode(m){
+  if (!canEdit()) return;
+  cur = m; selectedGift = null;
+  el.bet.value = m === 'ton' ? 0.5 : 10;
+  refreshMode(); refreshGiftUI();
+}
+function setBet(v){ if (!canEdit()) return; selectedGift = null; refreshGiftUI(); el.bet.value = v; }
+function doubleBet(){ if (!canEdit()) return; selectedGift = null; refreshGiftUI(); el.bet.value = round2(Number(el.bet.value || 0) * 2) || 1; }
+function halveBet(){ if (!canEdit()) return; selectedGift = null; refreshGiftUI(); el.bet.value = Math.max(cur === 'ton' ? 0.01 : 1, round2(Number(el.bet.value || 0) / 2)); }
+function maxBet(){ if (!canEdit()) return; selectedGift = null; refreshGiftUI(); el.bet.value = cur === 'ton' ? balances.ton.toFixed(2) : Math.floor(balances.stars); }
+
+/* ================= ДЕЙСТВИЕ: ставка / вывод ================= */
+async function onAction(){
+  if (busy) return;
+  const st = clock();
+
+  // --- ставка ---
+  if (st.state === 'wait' && !myBet) {
+    if (st.left < 600) return toast('Раунд вот-вот стартует');
+    const amount = round2(Number(el.bet.value));
+    if (!amount || amount <= 0) return toast('Введите ставку', 'lose');
+    const minBet = cur === 'ton' ? 0.01 : 1;
+    if (amount < minBet) return toast('Минимальная ставка — ' + minBet, 'lose');
+
+    busy = true; el.btn.disabled = true; setText(el.btn, '…');
+    const round = st.round;
+    let ok;
+    if (selectedGift) {
+      ok = await removeGiftFromInventory(selectedGift);
+      if (!ok) toast('Подарок не найден в инвентаре', 'lose');
+    } else {
+      ok = await adjustBalance(cur, -amount);
+      if (!ok) toast('Недостаточно средств', 'lose');
     }
+    busy = false;
+    if (!ok) { el.btn.disabled = false; return; }
 
-    async function logCrashHistory(value) {
-        try {
-            await SB.from('crash_history').insert({ multiplier: Number(value) });
-            fetchHistory();
-        } catch(e) {}
+    myBet = { round, amount, cur: selectedGift ? 'stars' : cur, gift: selectedGift, cashed: false };
+    haptic('impactOccurred', 'medium');
+    SB.from('crash_bets').insert({
+      user_id: currentUser.user_id, username: currentUser.username,
+      amount, currency: myBet.cur, round_id: round, cashed_out: false
+    }).then(({ error }) => { if (error) console.error('crash_bets insert', error); fetchBets(true); });
+    return;
+  }
+
+  // --- вывод ---
+  if (st.state === 'fly' && myBet && myBet.round === st.round && !myBet.cashed) {
+    await cashOut(st.mult);
+  }
+}
+
+async function cashOut(multiplier){
+  if (!myBet || myBet.cashed) return;
+  myBet.cashed = true;                         // сразу, чтобы не было двойного вывода
+  const m = round2(Math.floor(multiplier * 100) / 100);
+  const win = round2(myBet.amount * m);
+  const bet = myBet;
+  setText(el.btn, 'Взято!'); el.btn.disabled = true; el.btn.classList.remove('cash');
+  haptic('notificationOccurred', 'success');
+  await adjustBalance(bet.cur, win);
+  toast(`+${fmt(win, bet.cur)} ${bet.cur === 'ton' ? 'TON' : '⭐'} (${m.toFixed(2)}x)`, 'win');
+  SB.from('crash_bets').update({ cashed_out: true, multiplier: m, profit: win })
+    .eq('user_id', currentUser.user_id).eq('round_id', bet.round)
+    .then(({ error }) => { if (error) console.error(error); fetchBets(true); });
+}
+
+/* ================= ИГРОКИ / ИСТОРИЯ ================= */
+async function fetchBets(force){
+  const st = clock();
+  const round = st.round;
+  if (!force && lastFetchRound === round && fetchBets._busy) return;
+  fetchBets._busy = true; lastFetchRound = round;
+  try {
+    const { data } = await SB.from('crash_bets').select('*').eq('round_id', round).order('amount', { ascending: false }).limit(40);
+    if (round !== clock().round && clock().state !== 'crash') { /* раунд сменился */ }
+    el.players.innerHTML = '';
+    (data || []).forEach(b => {
+      const pill = document.createElement('div');
+      const mine = currentUser && String(b.user_id) === currentUser.user_id;
+      pill.className = 'bet-pill' + (b.cashed_out ? ' cashed' : '') + (mine ? ' me' : '');
+      const n = document.createElement('b'); n.textContent = b.username || 'Игрок';
+      const v = document.createElement('span');
+      v.textContent = b.cashed_out ? Number(b.multiplier).toFixed(2) + 'x' : b.amount + (b.currency === 'ton' ? ' TON' : ' ⭐');
+      pill.append(n, v); el.players.appendChild(pill);
+    });
+  } catch(e){ console.error(e); }
+  fetchBets._busy = false;
+}
+function initRealtime(){
+  if (realtimeChannel) SB.removeChannel(realtimeChannel);
+  realtimeChannel = SB.channel('crash_bets_live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'crash_bets' }, () => fetchBets(true))
+    .subscribe();
+}
+function renderHistory(lastFinished){
+  if (lastHistoryRound === lastFinished) return;
+  lastHistoryRound = lastFinished;
+  el.history.innerHTML = '';
+  for (let i = 0; i < 14; i++) {
+    const v = crashPointOf(lastFinished - i);
+    const c = document.createElement('div');
+    c.className = 'chip num ' + (v >= 5 ? 'top' : v >= 2 ? 'hi' : 'lo');
+    c.textContent = v.toFixed(2) + 'x';
+    el.history.appendChild(c);
+  }
+}
+
+/* ================= ГЛАВНЫЙ ЦИКЛ ================= */
+function onPhaseChange(st){
+  // вызывается один раз при смене фазы/раунда
+  if (st.state === 'wait') {
+    if (myBet && myBet.round !== st.round) myBet = null;   // ставка уже сыграна
+    selectedGift = null; refreshGiftUI();
+    el.boom.style.display = 'none';
+    el.rocket.classList.remove('hidden');
+    syncBalances();
+    fetchBets(true);
+  }
+  if (st.state === 'fly') {
+    el.boom.style.display = 'none';
+    fetchBets(true);
+  }
+  if (st.state === 'crash') {
+    const q = placeRocket(st.mult);
+    el.boom.style.left = (q.x - 42) + 'px'; el.boom.style.top = (q.y - 50) + 'px';
+    el.boom.style.display = 'block'; el.boom.style.animation = 'none'; void el.boom.offsetWidth; el.boom.style.animation = '';
+    haptic('notificationOccurred', 'error');
+    if (myBet && myBet.round === st.round && !myBet.cashed) {
+      toast(`Крах на ${st.cp.toFixed(2)}x — ставка проиграна`, 'lose');
+      myBet = null;
     }
+    syncBalances();
+  }
+}
 
-    function seededRandom(seed) {
-        let t = seed += 0x6D2B79F5;
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+function frame(){
+  const st = clock();
+  const key = st.state + ':' + st.round;
+  if (key !== lastKey) { lastKey = key; onPhaseChange(st); }
+
+  const lastFinished = st.state === 'wait' ? st.round - 1 : (st.state === 'crash' ? st.round : st.round - 1);
+  renderHistory(lastFinished);
+
+  const hasBet = !!myBet && myBet.round === (st.state === 'wait' ? st.round : st.round);
+  const lockInputs = st.state !== 'wait' || !!myBet || busy;
+  el.betWrap.classList.toggle('locked', lockInputs);
+  el.autoWrap.classList.toggle('locked', lockInputs);
+  el.quick.classList.toggle('locked', lockInputs);
+  el.giftBtn.classList.toggle('locked', lockInputs);
+
+  el.scene.classList.toggle('moving', st.state === 'fly');
+  el.status.classList.toggle('live', st.state === 'fly');
+  el.status.classList.toggle('crash', st.state === 'crash');
+
+  if (st.state === 'wait') {
+    setText(el.status, `Взлёт через ${Math.max(0, Math.ceil(st.left / 1000))}с`);
+    setText(el.mult, '1.00x'); el.mult.className = 'num idle';
+    el.rocket.classList.remove('on'); drawTrail(1); placeRocket(1);
+    if (!busy) {
+      if (myBet && myBet.round === st.round) {
+        setText(el.btn, `Ставка принята · ${fmt(myBet.amount, myBet.cur)}`); el.btn.className = 'btn-main placed'; el.btn.disabled = true;
+      } else {
+        setText(el.btn, 'Сделать ставку'); el.btn.className = 'btn-main'; el.btn.disabled = st.left < 600;
+      }
     }
-
-    function generateCrashPoint(roundId) {
-        const r = seededRandom(roundId);
-        const r2 = seededRandom(roundId + 1);
-        return r > 0.93 ? (2 + r2 * 10).toFixed(2) : (1.01 + r2 * 1.5).toFixed(2);
+  }
+  else if (st.state === 'fly') {
+    setText(el.status, 'В полёте');
+    setText(el.mult, st.mult.toFixed(2) + 'x'); el.mult.className = 'num';
+    el.rocket.classList.add('on'); drawTrail(st.mult); placeRocket(st.mult);
+    if (myBet && myBet.round === st.round && !myBet.cashed) {
+      const auto = Number(el.auto.value);
+      if (auto > 1 && st.mult >= auto) { cashOut(auto); }
+      else {
+        setText(el.btn, `Забрать ${myBet.cur === 'ton' ? (myBet.amount * st.mult).toFixed(2) + ' TON' : Math.floor(myBet.amount * st.mult) + ' ⭐'}`);
+        el.btn.className = 'btn-main cash'; el.btn.disabled = false;
+      }
+    } else if (!myBet || myBet.round !== st.round) {
+      setText(el.btn, 'Ждите следующий раунд'); el.btn.className = 'btn-main'; el.btn.disabled = true;
     }
+  }
+  else { // crash
+    setText(el.status, 'Крах');
+    setText(el.mult, st.cp.toFixed(2) + 'x'); el.mult.className = 'num crashed';
+    el.rocket.classList.add('hidden'); drawTrail(st.cp);
+    if (!(myBet && myBet.cashed)) { setText(el.btn, 'Крах!'); el.btn.className = 'btn-main'; el.btn.disabled = true; }
+  }
+  requestAnimationFrame(frame);
+}
 
-    function startWaitPhase() {
-        clearTimeout(roundTimer);
-        state = 'wait';
-        isCashedOut = false;
-        betQueued = false;
-        selectedGift = null;
-        currentRoundId += 1;
-        crashPoint = generateCrashPoint(currentRoundId);
-        historyLogged = false;
-        phaseStart = Date.now();
-        mult = 0.00;
+/* ================= СТАРТ ================= */
+async function init(){
+  const u = tg.initDataUnsafe?.user;
+  currentUser = u
+    ? { user_id: String(u.id), username: u.first_name || u.username || 'Игрок' }
+    : { user_id: '12345', username: 'Тестовый игрок' };
 
-        el.rocketWrap.classList.remove('flying');
-        el.rocketWrap.style.opacity = "0.2";
-        el.scene.classList.remove('grid-moving');
-        el.mult.classList.remove('crashed');
-        el.mult.innerText = "0.00x";
-        el.strip.classList.remove('is-live', 'is-crash');
-        el.btn.classList.remove('is-live-cashout', 'is-bet-placed');
-        el.btn.innerHTML = "Сделать ставку";
-        el.btn.disabled = false;
-        el.betWrap.classList.remove('locked');
-        el.quickBets.classList.remove('locked');
-
-        fetchHistory();
-        syncBalances();
-        clearOldRoundBets();
-
-        roundTimer = setTimeout(startFlightPhase, BET_WINDOW_MS);
-    }
-
-    function startFlightPhase() {
-        clearTimeout(roundTimer);
-        state = 'fly';
-        phaseStart = Date.now();
-
-        el.rocketWrap.classList.add('flying');
-        el.rocketWrap.style.opacity = "1";
-        el.scene.classList.add('grid-moving');
-        el.strip.innerText = 'В полёте';
-        el.strip.classList.add('is-live');
-        el.betWrap.classList.add('locked');
-        el.quickBets.classList.add('locked');
-
-        const flightSeconds = Math.log(crashPoint) / Math.log(1.10);
-        roundTimer = setTimeout(() => doCrash(crashPoint), flightSeconds * 1000);
-    }
-
-    function doCrash(val) {
-        clearTimeout(roundTimer);
-        state = 'crash';
-        phaseStart = Date.now();
-
-        el.scene.classList.remove('grid-moving');
-        el.mult.innerText = val + "x";
-        el.mult.classList.add('crashed');
-        el.strip.innerText = 'Крах';
-        el.strip.classList.remove('is-live');
-        el.strip.classList.add('is-crash');
-        el.btn.classList.remove('is-live-cashout', 'is-bet-placed');
-        el.btn.innerText = "Крах!";
-        el.btn.disabled = true;
-        betQueued = false;
-
-        if (!historyLogged) {
-            historyLogged = true;
-            logCrashHistory(val);
-        }
-
-        roundTimer = setTimeout(startWaitPhase, CRASH_DISPLAY_MS);
-    }
-
-    function tick() {
-        const elapsed = Date.now() - phaseStart;
-
-        if (state === 'wait') {
-            const secs = Math.max(0, Math.ceil((BET_WINDOW_MS - elapsed) / 1000));
-            el.strip.innerText = `Взлёт через ${secs}с`;
-        } else if (state === 'fly') {
-            const flightTime = elapsed / 1000;
-            // Множитель стартует с 0.00 и плавно растет
-            mult = Math.max(0, Math.pow(1.10, flightTime) - 1);
-            el.mult.innerText = mult.toFixed(2) + "x";
-            if (betQueued && !isCashedOut) {
-                el.btn.innerText = `Забрать ${(betVal * (1 + mult)).toFixed(1)}`;
-                el.btn.classList.add('is-live-cashout');
-            }
-        }
-    }
-
-    async function onAction() {
-        if (state === 'wait' && !betQueued) {
-            const amount = Number(document.getElementById('input-bet').value);
-            if (!amount || amount <= 0) return;
-
-            el.btn.disabled = true;
-            el.btn.innerText = "...";
-
-            let ok = false;
-            if (selectedGift) {
-                ok = await removeUserGift(selectedGift.index);
-                if (ok && selectedGift.price_stars > amount) {
-                    const diff = selectedGift.price_stars - amount;
-                    await adjustBalance(diff);
-                }
-            } else {
-                ok = await adjustBalance(-amount);
-            }
-
-            if (!ok) {
-                el.btn.disabled = false;
-                el.btn.innerText = "Сделать ставку";
-                alert('Недостаточно средств или подарка');
-                return;
-            }
-
-            betVal = amount;
-            betQueued = true;
-            el.btn.disabled = false;
-            el.btn.classList.add('is-bet-placed');
-            el.btn.innerHTML = `Ставка принята (${betVal})`;
-
-            el.betWrap.classList.add('locked');
-            el.quickBets.classList.add('locked');
-
-            await SB.from('crash_bets').insert({
-                user_id: currentUser.user_id,
-                username: currentUser.username,
-                amount: betVal,
-                currency: cur,
-                round_id: currentRoundId,
-                cashed_out: false
-            });
-
-            tg.HapticFeedback?.impactOccurred('medium');
-        } else if (state === 'fly' && betQueued && !isCashedOut) {
-            isCashedOut = true;
-            betQueued = false;
-            const currentMultiplier = 1 + mult;
-            const win = betVal * currentMultiplier;
-
-            el.btn.classList.remove('is-live-cashout');
-            el.btn.innerText = "Взято!";
-            el.btn.disabled = true;
-            tg.HapticFeedback?.notificationOccurred('success');
-
-            await adjustBalance(win);
-
-            await SB.from('crash_bets')
-                .update({ cashed_out: true, multiplier: Number(currentMultiplier.toFixed(2)), profit: Number(win.toFixed(2)) })
-                .eq('user_id', currentUser.user_id)
-                .eq('round_id', currentRoundId);
-        }
-    }
-
-    function initRealtimeBets() {
-        if (realtimeChannel) SB.removeChannel(realtimeChannel);
-
-        realtimeChannel = SB.channel('public:crash_bets')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'crash_bets' }, payload => {
-                fetchActiveBets();
-            })
-            .subscribe();
-        fetchActiveBets();
-    }
-
-    async function fetchActiveBets() {
-        const { data } = await SB.from('crash_bets').select('*').eq('round_id', currentRoundId);
-        if (data) {
-            el.playersList.innerHTML = '';
-            data.forEach(b => {
-                const pill = document.createElement('div');
-                pill.className = `player-bet-pill ${b.cashed_out ? 'cashed' : ''}`;
-                pill.innerHTML = `<span>${b.username}</span><span>${b.cashed_out ? b.multiplier + 'x' : b.amount + ' ⭐️'}</span>`;
-                el.playersList.appendChild(pill);
-            });
-        }
-    }
-
-    function clearOldRoundBets() {
-        el.playersList.innerHTML = '';
-    }
-
-    // --- Интеграция с инвентарем из колонки inventory (текст / JSON) ---
-    async function openInventoryModal() {
-        if (state !== 'wait' || betQueued) return;
-        const modal = document.getElementById('inventory-modal');
-        const listContainer = document.getElementById('inventory-list');
-        listContainer.innerHTML = 'Загрузка...';
-        modal.classList.add('show');
-
-        try {
-            const { data } = await SB.from('users').select('inventory').eq('id', currentUser.user_id).single();
-            listContainer.innerHTML = '';
-            
-            if (!data || !data.inventory) {
-                listContainer.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-400 py-4">Инвентарь пуст</div>';
-                return;
-            }
-
-            // Парсим содержимое инвентаря (поддерживает массив или JSON-строку)
-            let items = [];
-            try {
-                items = typeof data.inventory === 'string' ? JSON.parse(data.inventory) : data.inventory;
-            } catch(err) {
-                items = data.inventory.split(',').map(i => ({ name: i.trim(), price_stars: 100 }));
-            }
-
-            if (!Array.isArray(items) || items.length === 0) {
-                listContainer.innerHTML = '<div class="col-span-3 text-center text-xs text-gray-400 py-4">Нет подарков</div>';
-                return;
-            }
-
-            items.forEach((item, index) => {
-                const itemName = item.name || item.title || `Подарок #${index + 1}`;
-                const itemPrice = Number(item.price_stars || item.price || 50);
-                const itemImg = item.image_url || item.img || 'img/star.png';
-
-                const elDiv = document.createElement('div');
-                elDiv.className = 'inv-item';
-                elDiv.innerHTML = `
-                    <img src="${itemImg}" alt="" onerror="this.src='img/star.png'">
-                    <span>${itemName}</span>
-                    <span class="text-xs text-yellow-400 font-bold">${itemPrice} ⭐️</span>
-                `;
-                elDiv.onclick = () => {
-                    selectedGift = { index: index, price_stars: itemPrice };
-                    document.getElementById('input-bet').value = itemPrice;
-                    closeInventoryModal();
-                    tg.HapticFeedback?.selectionChanged();
-                };
-                listContainer.appendChild(elDiv);
-            });
-        } catch(e) {
-            listContainer.innerHTML = '<div class="col-span-3 text-center text-xs text-red-400">Ошибка загрузки</div>';
-        }
-    }
-
-    function closeInventoryModal() {
-        document.getElementById('inventory-modal').classList.remove('show');
-    }
-
-    async function removeUserGift(itemIndex) {
-        try {
-            const { data } = await SB.from('users').select('inventory').eq('id', currentUser.user_id).single();
-            if (!data || !data.inventory) return false;
-            
-            let items = typeof data.inventory === 'string' ? JSON.parse(data.inventory) : data.inventory;
-            items.splice(itemIndex, 1);
-
-            await SB.from('users').update({ inventory: JSON.stringify(items) }).eq('id', currentUser.user_id);
-            return true;
-        } catch(e) { return false; }
-    }
-
-    async function fetchHistory() {
-        const { data } = await SB.from('crash_history').select('multiplier').order('created_at', { ascending: false }).limit(5);
-        if (data) {
-            const container = document.getElementById('live-drop');
-            container.innerHTML = '';
-            data.forEach(item => {
-                const item_el = document.createElement('div');
-                item_el.className = 'drop-item num';
-                item_el.style.color = item.multiplier > 1.5 ? 'var(--success)' : 'var(--danger)';
-                item_el.innerText = item.multiplier + 'x';
-                container.appendChild(item_el);
-            });
-        }
-    }
-
-    function switchMode(m) {
-        if (state === 'wait' && !betQueued) {
-            cur = m;
-            selectedGift = null;
-            document.querySelectorAll('.currency-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('mode-' + m).classList.add('active');
-        }
-    }
-
-    function setBet(v) { if (state === 'wait' && !betQueued) { selectedGift = null; document.getElementById('input-bet').value = v; } }
-    function stepBet(dir) { if (state === 'wait' && !betQueued) { selectedGift = null; const i = document.getElementById('input-bet'); i.value = Math.max(1, Number(i.value || 0) + dir); } }
-    function doubleBet() { if (state === 'wait' && !betQueued) { selectedGift = null; const i = document.getElementById('input-bet'); i.value = Math.max(1, Number(i.value || 0) * 2); } }
-    function halveBet() { if (state === 'wait' && !betQueued) { selectedGift = null; const i = document.getElementById('input-bet'); i.value = Math.max(1, Math.floor(Number(i.value || 0) / 2)); } }
-
-    checkAuth();
-    startWaitPhase();
-    setInterval(tick, 100);
+  refreshMode(); refreshGiftUI(); resize();
+  loadRocket();
+  loadCatalog();
+  await syncBalances();
+  initRealtime();
+  setInterval(() => fetchBets(true), 4000);
+  setInterval(syncBalances, 15000);
+  requestAnimationFrame(frame);
+}
+init();
 </script>
 </body>
 </html>
