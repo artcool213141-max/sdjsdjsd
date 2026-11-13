@@ -77,12 +77,12 @@ async def missing_channels(user_id: int):
 def sub_keyboard(missing, payload: str):
     rows = []
     for ch in missing:
-cid = str(ch["id"])
-url = ch.get("link")
-if not url and not cid.lstrip("-").isdigit():
-    url = f"https://t.me/{cid.lstrip('@')}"
-if not url:
-    continue
+        cid = str(ch["id"])
+        url = ch.get("link")
+        if not url and not cid.lstrip("-").isdigit():
+            url = f"https://t.me/{cid.lstrip('@')}"
+        if not url:
+            continue
         rows.append([{"text": f"📢 {ch.get('name') or 'Канал'}", "url": url}])
     rows.append([{"text": "✅ Я подписался", "callback_data": f"chk:{payload}"}])
     return {"inline_keyboard": rows}
