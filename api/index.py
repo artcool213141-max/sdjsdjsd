@@ -43,7 +43,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for _name in ("ref", "tasks", "bot", "event_api", "topup", "inventory", "withdraw", "giveaways", "roulette", "upgrade", "cases", "crash", "rolls"):
+for _name in ("ref", "tasks", "bot", "event_api", "topup", "inventory", "withdraw", "giveaways", "roulette", "upgrade", "cases", "crash", "rolls", "plinko"):
     _router = load_router(_name)
     if _router is not None:
         app.include_router(_router)
