@@ -15,7 +15,7 @@ router = APIRouter()
 # Каналы для обязательной подписки при первом входе (через @username или числовой ID вида -100...)
 MANDATORY_CHANNELS = [
     {"id": "@PandaGift_case", "name": "PandaGifts"},
-    {"id": "-5513799875", "name": "Чат PandaGifts", "link": "https://t.me/+cZnOP0CizUtiMGUy"},
+    {"id": "-5513799875", "name": "Чат PandaGifts", "link": "https://t.me/PandaGifts_chat"},
 ]
 
 # Trafsly
