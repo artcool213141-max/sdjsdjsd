@@ -95,22 +95,12 @@ canvas{width:100%;max-width:380px;aspect-ratio:360/400;display:block}
   </div>
   <div class="row">
     <div class="field"><label>Размер ставки</label><input type="number" id="input-bet" class="num" value="10" min="0" step="any" inputmode="decimal"></div>
-    <div class="gift-btn" id="gift-btn" onclick="openInventory()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-      <span id="gift-label">Подарок</span>
-    </div>
   </div>
   <div class="quick" id="quick"></div>
   <div class="worth" id="worth"></div>
   <button id="btn-main" class="btn-main" onclick="drop()">Сбросить шарик</button>
 </div>
 
-<div id="inv-modal" class="overlay" onclick="if(event.target===this)closeInventory()">
-  <div class="modal">
-    <div class="modal-head"><span>Выбери подарок</span><button onclick="closeInventory()">Закрыть</button></div>
-    <div id="inv-grid" class="grid"></div>
-  </div>
-</div>
 <div id="toast"></div>
 
 <script>
@@ -119,7 +109,7 @@ try { tg.ready(); tg.expand(); tg.disableVerticalSwipes?.(); } catch(e){}
 const tgUser = tg.initDataUnsafe?.user;
 const UID = tgUser ? String(tgUser.id) : '12345';
 
-let cur = 'stars', selectedGift = null, busy = false, ratio = 80;
+let cur = 'stars', busy = false, ratio = 80;
 let me = { balance: 0, ton: 0 };
 let BUCKETS = [10, 2, 1, 0.5, 0.2, 0.5, 1.5, 2, 5];
 const ROWS = 8, W = 360, H = 400, SP = 36, DY = 38, TOP = 40, CX = W / 2;
@@ -189,26 +179,39 @@ function makePath(slot){
   for (let i = p.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; }
   return p;
 }
-function animate(slot){
-  return new Promise(resolve => {
-    const path = makePath(slot), STEP = 190;
-    const pts = []; let k = 0;
-    pts.push({ x: CX, y: 6 });
+function runBall(){
+  const STEP = 140, t0 = performance.now(), Y0 = 6, Y1 = TOP - 12;
+  let pts = null, tStart = 0, slotFinal = 0, stopped = false, resolveDone;
+  const done = new Promise(r => resolveDone = r);
+  hot = -1;
+  function setSlot(slot){
+    const path = makePath(slot); let k = 0;
+    slotFinal = slot;
+    pts = [{ x: CX, y: Y0 }, { x: CX, y: Y1 }];
     for (let i = 0; i < ROWS; i++) {
-      pts.push({ x: pegX(i, k), y: TOP + i * DY - 12 });
+      if (i > 0) pts.push({ x: pegX(i, k), y: TOP + i * DY - 12 });
       if (path[i]) k++;
     }
     pts.push({ x: slotX(k), y: TOP + ROWS * DY + 20 });
-    hot = -1; const t0 = performance.now(); const total = (pts.length - 1) * STEP;
-    (function frame(now){
-      const e = Math.min(now - t0, total), s = Math.min(Math.floor(e / STEP), pts.length - 2), t = (e - s * STEP) / STEP;
-      const a = pts[s], b = pts[s + 1];
-      ball = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t - Math.sin(Math.PI * t) * 9 };
-      draw();
-      if (e < total) requestAnimationFrame(frame);
-      else { ball = null; hot = slot; draw(); resolve(); }
-    })(performance.now());
-  });
+    tStart = Math.max(performance.now(), t0 + STEP);
+  }
+  function stop(){ stopped = true; ball = null; draw(); }
+  (function frame(now){
+    if (stopped) return;
+    if (!pts) {   // ждём ответ сервера: шарик уже летит к первому колышку
+      const t = Math.min((now - t0) / STEP, 1);
+      ball = { x: CX, y: Y0 + (Y1 - Y0) * t + (t >= 1 ? Math.sin(now / 110) * 2.5 : 0) };
+      draw(); return requestAnimationFrame(frame);
+    }
+    const total = (pts.length - 2) * STEP, e = Math.min(Math.max(0, now - tStart), total);
+    const s = Math.min(1 + Math.floor(e / STEP), pts.length - 2), t = (e - (s - 1) * STEP) / STEP;
+    const a = pts[s], b = pts[s + 1];
+    ball = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t - Math.sin(Math.PI * t) * 9 };
+    draw();
+    if (e < total) requestAnimationFrame(frame);
+    else { ball = null; hot = slotFinal; draw(); resolveDone(); }
+  })(performance.now());
+  return { setSlot, stop, done };
 }
 
 /* ---------- ui ---------- */
@@ -219,20 +222,15 @@ function renderQuick(){
   [['½', halveBet], ['2×', doubleBet], ['MAX', maxBet]].forEach(([t, f]) => { const d = document.createElement('div'); d.textContent = t; d.onclick = f; q.appendChild(d); });
 }
 function updateWorth(){
-  const a = selectedGift ? Number(selectedGift.price_stars) : Number($('input-bet').value || 0);
-  const v = selectedGift ? a : (cur === 'ton' ? a * ratio : a);
+  const a = Number($('input-bet').value || 0);
+  const v = cur === 'ton' ? a * ratio : a;
   $('worth').innerHTML = a > 0 ? `Ваша ставка ≈ <b>${Math.round(v * 10) / 10}</b> ${STAR}` : '';
 }
 function refreshMode(){
   $('mode-stars').classList.toggle('active', cur === 'stars'); $('mode-ton').classList.toggle('active', cur === 'ton');
   renderQuick(); updateWorth();
 }
-function refreshGiftUI(){
-  $('gift-btn').classList.toggle('sel', !!selectedGift);
-  $('gift-label').textContent = selectedGift ? selectedGift.name : 'Подарок';
-  $('input-bet').readOnly = !!selectedGift;
-}
-function clearGift(){ selectedGift = null; refreshGiftUI(); updateWorth(); }
+function clearGift(){}
 $('input-bet').addEventListener('input', updateWorth);
 function switchMode(m){ if (busy) return; cur = m; clearGift(); $('input-bet').value = m === 'ton' ? 0.5 : 10; refreshMode(); }
 function addBet(v){ if (busy) return; clearGift(); $('input-bet').value = round2(Number($('input-bet').value || 0) + v); updateWorth(); }
@@ -248,24 +246,6 @@ async function refreshMe(){
     paintBalances(); draw(); return r;
   } catch(e){ console.error(e); toast('Сервис временно недоступен', 'lose'); }
 }
-async function openInventory(){
-  if (busy) return;
-  const grid = $('inv-grid'); grid.innerHTML = '<div class="empty">Загрузка…</div>'; $('inv-modal').classList.add('show');
-  const r = await refreshMe(); if (!r) { grid.innerHTML = '<div class="empty">Ошибка загрузки</div>'; return; }
-  grid.innerHTML = '';
-  if (!r.gifts.length) { grid.innerHTML = '<div class="empty">У вас пока нет подарков</div>'; return; }
-  r.gifts.forEach(g => {
-    const d = document.createElement('div'); d.className = 'inv';
-    const img = document.createElement('img'); img.src = g.image_url ? (g.image_url.startsWith('/') ? BASES[baseIdx] + g.image_url : g.image_url) : 'img/star.png'; img.onerror = () => { img.onerror = null; img.src = 'img/star.png'; };
-    const n = document.createElement('div'); n.className = 'n'; n.textContent = g.name;
-    const p = document.createElement('div'); p.className = 'p'; p.innerHTML = `${g.price_stars} ${STAR}`;
-    d.append(img, n, p);
-    if (g.count > 1) { const c = document.createElement('div'); c.className = 'c'; c.textContent = '×' + g.count; d.appendChild(c); }
-    d.onclick = () => { selectedGift = g; cur = 'stars'; refreshMode(); $('input-bet').value = g.price_stars; refreshGiftUI(); updateWorth(); closeInventory(); haptic('selectionChanged'); };
-    grid.appendChild(d);
-  });
-}
-function closeInventory(){ $('inv-modal').classList.remove('show'); }
 
 function addHistory(r){
   const h = $('history'); if (h.querySelector('.hempty')) h.innerHTML = '';
@@ -274,7 +254,6 @@ function addHistory(r){
 }
 function prizeText(w){
   const p = [];
-  if (w.gift) p.push('🎁 ' + w.gift.name);
   if (w.stars > 0) p.push('+' + round2(w.stars) + ' ⭐');
   if (w.ton > 0) p.push('+' + Number(w.ton).toFixed(2) + ' TON');
   return p.join(' ') || '0';
@@ -283,23 +262,25 @@ function prizeText(w){
 async function drop(){
   if (busy) return;
   const amount = Number($('input-bet').value);
-  if (!selectedGift && (!amount || amount <= 0)) return toast('Укажите сумму ставки', 'lose');
+  if (!amount || amount <= 0) return toast('Укажите сумму ставки', 'lose');
+  if (cur === 'stars' ? amount > me.balance : amount > me.ton) return toast('Недостаточно средств', 'lose');
   busy = true; $('btn-main').disabled = true; setStatus('Шарик летит…');
+  // шарик стартует мгновенно, ставка списывается на экране сразу
+  if (cur === 'ton') me.ton -= amount; else me.balance -= amount;
+  paintBalances(); haptic('impactOccurred', 'medium');
+  const ballCtl = runBall();
   try {
-    const r = await api('/plinko/drop', { method: 'POST', body: { currency: selectedGift ? 'gift' : cur, amount, gift_key: selectedGift ? selectedGift.key : null } });
-    // пока шарик летит, показываем баланс без выигрыша
-    me.balance = r.balance - r.win.stars; me.ton = r.ton_balance - r.win.ton; paintBalances();
-    haptic('impactOccurred', 'medium');
-    await animate(r.slot);
+    const r = await api('/plinko/drop', { method: 'POST', body: { currency: cur, amount } });
+    ballCtl.setSlot(r.slot);
+    await ballCtl.done;
     me.balance = r.balance; me.ton = r.ton_balance; paintBalances();
     addHistory(r);
     const win = r.mult >= 1;
     setStatus(`${r.mult}x · ${prizeText(r.win)}`, win ? 'win' : 'lose');
     toast(`${r.mult}x: ${prizeText(r.win)}`, win ? 'win' : 'lose');
     haptic('notificationOccurred', win ? 'success' : 'warning');
-    if (selectedGift) clearGift();
   } catch(e){
-    toast(e.message, 'lose'); setStatus('Сделайте ставку'); refreshMe();
+    ballCtl.stop(); toast(e.message, 'lose'); setStatus('Сделайте ставку'); refreshMe();
   }
   busy = false; $('btn-main').disabled = false;
 }
