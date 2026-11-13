@@ -1,4 +1,5 @@
 import asyncio
+import random
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -11,6 +12,25 @@ except ImportError:
     from api.ref import validate_init_data, rpc, supabase
 
 router = APIRouter()
+
+# ---------------- ПЛАТНАЯ РУЛЕТКА: 150 звёзд ----------------
+ROULETTE_PAID_PRICE = 150   # цена одного прокрута в звёздах
+
+# (id гифта, шанс в %). 63 = твой мишка, выпадает с шансом 71%.
+# Сумма шансов = 100.
+ROULETTE_PAID_LOOT = [
+    (63, 71.0),   # мишка (misha.png)
+    (17, 12.0),
+    (15, 8.0),
+    (13, 5.0),
+    (1, 2.0),
+    (4, 1.2),
+    (6, 0.5),
+    (16, 0.2),
+    (9, 0.07),
+    (3, 0.02),
+    (7, 0.01),
+]
 
 ERRORS = {
     "cooldown": "Бесплатный кейс ещё недоступен",
@@ -40,6 +60,13 @@ def _check(res):
     if res.get("success") is False or res.get("error"):
         raise HTTPException(400, ERRORS.get(res.get("error"), res.get("error") or ERRORS["failed"]))
     return res
+
+
+def _catalog_items() -> list:
+    data = rpc("get_catalog", {})
+    if isinstance(data, dict):
+        data = data.get("items") or data.get("catalog") or []
+    return [x for x in (data or []) if isinstance(x, dict) and x.get("id") is not None]
 
 
 def _credit_referral_sync(user: dict):
@@ -90,17 +117,13 @@ async def roulette_status(req: Base):
 @router.post("/roulette/catalog")
 async def roulette_catalog(req: Base):
     validate_init_data(req.init_data)
-    data = rpc("get_catalog", {})
-    if isinstance(data, dict):
-        data = data.get("items") or data.get("catalog") or []
     items = [
         {
             "id": x.get("id"),
             "name": x.get("name"),
             "price_stars": x.get("price_stars"),
         }
-        for x in (data or [])
-        if isinstance(x, dict) and x.get("id") is not None
+        for x in _catalog_items()
     ]
     return {"items": items}
 
@@ -117,7 +140,36 @@ async def roulette_free(req: Base):
 @router.post("/roulette/paid")
 async def roulette_paid(req: Base):
     user = validate_init_data(req.init_data)
-    return _check(rpc("roulette_paid", {"p_user_id": str(user["id"])}))
+    uid = str(user["id"])
+
+    cat = {x["id"]: x for x in _catalog_items()}
+    pool = [(nid, w) for nid, w in ROULETTE_PAID_LOOT if nid in cat]
+    if not pool:
+        raise HTTPException(500, "В рулетке нет призов")
+
+    nft_id = random.SystemRandom().choices(
+        [p[0] for p in pool], weights=[p[1] for p in pool], k=1
+    )[0]
+
+    # списание 150 звёзд и выдача выпавшего гифта делает open_case
+    res = _check(rpc("open_case", {
+        "p_user_id": uid,
+        "p_nft_id": nft_id,
+        "p_currency": "stars",
+        "p_price": ROULETTE_PAID_PRICE,
+    }))
+
+    item = cat[nft_id]
+    return {
+        **res,
+        "nft": {
+            "id": item.get("id"),
+            "name": item.get("name"),
+            "price_stars": item.get("price_stars"),
+            "image_url": item.get("image_url"),
+        },
+        "price": ROULETTE_PAID_PRICE,
+    }
 
 
 @router.post("/roulette/sell")
