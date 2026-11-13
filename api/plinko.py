@@ -5,9 +5,9 @@ from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 
 try:
-    from ref import validate_init_data, supabase
+    from ref import validate_init_data, rpc, supabase
 except ImportError:
-    from api.ref import validate_init_data, supabase
+    from api.ref import validate_init_data, rpc, supabase
 
 router = APIRouter()
 
@@ -17,19 +17,14 @@ MAX_BET_TON = float(os.environ.get("PLINKO_MAX_TON", "1000"))
 
 # ---- Шансы (в процентах, сумма = 100). RTP ≈ 95% ----
 OUTCOMES = [(10, 1), (5, 5), (2, 10), (1.5, 6), (1, 10), (0.5, 25), (0.2, 43)]
-# Визуальные ячейки слева направо и в какие ячейки может упасть множитель
 BUCKETS = [10, 2, 1, 0.5, 0.2, 0.5, 1.5, 2, 5]
 SLOTS = {10: [0], 5: [8], 2: [1, 7], 1.5: [6], 1: [2], 0.5: [3, 5], 0.2: [4]}
-
-# ---- ТАБЛИЦЫ ПОДАРКОВ (ADAPT: поправьте под свою базу, если названия другие) ----
-CATALOG_TABLE = "gifts"          # key, name, image_url, price_stars
-INVENTORY_TABLE = "inventory"    # id, user_id, gift_key
 
 
 class DropReq(BaseModel):
     currency: str                      # stars | ton | gift
     amount: Optional[float] = 0
-    gift_key: Optional[str] = None
+    gift_key: Optional[str] = None     # id NFT из nft_catalog
 
 
 def db():
@@ -40,6 +35,13 @@ def db():
 
 def me_id(x_init_data: str) -> str:
     return str(validate_init_data(x_init_data)["id"])
+
+
+def r1(res):
+    """rpc может вернуть список или словарь."""
+    if isinstance(res, list):
+        return res[0] if res else {}
+    return res or {}
 
 
 def pick_multiplier() -> float:
@@ -69,28 +71,75 @@ def cas_balance(uid: str, row: dict, new_b: float, new_t: float) -> bool:
     return bool(q.execute().data)
 
 
+def add_stars(uid: str, amount: float):
+    for _ in range(5):
+        row = get_row(uid)
+        if cas_balance(uid, row, float(row.get("balance") or 0) + amount,
+                       float(row.get("ton_balance") or 0)):
+            return True
+    return False
+
+
+# ---------- подарки (nft_catalog / инвентарь через ваши RPC из inventory.py) ----------
+def _item(c):
+    nid = c.get("id")
+    return {"key": str(nid), "id": nid, "name": c.get("name") or f"NFT #{nid}",
+            "image_url": f"/inventory/preview/{nid}",
+            "price_stars": float(c.get("price_stars") or 0)}
+
+
 def catalog():
-    return (db().table(CATALOG_TABLE).select("key,name,image_url,price_stars")
-            .gt("price_stars", 0).execute().data or [])
+    try:
+        rows = rpc("get_catalog", {}) or []
+    except Exception as e:
+        print("plinko catalog error:", repr(e))
+        return []
+    return [_item(c) for c in rows if float(c.get("price_stars") or 0) > 0]
 
 
-def take_gift(uid: str, key: str):
-    """Забирает один подарок из инвентаря (ставка). Возвращает запись каталога."""
-    item = next((g for g in catalog() if g["key"] == key), None)
+def my_inventory(uid: str):
+    """[{id, count}] из rpc get_inventory (разные имена полей учтены)."""
+    try:
+        rows = rpc("get_inventory", {"p_user_id": uid}) or []
+    except Exception as e:
+        print("plinko inventory error:", repr(e))
+        return []
+    out = {}
+    for it in rows:
+        nid = it.get("nft_id", it.get("id"))
+        if nid is None:
+            continue
+        cnt = it.get("count", it.get("qty", it.get("quantity", 1))) or 1
+        out[int(nid)] = out.get(int(nid), 0) + int(cnt)
+    return [{"id": k, "count": v} for k, v in out.items()]
+
+
+def take_gift(uid: str, nft_id: int):
+    """Ставка подарком: подарок убирается из инвентаря через sell_item (атомарно в БД),
+    а полученные за него звёзды сразу идут в ставку. Возвращает (предмет, сумма ставки в звёздах)."""
+    item = next((g for g in catalog() if g["id"] == nft_id), None)
     if not item:
-        raise HTTPException(400, "Подарок не найден")
-    rows = (db().table(INVENTORY_TABLE).select("id").eq("user_id", uid)
-            .eq("gift_key", key).limit(1).execute().data)
-    if not rows:
+        raise HTTPException(400, "Подарок недоступен для ставки")
+    if not any(i["id"] == nft_id and i["count"] > 0 for i in my_inventory(uid)):
         raise HTTPException(400, "У вас нет этого подарка")
-    done = db().table(INVENTORY_TABLE).delete().eq("id", rows[0]["id"]).execute().data
-    if not done:
-        raise HTTPException(409, "Подарок уже использован")
-    return item
+    before = get_row(uid)
+    res = r1(rpc("sell_item", {"p_user_id": uid, "p_nft_id": nft_id}))
+    if not res.get("success"):
+        raise HTTPException(400, "Подарок уже использован или продан")
+    after = get_row(uid)
+    credited = float(after.get("balance") or 0) - float(before.get("balance") or 0)
+    if credited <= 0:
+        credited = item["price_stars"]
+    return item, round(credited, 2)
 
 
-def give_gift(uid: str, key: str):
-    db().table(INVENTORY_TABLE).insert({"user_id": uid, "gift_key": key}).execute()
+def give_gift(uid: str, nft_id: int) -> bool:
+    try:
+        res = r1(rpc("grant_item", {"p_user_id": uid, "p_nft_id": int(nft_id)}))
+        return res.get("success", True) is not False
+    except Exception as e:
+        print("plinko grant error:", repr(e))
+        return False
 
 
 @router.get("/plinko/me/{user_id}")
@@ -99,12 +148,8 @@ async def plinko_me(user_id: str, x_init_data: str = Header("")):
     if uid != str(user_id):
         raise HTTPException(403, "forbidden")
     row = get_row(uid)
-    cat = {g["key"]: g for g in catalog()}
-    own = db().table(INVENTORY_TABLE).select("gift_key").eq("user_id", uid).execute().data or []
-    counts = {}
-    for r in own:
-        counts[r["gift_key"]] = counts.get(r["gift_key"], 0) + 1
-    gifts = [{**cat[k], "count": c} for k, c in counts.items() if k in cat]
+    cat = {g["id"]: g for g in catalog()}
+    gifts = [{**cat[i["id"]], "count": i["count"]} for i in my_inventory(uid) if i["id"] in cat]
     return {
         "balance": float(row.get("balance") or 0),
         "ton_balance": float(row.get("ton_balance") or 0),
@@ -127,57 +172,57 @@ async def plinko_drop(req: DropReq, x_init_data: str = Header("")):
     if cur == "ton" and not (0.01 <= amt <= MAX_BET_TON):
         raise HTTPException(400, f"Ставка в TON: от 0.01 до {MAX_BET_TON}")
 
+    bet_gift, bet_s, bet_t = None, 0.0, 0.0
+    if cur == "gift":
+        try:
+            nft_id = int(req.gift_key)
+        except (TypeError, ValueError):
+            raise HTTPException(400, "Неверный подарок")
+        bet_gift, bet_s = take_gift(uid, nft_id)   # подарок уже списан
+    elif cur == "stars":
+        bet_s = amt
+    else:
+        bet_t = amt
+
     mult = pick_multiplier()
     slot = random.choice(SLOTS[mult])
 
     win_s = win_t = 0.0
     win_gift = None
-    bet_gift = None
-
-    if cur == "gift":
-        bet_gift = take_gift(uid, req.gift_key or "")
-        value = float(bet_gift["price_stars"]) * mult
-        # самый дорогой подарок из каталога, который не дороже выигрыша; остаток звёздами
-        cands = [g for g in catalog() if float(g["price_stars"]) <= value]
-        win_gift = max(cands, key=lambda g: float(g["price_stars"])) if cands else None
-        win_s = round(value - float(win_gift["price_stars"]), 2) if win_gift else round(value, 2)
-        try:
-            if win_gift:
-                give_gift(uid, win_gift["key"])
-        except Exception:
-            give_gift(uid, bet_gift["key"])   # вернуть ставку, если выдача не удалась
-            raise HTTPException(500, "Не удалось выдать выигрыш")
-        if win_s > 0:
-            for _ in range(5):
-                row = get_row(uid)
-                if cas_balance(uid, row, float(row.get("balance") or 0) + win_s,
-                               float(row.get("ton_balance") or 0)):
-                    break
+    if cur == "ton":
+        win_t = round(bet_t * mult, 4)
     else:
-        for _ in range(5):
-            row = get_row(uid)
-            b, t = float(row.get("balance") or 0), float(row.get("ton_balance") or 0)
-            if cur == "stars":
-                if b < amt:
-                    raise HTTPException(400, "Недостаточно звёзд")
-                win_s = round(amt * mult, 2)
-                nb, nt = b - amt + win_s, t
-            else:
-                if t < amt:
-                    raise HTTPException(400, "Недостаточно TON")
-                win_t = round(amt * mult, 4)
-                nb, nt = b, t - amt + win_t
-            if cas_balance(uid, row, nb, nt):
-                break
+        value = bet_s * mult
+        if cur == "gift":
+            # самый дорогой подарок, который не дороже выигрыша; остаток — звёздами
+            cands = [g for g in catalog() if g["price_stars"] <= value]
+            win_gift = max(cands, key=lambda g: g["price_stars"]) if cands else None
+            win_s = round(value - win_gift["price_stars"], 2) if win_gift else round(value, 2)
         else:
-            raise HTTPException(409, "Баланс изменился, попробуйте ещё раз")
+            win_s = round(value, 2)
+
+    for _ in range(5):
+        row = get_row(uid)
+        b, t = float(row.get("balance") or 0), float(row.get("ton_balance") or 0)
+        if b < bet_s or t < bet_t:
+            raise HTTPException(400, "Недостаточно средств")
+        if cas_balance(uid, row, b - bet_s + win_s, t - bet_t + win_t):
+            break
+    else:
+        raise HTTPException(409, "Баланс изменился, попробуйте ещё раз")
+
+    if win_gift and not give_gift(uid, win_gift["id"]):
+        add_stars(uid, win_gift["price_stars"])   # не удалось выдать — компенсируем звёздами
+        win_s = round(win_s + win_gift["price_stars"], 2)
+        win_gift = None
 
     row = get_row(uid)
+    strip = lambda g: None if not g else {k: v for k, v in g.items() if k != "id"}
     return {
         "slot": slot,
         "mult": mult,
-        "win": {"stars": win_s, "ton": win_t, "gift": win_gift},
-        "bet_gift": bet_gift,
+        "win": {"stars": win_s, "ton": win_t, "gift": strip(win_gift)},
+        "bet_gift": strip(bet_gift),
         "balance": float(row.get("balance") or 0),
         "ton_balance": float(row.get("ton_balance") or 0),
     }
