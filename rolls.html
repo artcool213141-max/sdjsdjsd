@@ -555,7 +555,7 @@ function showWinner(res){
   const av = $('win-av'); av.innerHTML = ''; avatarFill(av, res.winner_username, res.winner_avatar);
   $('win-name').textContent = res.winner_username;
   $('win-prize').innerHTML = parts.length ? '+ ' + parts.join(' ') : '';
-  $('win-me').textContent = res.winner_mine ? 'Красава! Весь банк отправлен тебе на баланс 🔥' : '';
+  $('win-me').textContent = res.winner_mine ? 'Ты победил, весь банк уже выдан тебе !' : '';
   $('win-modal').classList.add('show');
   haptic('notificationOccurred', res.winner_mine ? 'success' : 'warning');
   if (res.winner_mine) refreshMe();
