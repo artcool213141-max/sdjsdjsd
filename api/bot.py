@@ -75,10 +75,11 @@ async def missing_channels(user_id: int):
 
 
 def sub_keyboard(missing, payload: str):
-    rows = [[{"text": f"📢 {ch['name']}", "url": f"https://t.me/{ch['id'].lstrip('@')}"}]
-            for ch in missing]
-    rows.append([{"text": "Я подписался 🐼", "callback_data": f"chk:{payload}"}])
-    return {"inline_keyboard": rows}
+    rows = []
+    for ch in missing:
+        cid = str(ch['id'])
+        # Если это числовой ID (начинается с минус), ссылкой на канал по ID является t.me/c/... либо через юзернейм
+        if cid.startswith("-100"):
 
 
 def open_keyboard(payload: str):
