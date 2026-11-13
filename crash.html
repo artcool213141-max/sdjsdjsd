@@ -243,11 +243,13 @@ const round2 = n => Math.round(n * 100) / 100;
 function setText(node, v){ if (node.textContent !== v) node.textContent = v; }
 function haptic(kind, type){ try { tg.HapticFeedback?.[kind]?.(type); } catch(e){} }
 function toast(msg, kind=''){
+  if (/^HTTP \d+|Failed to fetch|NetworkError|Load failed|нет ответа/i.test(msg)) msg = 'Мини-игра временно недоступна, попробуйте позже';
   const t = $('toast'); t.className = kind; t.textContent = msg; void t.offsetWidth; t.classList.add('show');
   clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 2800);
 }
 function fmtAmt(v, c){ v = Number(v); return c === 'ton' ? v.toFixed(2) : String(+v.toFixed(2)); }
 
+const DEBUG = /[?&]debug=1/.test(location.search);   // страница?debug=1 покажет техническую ошибку
 const BASES = API_BASE ? [API_BASE] : ['', '/api'];
 let baseIdx = 0, lastApiError = '';
 async function api(path, opts = {}){
@@ -613,10 +615,10 @@ function frame(){
   el.status.classList.toggle('err', apiDown);
 
   if (st.state === 'load') {
-    setText(el.status, apiDown ? ('Нет связи: ' + lastApiError) : 'Подключение…');
+    setText(el.status, apiDown ? (DEBUG ? ('Ошибка: ' + lastApiError) : 'Мини-игра временно недоступна') : 'Подключение…');
     el.mult.className = 'num idle'; setText(el.mult, '1.00x');
     el.rocket.classList.remove('on'); drawTrail(1); placeRocket(1);
-    if (!busy) { setText(el.btn, apiDown ? 'Нет связи' : 'Подключение…'); el.btn.className = 'btn-main'; el.btn.disabled = true; }
+    if (!busy) { setText(el.btn, apiDown ? 'Недоступно, попробуйте позже' : 'Подключение…'); el.btn.className = 'btn-main'; el.btn.disabled = true; }
   }
   else if (st.state === 'wait') {
     setText(el.status, `Взлёт через ${Math.max(0, Math.ceil(st.left / 1000))}с`);
