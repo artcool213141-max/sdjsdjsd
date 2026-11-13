@@ -146,28 +146,29 @@ async def handle_check(cq: dict):
     payload = clean_payload((cq.get("data") or "")[4:])
     msg = cq.get("message") or {}
 
-    # Мгновенно убираем часики с кнопки, чтобы она не висела
+    # 1. МГНОВЕННО отвечаем Telegram, чтобы убрать крутящиеся часики с кнопки
     await tg_call("answerCallbackQuery", {
         "callback_query_id": cq["id"],
-        "text": "Проверяем подписку..."
+        "text": "Проверяем...",
+        "show_alert": False
     })
 
-    # Проверяем подписку
+    # 2. Проверяем подписку
     missing = await missing_channels(user_id)
     
     if missing:
-        # Если не подписан — меняем текст сообщения на предупреждение
+        # Если не подписан — аккуратно обновляем текст сообщения
         if msg.get("chat") and msg.get("message_id"):
             await tg_call("editMessageText", {
                 "chat_id": msg["chat"]["id"],
                 "message_id": msg["message_id"],
-                "text": "❌ <b>Вы еще не подписались на канал!</b>\n\nПодпишитесь на канал ниже, а затем снова нажмите кнопку <b>«Я подписался»</b> 👇",
+                "text": "❌ <b>Вы еще не подписались на канал!</b>\n\nПодпишитесь на канал ниже и снова нажмите кнопку <b>«Я подписался»</b> 👇",
                 "parse_mode": "HTML",
                 "reply_markup": sub_keyboard(missing, payload),
             })
         return
 
-    # Если подписан — открываем вход в апку
+    # 3. Если подписан — открываем вход в игру
     if msg.get("chat") and msg.get("message_id"):
         await tg_call("editMessageText", {
             "chat_id": msg["chat"]["id"],
