@@ -117,7 +117,42 @@ CAPTION = (
 OPEN_TEXT = CAPTION
 
 
-async def handle_start(chat_id: int, user_id: int, payload: str):
+def _register_ref_sync(user: dict, payload: str):
+    """Записывает реферала напрямую из бота (не зависит от фронта).
+    Дубли отсекает уникальный индекс referrals_referred_uidx / сама SQL-функция."""
+    if supabase is None or not payload.isdigit():
+        return None
+    uid = int(user["id"])
+    ref_id = int(payload)
+    if ref_id == uid:
+        return None
+    uname = user.get("username") or user.get("first_name")
+    try:
+        # строка в users нужна из-за внешних ключей referrals -> users
+        supabase.table("users").upsert(
+            {"id": str(uid), "balance": 0, "username": uname},
+            on_conflict="id", ignore_duplicates=True,
+        ).execute()
+        res = supabase.rpc("register_referral", {
+            "p_referred_id": uid,
+            "p_referrer_id": ref_id,
+            "p_is_premium": bool(user.get("is_premium", False)),
+            "p_username": uname,
+        }).execute().data
+        print("register_referral:", uid, "<-", ref_id, res)
+        return res
+    except Exception as e:
+        print("register_referral error:", uid, "<-", ref_id, repr(e))
+        return None
+
+
+async def register_ref(user: dict, payload: str):
+    await asyncio.to_thread(_register_ref_sync, user, payload)
+
+
+async def handle_start(chat_id: int, user_id: int, payload: str, user: Optional[dict] = None):
+    # Реферал засчитываем сразу при /start, до проверки подписки
+    await register_ref(user or {"id": user_id}, payload)
     missing = await missing_channels(user_id)
     if missing:
         await tg_call("sendMessage", {
@@ -216,6 +251,8 @@ async def handle_check(cq: dict):
                 "show_alert": True,
             })
             return
+
+        await register_ref(cq["from"], payload)
 
         answered = True
         await tg_call("answerCallbackQuery", {
@@ -550,7 +587,7 @@ async def handle_update(update: dict):
         if text.startswith("/start") and chat.get("type") == "private" and msg.get("from"):
             parts = text.split(maxsplit=1)
             payload = clean_payload(parts[1]) if len(parts) > 1 else ""
-            await handle_start(chat["id"], msg["from"]["id"], payload)
+            await handle_start(chat["id"], msg["from"]["id"], payload, msg["from"])
         return
 
     cq = update.get("callback_query")
