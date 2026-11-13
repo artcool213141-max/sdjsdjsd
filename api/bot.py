@@ -93,6 +93,12 @@ SUB_TEXT = (
     "подпишись на наших спонсоров ниже и нажми <b>«Я подписался»</b> 🚀"
 )
 
+# Текст, который выведется, если пользователь нажав кнопку, так и не подписался
+NOT_SUBSCRIBED_TEXT = (
+    "❌ <b>Вы еще не подписались на канал!</b>\n\n"
+    "Подпишитесь на канал ниже, а затем снова нажмите кнопку <b>«Я подписался»</b> 👇"
+)
+
 CAPTION = (
     "🐼 <b>Панда в теме! Твой вход одобрен!</b>\n\n"
     "Подписка засчитана. Жми кнопку ниже, чтобы ворваться в игру "
@@ -142,14 +148,23 @@ async def handle_check(cq: dict):
 
     missing = await missing_channels(user_id)
     if missing:
+        # Убираем всплывающее окошко и просто обновляем текст сообщения в чате
         await tg_call("answerCallbackQuery", {
             "callback_query_id": cq["id"],
-            "text": "Вы подписались ещё не на все каналы!",
-            "show_alert": True,
+            "text": "Вы еще не подписались!",
         })
+        
+        if msg.get("chat") and msg.get("message_id"):
+            await tg_call("editMessageText", {
+                "chat_id": msg["chat"]["id"],
+                "message_id": msg["message_id"],
+                "text": NOT_SUBSCRIBED_TEXT,
+                "parse_mode": "HTML",
+                "reply_markup": sub_keyboard(missing, payload),
+            })
         return
 
-    await tg_call("answerCallbackQuery", {"callback_query_id": cq["id"]})
+    await tg_call("answerCallbackQuery", {"callback_query_id": cq["id"], "text": "Успешно!"})
     if msg.get("chat") and msg.get("message_id"):
         await tg_call("editMessageText", {
             "chat_id": msg["chat"]["id"],
@@ -223,7 +238,6 @@ def all_user_ids():
     start = 0
     page = 1000
     while True:
-        # Используйте .execute() аккуратно, либо перейдите на async-клиент supabase, если используете async
         response = supabase.table("users").select("id").range(start, start + page - 1).execute()
         rows = response.data or []
         ids.extend([r["id"] for r in rows])
@@ -445,20 +459,16 @@ async def handle_rass_callback(cq: dict):
         await strip_keyboard(cq)
         await show_confirm(uid, chat_id, state)
     elif action == "go" and step == "confirm":
-        # Запускаем рассылку в фоновой задаче, чтобы вебхук не зависал и не падал по таймауту
         asyncio.create_task(run_broadcast(uid, chat_id, cq))
     else:
         await answer_cb(cq, "Это действие уже неактуально.", alert=True)
 
 
 async def handle_update(update: dict):
-    # --- 1. ПЛАТЕЖИ (Stars) ---
-    # Этот блок ОБЯЗАТЕЛЬНО должен быть первым, чтобы ловить pre_checkout_query и successful_payment
     if update.get("pre_checkout_query") or (update.get("message") or {}).get("successful_payment"):
         await topup_update(update)
         return
 
-    # --- 2. ОБЫЧНЫЕ СООБЩЕНИЯ ---
     msg = update.get("message")
     if msg:
         chat = msg.get("chat") or {}
@@ -474,7 +484,6 @@ async def handle_update(update: dict):
             await handle_start(chat["id"], msg["from"]["id"], payload)
         return
 
-    # --- 3. CALLBACK КНОПКИ ---
     cq = update.get("callback_query")
     if not cq:
         return
@@ -482,10 +491,10 @@ async def handle_update(update: dict):
     if data.startswith("chk:"):
         await handle_check(cq)
     elif data.startswith("rass:"):
+        data_str = data[5:]
         await handle_rass_callback(cq)
 
 
-# Сделайте так:
 @router.post("/")
 async def bot_webhook(request: Request,
                      x_telegram_bot_api_secret_token: Optional[str] = Header(None)):
