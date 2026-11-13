@@ -5,9 +5,9 @@ from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 
 try:
-    from ref import validate_init_data, supabase
+    from ref import validate_init_data, rpc, supabase
 except ImportError:
-    from api.ref import validate_init_data, supabase
+    from api.ref import validate_init_data, rpc, supabase
 
 router = APIRouter()
 
@@ -53,16 +53,32 @@ def get_row(uid: str):
     return rows[0]
 
 
-def _eq(q, col, val):
-    return q.is_(col, "null") if val is None else q.eq(col, val)
+def settle(uid: str, bet_s: float, bet_t: float, win_s: float, win_t: float):
+    """Атомарно: списать ставку и начислить выигрыш. Возвращает (звёзды, TON) после операции.
+    Основной путь — SQL-функция plinko_settle (см. plinko.sql). Если её ещё нет, работает запасной путь."""
+    res = None
+    try:
+        res = rpc("plinko_settle", {"p_user_id": uid, "p_bet_s": bet_s, "p_bet_t": bet_t,
+                                    "p_win_s": win_s, "p_win_t": win_t})
+    except Exception as e:
+        print("plinko_settle rpc error:", repr(e))
+    if isinstance(res, list):
+        res = res[0] if res else None
+    if isinstance(res, dict) and "success" in res:
+        if not res["success"]:
+            raise HTTPException(400, "Недостаточно средств")
+        return float(res.get("balance") or 0), float(res.get("ton_balance") or 0)
 
-
-def cas_balance(uid: str, row: dict, new_b: float, new_t: float):
-    """Обновляет баланс только если он не менялся с момента чтения. Возвращает новую строку или None."""
-    q = db().table("users").update({"balance": new_b, "ton_balance": new_t}).eq("id", uid)
-    q = _eq(_eq(q, "balance", row.get("balance")), "ton_balance", row.get("ton_balance"))
-    data = q.execute().data
-    return data[0] if data else None
+    print("plinko_settle недоступна — запасной путь (выполните plinko.sql в Supabase)")
+    row = get_row(uid)
+    b, t = float(row.get("balance") or 0), float(row.get("ton_balance") or 0)
+    if b < bet_s:
+        raise HTTPException(400, "Недостаточно звёзд")
+    if t < bet_t:
+        raise HTTPException(400, "Недостаточно TON")
+    nb, nt = round(b - bet_s + win_s, 4), round(t - bet_t + win_t, 6)
+    db().table("users").update({"balance": nb, "ton_balance": nt}).eq("id", uid).execute()
+    return nb, nt
 
 
 @router.get("/plinko/me/{user_id}")
@@ -100,20 +116,11 @@ async def plinko_drop(req: DropReq, x_init_data: str = Header("")):
     bet_s = amt if cur == "stars" else 0.0
     bet_t = amt if cur == "ton" else 0.0
 
-    for _ in range(5):
-        row = get_row(uid)
-        b, t = float(row.get("balance") or 0), float(row.get("ton_balance") or 0)
-        if b < bet_s:
-            raise HTTPException(400, "Недостаточно звёзд")
-        if t < bet_t:
-            raise HTTPException(400, "Недостаточно TON")
-        new = cas_balance(uid, row, b - bet_s + win_s, t - bet_t + win_t)
-        if new:
-            return {
-                "slot": slot,
-                "mult": mult,
-                "win": {"stars": win_s, "ton": win_t},
-                "balance": float(new.get("balance") or 0),
-                "ton_balance": float(new.get("ton_balance") or 0),
-            }
-    raise HTTPException(409, "Баланс изменился, попробуйте ещё раз")
+    balance, ton_balance = settle(uid, bet_s, bet_t, win_s, win_t)
+    return {
+        "slot": slot,
+        "mult": mult,
+        "win": {"stars": win_s, "ton": win_t},
+        "balance": balance,
+        "ton_balance": ton_balance,
+    }
