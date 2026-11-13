@@ -232,7 +232,7 @@ async def handle_check(cq: dict):
             if had_error:
                 alert = "⚠️ Не удалось проверить подписку: бот не видит канал. Сообщите администратору."
             else:
-                alert = "❌ Вы ещё не подписаны на канал. Подпишитесь и нажмите кнопку снова."
+                alert = "❌ Вы ещё не подписаны на канал или чат. Подпишитесь и нажмите кнопку снова."
             answered = True
             await tg_call("answerCallbackQuery", {
                 "callback_query_id": cq["id"],
