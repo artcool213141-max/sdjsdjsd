@@ -14,12 +14,17 @@ except ImportError:
 router = APIRouter()
 
 # ---------------- ПЛАТНАЯ РУЛЕТКА: 150 звёзд ----------------
+# Картинка мишки задаётся прямо в коде. Всё остальное (название, цена, инвентарь)
+# берётся из базы по ID гифта.
+MISHA_ID = 64
+MISHA_IMAGE_URL = "https://github.com/artcool213141-max/sdjsdjsd/blob/main/misha.png?raw=true"
+
 ROULETTE_PAID_PRICE = 150   # цена одного прокрута в звёздах
 
 # (id гифта, шанс в %). 64 = твой мишка, выпадает с шансом 71%.
 # Сумма шансов = 100.
 ROULETTE_PAID_LOOT = [
-    (64, 71.0),   # мишка (misha.png)
+    (MISHA_ID, 71.0),   # мишка (misha.png)
     (17, 12.0),
     (15, 8.0),
     (13, 5.0),
@@ -60,6 +65,13 @@ def _check(res):
     if res.get("success") is False or res.get("error"):
         raise HTTPException(400, ERRORS.get(res.get("error"), res.get("error") or ERRORS["failed"]))
     return res
+
+
+def _image(item: dict):
+    """Для мишки подставляем картинку из кода, для остальных - из базы."""
+    if item.get("id") == MISHA_ID:
+        return MISHA_IMAGE_URL
+    return item.get("image_url")
 
 
 def _catalog_items() -> list:
@@ -122,6 +134,7 @@ async def roulette_catalog(req: Base):
             "id": x.get("id"),
             "name": x.get("name"),
             "price_stars": x.get("price_stars"),
+            "image_url": _image(x),
         }
         for x in _catalog_items()
     ]
@@ -166,7 +179,7 @@ async def roulette_paid(req: Base):
             "id": item.get("id"),
             "name": item.get("name"),
             "price_stars": item.get("price_stars"),
-            "image_url": item.get("image_url"),
+            "image_url": _image(item),
         },
         "price": ROULETTE_PAID_PRICE,
     }
