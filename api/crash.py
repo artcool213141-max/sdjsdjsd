@@ -182,10 +182,12 @@ def _slug(link) -> Optional[str]:
     return m.group(1).lower() if m else None
 
 
-def nft_image(link) -> str:
-    """Превью NFT-подарка по ссылке t.me/nft/<Name>-<num>."""
-    sl = _slug(link)
-    return f"https://nft.fragment.com/gift/{sl}.medium.webp" if sl else ""
+PREVIEW_BASE = (os.environ.get("PREVIEW_BASE") or "https://sdjsdjsd.vercel.app").rstrip("/")
+
+
+def preview_url(cat_id) -> str:
+    """Превью подарка — тот же эндпоинт, что использует система кейсов (/inventory/preview/<id>)."""
+    return f"{PREVIEW_BASE}/inventory/preview/{cat_id}" if cat_id is not None else ""
 
 
 def is_star(name) -> bool:
@@ -250,11 +252,9 @@ def resolve_item(item) -> dict:
             found = next((c for c in cat if str(c["name"]).lower() == s.lower()), None)
         extra = {"name": s}
     price = found["price_stars"] if found else (extra.get("price_stars") or extra.get("price") or 0)
-    img = ""
-    if found:
-        img = found.get("image_url") or nft_image(found.get("link"))
+    img = preview_url(found["id"]) if found else ""
     if not img:
-        img = extra.get("image_url") or extra.get("img") or nft_image(extra.get("link")) or ""
+        img = extra.get("image_url") or extra.get("img") or ""
     return {
         "key": item_key(item),
         "id": found["id"] if found else None,
@@ -266,7 +266,7 @@ def resolve_item(item) -> dict:
 
 def new_item_like(cat: dict, items: list, mode: str):
     """Формирует запись нового подарка в том же стиле, как уже лежат в инвентаре."""
-    img = cat.get("image_url") or nft_image(cat.get("link"))
+    img = preview_url(cat["id"])
     sample = items[0] if items else None
     if isinstance(sample, dict):
         out = {}
@@ -356,7 +356,7 @@ def payout_bet(bet: dict, m: float):
         rest = value
         g = pick_prize(value, bet.get("gift_name"))
         if g and add_gift(uid, g):
-            gimg = g.get("image_url") or nft_image(g.get("link"))
+            gimg = preview_url(g["id"])
             rest = r2(value - float(g["price_stars"]))
             res["gift"] = {"name": g["name"], "image_url": gimg, "price_stars": float(g["price_stars"])}
             upd["payout_gift_name"] = g["name"]
