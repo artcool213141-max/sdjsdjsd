@@ -58,14 +58,15 @@ header{position:sticky;top:0;display:flex;align-items:center;justify-content:spa
 .status.crash{color:var(--danger);border-color:rgba(255,90,90,.4)}
 .status.err{color:var(--danger)}
 #multiplier{position:absolute;left:50%;top:24%;transform:translate(-50%,-50%);z-index:20;pointer-events:none;
-  font-size:clamp(2.6rem,14vw,4.2rem);font-weight:900;letter-spacing:-.02em;text-shadow:0 0 30px rgba(47,107,255,.6)}
+  font-size:clamp(2rem,10vw,3.1rem);font-weight:900;letter-spacing:-.02em;text-shadow:0 0 26px rgba(47,107,255,.6)}
 #multiplier.idle{color:rgba(255,255,255,.35);text-shadow:none}
-#multiplier.crashed{color:var(--danger);text-shadow:0 0 40px rgba(255,90,90,.55)}
-#rocket{position:absolute;z-index:10;width:120px;height:120px;pointer-events:none;left:0;top:0;opacity:.35;transition:opacity .25s;will-change:transform}
+#multiplier.crashed{color:var(--danger);text-shadow:0 0 34px rgba(255,90,90,.55)}
+/* ракета: скрыта, пока не закончилось окно ставок; появляется только в полёте */
+#rocket{position:absolute;z-index:10;width:104px;height:104px;pointer-events:none;left:0;top:0;opacity:0;transition:opacity .12s;will-change:transform}
 #rocket.on{opacity:1}
 #rocket.hidden{opacity:0}
-#fallback-rocket{display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:68px;transform:rotate(-45deg)}
-#boom{position:absolute;z-index:11;font-size:80px;pointer-events:none;display:none;animation:boom .5s ease-out}
+#fallback-rocket{display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:60px;transform:rotate(-45deg)}
+#boom{position:absolute;z-index:11;font-size:72px;pointer-events:none;display:none;animation:boom .5s ease-out}
 @keyframes boom{from{transform:scale(.2);opacity:0}60%{transform:scale(1.25);opacity:1}to{transform:scale(1);opacity:.9}}
 
 /* bets feed */
@@ -207,7 +208,7 @@ const API_BASE = '';
 const tg = window.Telegram.WebApp;
 try { tg.ready(); tg.expand(); tg.disableVerticalSwipes?.(); } catch(e){}
 
-const BET_WINDOW = 10000;      // 10 секунд между полётами (должно совпадать с crash.py)
+const BET_WINDOW = 5000;       // 5 секунд между полётами (должно совпадать с crash.py)
 const GROWTH = 0.25;           // должно совпадать с crash.py
 
 const tgUser = tg.initDataUnsafe?.user;
@@ -287,7 +288,7 @@ function phase(){
   if (n < S.fly_start) return { state: 'wait', round: S.round_id, left: S.fly_start - n, mult: 1 };
   if (S.finished && S.crash_point != null) {
     if (n < S.end_at) return { state: 'crash', round: S.round_id, cp: S.crash_point, mult: S.crash_point };
-    // раунд закончился — следующий начинается ровно в end_at, окно ставок 10с
+    // раунд закончился — следующий начинается ровно в end_at, окно ставок BET_WINDOW
     const left = S.end_at + BET_WINDOW - n;
     if (left > 0) return { state: 'wait', round: S.round_id + 1, left, mult: 1, predicted: true };
     return { state: 'load' };
@@ -385,7 +386,7 @@ function drawTrail(m){
 }
 function placeRocket(m){
   const q = pathPoint(m > 1 ? progressOf(m) : 0);
-  const s = el.rocket.offsetWidth || 120;
+  const s = el.rocket.offsetWidth || 104;
   el.rocket.style.transform = `translate(${q.x - s/2}px, ${q.y - s/2}px)`;
   return q;
 }
@@ -409,16 +410,19 @@ const rows = new Map();
 
 function gcard(name, img){
   const d = document.createElement('div'); d.className = 'gcard';
-  const i = document.createElement('img'); i.src = img || 'img/star.png'; i.onerror = () => { i.src = 'img/star.png'; };
+  const i = document.createElement('img'); i.src = img || 'img/star.png'; i.onerror = () => { i.onerror = null; i.src = 'img/star.png'; };
   const s = document.createElement('span'); s.textContent = name || 'Подарок';
   d.append(i, s); return d;
 }
 function coin(src){ const i = document.createElement('img'); i.className = 'coin'; i.src = src; return i; }
 
+// Star — это не подарок, а обычные звёзды: показываем монетку, а не карточку подарка
+const isStarName = n => String(n || '').trim().toLowerCase() === 'star';
+
 function paintPrize(r){
   const b = r.b; r.prize.innerHTML = '';
-  if (b.payout_gift_name) r.prize.appendChild(gcard(b.payout_gift_name, b.payout_gift_image));
-  else if (b.currency === 'gift') r.prize.appendChild(gcard(b.gift_name, b.gift_image));
+  if (b.payout_gift_name && !isStarName(b.payout_gift_name)) r.prize.appendChild(gcard(b.payout_gift_name, b.payout_gift_image));
+  else if (b.currency === 'gift' && !isStarName(b.gift_name)) r.prize.appendChild(gcard(b.gift_name, b.gift_image));
   else r.prize.appendChild(coin(b.currency === 'ton' ? 'img/ton.png' : 'img/star.png'));
 }
 function makeRow(b){
@@ -448,7 +452,7 @@ function renderBets(list){
     if (!r) { r = makeRow(b); rows.set(b.id, r); el.betsList.prepend(r.el); }
     r.b = b;
     r.el.classList.toggle('me', !!b.mine);
-    const pk = (b.payout_gift_name || '') + '|' + b.currency;
+    const pk = (b.payout_gift_name || '') + '|' + (b.payout_gift_image || '') + '|' + (b.gift_image || '') + '|' + b.currency;
     if (r.prizeKey !== pk) { r.prizeKey = pk; paintPrize(r); }
   });
   el.betsEmpty.style.display = rows.size ? 'none' : 'block';
@@ -506,11 +510,16 @@ async function openInventory(){
     const r = await api(`/crash/me/${encodeURIComponent(UID)}`);
     me.balance = r.balance; me.ton = r.ton_balance; paintBalances();
     grid.innerHTML = '';
-    if (!r.gifts.length) { grid.innerHTML = '<div class="empty">В инвентаре пока нет подарков</div>'; return; }
-    r.gifts.forEach(g => {
+    // Star — это просто звёзды, в выборе подарков для ставки их не показываем
+    const gifts = (r.gifts || []).filter(g => !isStarName(g.name));
+    if (!gifts.length) { grid.innerHTML = '<div class="empty">В инвентаре пока нет подарков</div>'; return; }
+    gifts.forEach(g => {
       const d = document.createElement('div');
       d.className = 'inv' + (g.price_stars > 0 ? '' : ' off');
-      const img = document.createElement('img'); img.src = g.image_url || 'img/star.png'; img.onerror = () => { img.src = 'img/star.png'; };
+      const img = document.createElement('img');
+      img.loading = 'lazy';
+      img.src = g.image_url || 'img/star.png';
+      img.onerror = () => { img.onerror = null; img.src = 'img/star.png'; };
       const n = document.createElement('div'); n.className = 'n'; n.textContent = g.name;
       const p = document.createElement('div'); p.className = 'p'; p.textContent = g.price_stars > 0 ? g.price_stars + ' ⭐' : 'нет цены';
       d.append(img, n, p);
@@ -580,14 +589,14 @@ async function doCashout(){
 function onPhaseChange(st){
   if (st.state === 'wait') {
     el.boom.style.display = 'none';
-    el.rocket.classList.remove('hidden');
+    el.rocket.classList.remove('hidden', 'on');
     clearGift();
     refreshMe();
   }
   if (st.state === 'fly') el.boom.style.display = 'none';
   if (st.state === 'crash') {
     const q = placeRocket(st.mult);
-    el.boom.style.left = (q.x - 40) + 'px'; el.boom.style.top = (q.y - 48) + 'px';
+    el.boom.style.left = (q.x - 36) + 'px'; el.boom.style.top = (q.y - 44) + 'px';
     el.boom.style.display = 'block'; el.boom.style.animation = 'none'; void el.boom.offsetWidth; el.boom.style.animation = '';
     haptic('notificationOccurred', 'error');
     if (myBet && myBet.round_id === st.round && !myBet.cashed_out && lastLossRound !== st.round) {
@@ -623,7 +632,7 @@ function frame(){
   else if (st.state === 'wait') {
     setText(el.status, `Взлёт через ${Math.max(0, Math.ceil(st.left / 1000))}с`);
     setText(el.mult, '1.00x'); el.mult.className = 'num idle';
-    el.rocket.classList.remove('on'); drawTrail(1); placeRocket(1);
+    el.rocket.classList.remove('on'); drawTrail(1); placeRocket(1);   // ракеты не видно, пока идёт окно ставок
     if (!busy) {
       if (bet) { setText(el.btn, `Ставка принята · ${fmtAmt(myBet.amount, myBet.currency)}`); el.btn.className = 'btn-main placed'; el.btn.disabled = true; }
       else { setText(el.btn, 'Сделать ставку'); el.btn.className = 'btn-main'; el.btn.disabled = st.left < 500; }
@@ -632,7 +641,7 @@ function frame(){
   else if (st.state === 'fly') {
     setText(el.status, 'В полёте');
     setText(el.mult, st.mult.toFixed(2) + 'x'); el.mult.className = 'num';
-    el.rocket.classList.add('on'); drawTrail(st.mult); placeRocket(st.mult);
+    el.rocket.classList.add('on'); drawTrail(st.mult); placeRocket(st.mult);   // ракета появляется только когда таймер ставок прошёл
     if (!busy) {
       if (bet && !myBet.cashed_out) {
         const v = myBet.amount * st.mult;
