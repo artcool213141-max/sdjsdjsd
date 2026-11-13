@@ -118,46 +118,23 @@ OPEN_TEXT = CAPTION
 
 
 def _register_ref_sync(user: dict, payload: str):
-    """Пишет реферала напрямую в referrals (без SQL-функции).
-    Дубли отсекает уникальный индекс по referred_id."""
+    """На /start только запоминаем, кто пригласил (pending_refs).
+    Зачисление в referrals происходит при открытии бесплатного кейса (api/roulette.py)."""
     if supabase is None or not payload.isdigit():
         return None
     uid = int(user["id"])
     ref_id = int(payload)
     if ref_id == uid:
         return None
-    uname = user.get("username") or user.get("first_name")
     try:
-        # уже есть запись о том, кто его пригласил - ничего не делаем
-        ex = supabase.table("referrals").select("id").eq("referred_id", uid).limit(1).execute().data
-        if ex:
-            print("register_ref: уже записан", uid)
-            return None
-
-        # пригласивший обязан быть в users (внешний ключ)
-        rr = supabase.table("users").select("id").eq("id", str(ref_id)).limit(1).execute().data
-        if not rr:
-            print("register_ref: пригласивший не найден в users", ref_id)
-            return None
-
-        # приглашённый тоже должен быть в users (внешний ключ)
-        supabase.table("users").upsert(
-            {"id": str(uid), "balance": 0, "username": uname},
-            on_conflict="id", ignore_duplicates=True,
+        # ignore_duplicates: первый пригласивший не перезаписывается
+        supabase.table("pending_refs").upsert(
+            {"user_id": uid, "referrer_id": ref_id},
+            on_conflict="user_id", ignore_duplicates=True,
         ).execute()
-
-        row = {
-            "referred_id": uid,
-            "invited_id": str(uid),
-            "referrer_id": str(ref_id),
-            "is_premium": bool(user.get("is_premium", False)),
-        }
-        res = supabase.table("referrals").insert(row).execute().data
-        print("register_ref OK:", uid, "<-", ref_id, res)
-        return res
+        print("pending_ref saved:", uid, "<-", ref_id)
     except Exception as e:
-        print("register_ref ERROR:", uid, "<-", ref_id, repr(e))
-        return None
+        print("pending_ref ERROR:", uid, "<-", ref_id, repr(e))
 
 
 async def register_ref(user: dict, payload: str):
