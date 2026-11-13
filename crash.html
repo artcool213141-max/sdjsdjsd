@@ -250,7 +250,7 @@ function toast(msg, kind=''){
 function fmtAmt(v, c){ v = Number(v); return c === 'ton' ? v.toFixed(2) : String(+v.toFixed(2)); }
 
 const DEBUG = /[?&]debug=1/.test(location.search);   // страница?debug=1 покажет техническую ошибку
-const BASES = API_BASE ? [API_BASE] : ['', '/api'];
+const BASES = API_BASE ? [API_BASE] : ['', '/api', 'https://sdjsdjsd.vercel.app'];
 let baseIdx = 0, lastApiError = '';
 async function api(path, opts = {}){
   let lastErr = null;
@@ -659,6 +659,7 @@ function frame(){
 }
 
 /* ================= СТАРТ ================= */
+el.status.addEventListener('click', () => { if (apiDown) alert('Диагностика: ' + lastApiError + '\nСтраница: ' + location.origin); });
 refreshMode(); refreshGiftUI(); resize();
 loadRocket();
 refreshMe();
