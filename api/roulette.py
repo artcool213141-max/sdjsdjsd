@@ -17,7 +17,7 @@ router = APIRouter()
 # Картинка мишки задаётся прямо в коде. Всё остальное (название, цена, инвентарь)
 # берётся из базы по ID гифта.
 MISHA_ID = 64
-MISHA_IMAGE_URL = "https://github.com/artcool213141-max/sdjsdjsd/blob/main/misha.png?raw=true"
+MISHA_IMAGE_URL = "misha.png"
 
 ROULETTE_PAID_PRICE = 150   # цена одного прокрута в звёздах
 
