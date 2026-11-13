@@ -77,9 +77,17 @@ async def missing_channels(user_id: int):
 def sub_keyboard(missing, payload: str):
     rows = []
     for ch in missing:
-        cid = str(ch['id'])
-        # Если это числовой ID (начинается с минус), ссылкой на канал по ID является t.me/c/... либо через юзернейм
+        cid = str(ch["id"])
+        # Если это числовой ID (-100...), юзернейма нет — нужна явная ссылка в поле "link"
         if cid.startswith("-100"):
+            url = ch.get("link")
+        else:
+            url = f"https://t.me/{cid.lstrip('@')}"
+        if not url:
+            continue
+        rows.append([{"text": f"📢 {ch.get('name') or 'Канал'}", "url": url}])
+    rows.append([{"text": "✅ Я подписался", "callback_data": f"chk:{payload}"}])
+    return {"inline_keyboard": rows}
 
 
 def open_keyboard(payload: str):
