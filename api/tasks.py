@@ -12,9 +12,9 @@ except ImportError:
 
 router = APIRouter()
 
-# Твои личные каналы для обязательной подписки при первом входе (через @username или ID)
+# Каналы для обязательной подписки при первом входе (через @username или числовой ID вида -100...)
 MANDATORY_CHANNELS = [
-    {"id": "@St1fix_free", "name": "St1fix"}, # <-- укажите юзернейм вместо числового ID
+    {"id": "@St1fix_Free", "name": "St1fix"},
 ]
 
 # Trafsly
@@ -58,28 +58,68 @@ def ensure_user(user: dict):
     ).execute()
 
 
-async def is_member(channel: str, user_id: int):
-    try:
-        # Жесткий таймаут 2 секунды, чтобы интерфейс не зависал
-        async with httpx.AsyncClient(timeout=2.0) as c:
-            r = await c.get(
-                f"https://api.telegram.org/bot{BOT_TOKEN}/getChatMember",
-                params={"chat_id": channel, "user_id": user_id},
-            )
-        if r.status_code != 200:
+def _norm_chat_id(channel):
+    """Приводит chat_id к виду, который понимает Telegram."""
+    channel = str(channel).strip()
+    if channel.lstrip("-").isdigit():
+        return int(channel)
+    if channel.startswith("https://t.me/"):
+        channel = channel[len("https://t.me/"):]
+    if not channel.startswith("@"):
+        channel = "@" + channel
+    return channel
+
+
+async def tg_get_chat_member(channel, user_id: int):
+    """Возвращает (raw_json | None, error_str | None). С двумя попытками."""
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/getChatMember"
+    params = {"chat_id": _norm_chat_id(channel), "user_id": int(user_id)}
+    last_err = None
+    for attempt in range(2):
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as c:
+                r = await c.get(url, params=params)
+            try:
+                data = r.json()
+            except Exception:
+                data = None
+            if data is None:
+                last_err = f"bad_response status={r.status_code}"
+                continue
+            return data, None
+        except Exception as e:
+            last_err = repr(e)
+            print(f"getChatMember attempt {attempt + 1} exception:", last_err)
+    return None, last_err
+
+
+async def is_member(channel, user_id: int):
+    """
+    True  — подписан
+    False — точно не подписан
+    None  — не удалось проверить (ошибка сети / бот не админ / неверный канал)
+    """
+    data, err = await tg_get_chat_member(channel, user_id)
+    if data is None:
+        print("is_member network error:", err)
+        return None
+
+    if not data.get("ok"):
+        desc = (data.get("description") or "").lower()
+        print("is_member telegram error:", data)
+        # Пользователь не найден в чате — значит не подписан
+        if "participant_id_invalid" in desc or "user not found" in desc:
             return False
-        data = r.json()
-        if not data.get("ok"):
-            return False
-        st = data.get("result", {}).get("status")
-        return st in ("member", "administrator", "creator")
-    except Exception as e:
-        print("is_member exception:", repr(e))
-        # При любом сбое сети или таймауте возвращаем True (или False в зависимости от логики), 
-        # но главное — код не падает и не вешает приложение бесконечным ожиданием.
-        # Если хочешь, чтобы при сбое пускало в апку: поставь True. 
-        # Если нужно жестко проверять: оставь False, но убедись, что бот админ в канале.
+        # Остальное: бот не админ, чат не найден и т.п. — это проблема настройки, не пользователя
+        return None
+
+    result = data.get("result") or {}
+    st = result.get("status")
+    if st in ("member", "administrator", "creator"):
         return True
+    if st == "restricted":
+        return bool(result.get("is_member"))
+    return False  # left / kicked
 
 
 @router.get("/tasks/env_check")
@@ -87,10 +127,30 @@ async def tasks_env_check():
     return {
         "TRAFSLY_TOKEN": bool(TRAFSLY_TOKEN),
         "FLOWLY_API_KEY": bool(FLOWLY_API_KEY),
+        "BOT_TOKEN": bool(BOT_TOKEN),
         "TR_REWARD": TR_REWARD,
         "FL_REWARD": FL_REWARD,
         "FL_TYPES": FL_TYPES,
     }
+
+
+@router.post("/tasks/sub_debug")
+async def sub_debug(req: InitReq):
+    """Диагностика: показывает сырой ответ Telegram для текущего пользователя по каждому каналу."""
+    user = validate_init_data(req.init_data)
+    out = []
+    # Кто такой бот (чтобы убедиться, что токен от того бота, который админ в канале)
+    bot_info = None
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as c:
+            r = await c.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getMe")
+        bot_info = r.json()
+    except Exception as e:
+        bot_info = {"error": repr(e)}
+    for ch in MANDATORY_CHANNELS:
+        data, err = await tg_get_chat_member(ch["id"], int(user["id"]))
+        out.append({"channel": ch["id"], "raw": data, "error": err})
+    return {"bot": bot_info, "checks": out}
 
 
 @router.post("/tasks/list")
@@ -99,17 +159,16 @@ async def tasks_list(req: InitReq):
     uid = str(user["id"])
     ensure_user(user)
 
-    # 1. Проверяем подписку на личные каналы перед входом в апку
+    # 1. Проверяем подписку на обязательные каналы перед входом в апку
     unsubscribed_channels = []
     for ch in MANDATORY_CHANNELS:
         member = await is_member(ch["id"], int(user["id"]))
-        if member is not True:  # не подписан или ошибка бота (лучше перестраховаться)
+        if member is not True:  # не подписан ИЛИ не удалось проверить — не пускаем
             unsubscribed_channels.append({
                 "name": ch["name"],
-                "link": f"https://t.me/{ch['id'].lstrip('@')}"
+                "link": f"https://t.me/{str(ch['id']).lstrip('@')}"
             })
 
-    # Если есть каналы, на которые не подписан — отдаем их фронту как обязательные
     if unsubscribed_channels:
         bal = db().table("users").select("balance").eq("id", uid).execute().data
         balance = float(bal[0]["balance"] or 0) if bal else 0.0
@@ -225,7 +284,6 @@ async def bh_task(req: SrcReq):
     if req.action == "check" and prev_ads_id:
         conf = await trafsly_confirm(uid_int, prev_ads_id)
         if conf.get("status") == "ok" and conf.get("subscribed"):
-            # Награда всегда берётся из TR_REWARD
             res = rpc("complete_task", {
                 "p_user_id": uid,
                 "p_task_id": f"tr:{prev_ads_id}",
@@ -309,7 +367,6 @@ async def fl_pick(user: dict, uid: str, skipped: str, prefer_id: Optional[str] =
     })
     if data is None:
         return None
-    # Принимаем оба статуса: пустые/уже выполненные офферы всё равно отфильтруются ниже
     if data.get("status") not in ("ok", "not_ok"):
         return {}
 
