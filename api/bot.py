@@ -118,8 +118,8 @@ OPEN_TEXT = CAPTION
 
 
 def _register_ref_sync(user: dict, payload: str):
-    """Записывает реферала напрямую из бота (не зависит от фронта).
-    Дубли отсекает уникальный индекс referrals_referred_uidx / сама SQL-функция."""
+    """Пишет реферала напрямую в referrals (без SQL-функции).
+    Дубли отсекает уникальный индекс по referred_id."""
     if supabase is None or not payload.isdigit():
         return None
     uid = int(user["id"])
@@ -128,21 +128,35 @@ def _register_ref_sync(user: dict, payload: str):
         return None
     uname = user.get("username") or user.get("first_name")
     try:
-        # строка в users нужна из-за внешних ключей referrals -> users
+        # уже есть запись о том, кто его пригласил - ничего не делаем
+        ex = supabase.table("referrals").select("id").eq("referred_id", uid).limit(1).execute().data
+        if ex:
+            print("register_ref: уже записан", uid)
+            return None
+
+        # пригласивший обязан быть в users (внешний ключ)
+        rr = supabase.table("users").select("id").eq("id", str(ref_id)).limit(1).execute().data
+        if not rr:
+            print("register_ref: пригласивший не найден в users", ref_id)
+            return None
+
+        # приглашённый тоже должен быть в users (внешний ключ)
         supabase.table("users").upsert(
             {"id": str(uid), "balance": 0, "username": uname},
             on_conflict="id", ignore_duplicates=True,
         ).execute()
-        res = supabase.rpc("register_referral", {
-            "p_referred_id": uid,
-            "p_referrer_id": ref_id,
-            "p_is_premium": bool(user.get("is_premium", False)),
-            "p_username": uname,
-        }).execute().data
-        print("register_referral:", uid, "<-", ref_id, res)
+
+        row = {
+            "referred_id": uid,
+            "invited_id": str(uid),
+            "referrer_id": str(ref_id),
+            "is_premium": bool(user.get("is_premium", False)),
+        }
+        res = supabase.table("referrals").insert(row).execute().data
+        print("register_ref OK:", uid, "<-", ref_id, res)
         return res
     except Exception as e:
-        print("register_referral error:", uid, "<-", ref_id, repr(e))
+        print("register_ref ERROR:", uid, "<-", ref_id, repr(e))
         return None
 
 
