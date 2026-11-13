@@ -1,12 +1,14 @@
+import asyncio
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 try:
-    from ref import validate_init_data, rpc
+    from ref import validate_init_data, rpc, supabase
 except ImportError:
-    from api.ref import validate_init_data, rpc
+    from api.ref import validate_init_data, rpc, supabase
 
 router = APIRouter()
 
@@ -40,6 +42,45 @@ def _check(res):
     return res
 
 
+def _credit_referral_sync(user: dict):
+    """Зачисляет реферала после первого открытия бесплатного кейса.
+    Берёт пригласившего из pending_refs, пишет в referrals, помечает verified.
+    Любая ошибка только логируется, на открытие кейса не влияет."""
+    if supabase is None:
+        return
+    uid = int(user["id"])
+    try:
+        pr = (supabase.table("pending_refs").select("referrer_id,verified")
+              .eq("user_id", uid).limit(1).execute().data)
+        if not pr or pr[0].get("verified"):
+            return
+        ref_id = int(pr[0]["referrer_id"])
+        if ref_id == uid:
+            return
+
+        ex = supabase.table("referrals").select("id").eq("referred_id", uid).limit(1).execute().data
+        if not ex:
+            # пригласивший должен существовать в users (внешний ключ)
+            rr = supabase.table("users").select("id").eq("id", str(ref_id)).limit(1).execute().data
+            if not rr:
+                print("credit_ref: пригласивший не найден в users", ref_id)
+                return
+            supabase.table("referrals").insert({
+                "referred_id": uid,
+                "invited_id": str(uid),
+                "referrer_id": str(ref_id),
+                "is_premium": bool(user.get("is_premium", False)),
+            }).execute()
+            print("credit_ref OK:", uid, "<-", ref_id)
+
+        supabase.table("pending_refs").update({
+            "verified": True,
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+        }).eq("user_id", uid).execute()
+    except Exception as e:
+        print("credit_ref ERROR:", uid, repr(e))
+
+
 @router.post("/roulette/status")
 async def roulette_status(req: Base):
     user = validate_init_data(req.init_data)
@@ -67,7 +108,10 @@ async def roulette_catalog(req: Base):
 @router.post("/roulette/free")
 async def roulette_free(req: Base):
     user = validate_init_data(req.init_data)
-    return _check(rpc("roulette_free", {"p_user_id": str(user["id"])}))
+    res = _check(rpc("roulette_free", {"p_user_id": str(user["id"])}))
+    # кейс успешно открыт -> засчитываем реферала
+    await asyncio.to_thread(_credit_referral_sync, user)
+    return res
 
 
 @router.post("/roulette/paid")
