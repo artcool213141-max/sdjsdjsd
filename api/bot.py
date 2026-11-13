@@ -150,34 +150,52 @@ async def ensure_webhook():
         )
         return r.json()
 
+@router.get("/webhook_info")
+async def webhook_info():
+    async with httpx.AsyncClient(timeout=10) as client:
+        r = await client.get(f"https://api.telegram.org/bot{BOT_TOKEN}/getWebhookInfo")
+        return r.json()
+
+
 async def handle_check(cq: dict):
     user_id = cq["from"]["id"]
     payload = clean_payload((cq.get("data") or "")[4:])
     msg = cq.get("message") or {}
+    print("handle_check: user", user_id)
 
-    # 1. МГНОВЕННО отвечаем Telegram, чтобы убрать крутящиеся часики с кнопки
-    await tg_call("answerCallbackQuery", {
-        "callback_query_id": cq["id"],
-        "text": "Проверяем...",
-        "show_alert": False
-    })
+    # Проверяем подписку по каждому каналу, отличая «не подписан» от «не смогли проверить»
+    missing = []
+    had_error = False
+    for ch in MANDATORY_CHANNELS:
+        m = await is_member(ch["id"], user_id)
+        print("handle_check: channel", ch["id"], "->", m)
+        if m is True:
+            continue
+        if m is None:
+            had_error = True
+            if SKIP_CHECK_ERRORS:
+                continue
+        missing.append(ch)
 
-    # 2. Проверяем подписку
-    missing = await missing_channels(user_id)
-    
     if missing:
-        # Если не подписан — аккуратно обновляем текст сообщения
-        if msg.get("chat") and msg.get("message_id"):
-            await tg_call("editMessageText", {
-                "chat_id": msg["chat"]["id"],
-                "message_id": msg["message_id"],
-                "text": "❌ <b>Вы еще не подписались на канал!</b>\n\nПодпишитесь на канал ниже и снова нажмите кнопку <b>«Я подписался»</b> 👇",
-                "parse_mode": "HTML",
-                "reply_markup": sub_keyboard(missing, payload),
-            })
+        # ЯВНОЕ всплывающее окно, чтобы кнопка не выглядела «проигнорированной»
+        if had_error:
+            alert = "⚠️ Не удалось проверить подписку: бот не видит канал. Сообщите администратору."
+        else:
+            alert = "❌ Вы ещё не подписаны на канал. Подпишитесь и нажмите кнопку снова."
+        await tg_call("answerCallbackQuery", {
+            "callback_query_id": cq["id"],
+            "text": alert,
+            "show_alert": True,
+        })
         return
 
-    # 3. Если подписан — открываем вход в игру
+    await tg_call("answerCallbackQuery", {
+        "callback_query_id": cq["id"],
+        "text": "✅ Подписка подтверждена!",
+        "show_alert": False,
+    })
+
     if msg.get("chat") and msg.get("message_id"):
         await tg_call("editMessageText", {
             "chat_id": msg["chat"]["id"],
@@ -515,6 +533,7 @@ async def bot_webhook(request: Request,
         raise HTTPException(403, "forbidden")
     try:
         update = await request.json()
+        print('update keys:', [k for k in update.keys() if k != 'update_id'])
         await handle_update(update)
     except Exception as e:
         print("bot_webhook exception:", repr(e))
