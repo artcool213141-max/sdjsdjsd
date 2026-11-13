@@ -14,7 +14,7 @@ router = APIRouter()
 
 # Твои личные каналы для обязательной подписки при первом входе (через @username или ID)
 MANDATORY_CHANNELS = [
-    {"id": -1003978277657, "name": "St1fix"},
+    {"id": "@St1fix_free", "name": "St1fix"}, # <-- укажите юзернейм вместо числового ID
 ]
 
 # Trafsly
