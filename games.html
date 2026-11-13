@@ -7,8 +7,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Подключаем скрипт для анимаций .tgs (Lottie) -->
+    
+    <!-- Подключаем Lottie и Pako (для работы с .tgs архивами Telegram) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         :root {
@@ -93,12 +96,20 @@
             cursor: pointer;
         }
         .game-card:active { transform: scale(0.97); border-color: #fff; background: rgba(255, 255, 255, 0.24); }
-        
-        /* Стили для анимаций вместо картинок */
-        .game-anim {
+
+        /* Контейнер для анимаций / картинок */
+        .game-media {
             width: 50px;
             height: 50px;
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .game-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
             filter: drop-shadow(0 4px 6px rgba(0, 20, 90, 0.4));
         }
 
@@ -142,7 +153,7 @@
 
         <!-- МИНЫ -->
         <div onclick="openPage('mines.html')" class="game-card">
-            <div id="anim-mine" class="game-anim"></div>
+            <div id="media-mine" class="game-media"></div>
             <div>
                 <div class="card-title">Мины</div>
                 <div class="card-desc">Что бы не проиграть, не попадайся на бомбы...</div>
@@ -156,7 +167,7 @@
 
         <!-- КРАШ -->
         <div onclick="openPage('crash.html')" class="game-card">
-            <div id="anim-crash" class="game-anim"></div>
+            <div id="media-crash" class="game-media"></div>
             <div>
                 <div class="card-title">Краш</div>
                 <div class="card-desc">Успей забрать коэффициент до падения ракеты</div>
@@ -170,7 +181,7 @@
 
         <!-- РОЛЛС -->
         <div onclick="openPage('rolls.html')" class="game-card">
-            <div id="anim-rolls" class="game-anim"></div>
+            <div id="media-rolls" class="game-media"></div>
             <div>
                 <div class="card-title">Роллс</div>
                 <div class="card-desc">Крути колесо фортуны и забирай общий банк</div>
@@ -184,7 +195,7 @@
 
         <!-- ПЛИНКО -->
         <div onclick="openPage('plinko.html')" class="game-card">
-            <div id="anim-plinko" class="game-anim"></div>
+            <div id="media-plinko" class="game-media"></div>
             <div>
                 <div class="card-title">Плинко</div>
                 <div class="card-desc">Бросай шарик и наблюдай, куда упадет множитель</div>
@@ -222,38 +233,35 @@
             window.location.href = url + '?v=' + Date.now();
         }
 
-        // Запуск Lottie-анимаций из .tgs файлов
-        lottie.loadAnimation({
-            container: document.getElementById('anim-mine'),
-            renderer: 'svg',
-            loop: true,
-            autoplay: true,
-            path: 'mine.tgs'
-        });
+        // Загрузка и распаковка TGS (gzip JSON), фоллбэк на PNG
+        async function loadTGS(containerId, tgsPath, fallbackImg) {
+            const container = document.getElementById(containerId);
+            try {
+                const res = await fetch(tgsPath);
+                if (!res.ok) throw new Error('Network error');
+                
+                const arrayBuffer = await res.arrayBuffer();
+                const decompressed = pako.ungzip(new Uint8Array(arrayBuffer), { to: 'string' });
+                const animationData = JSON.parse(decompressed);
 
-        lottie.loadAnimation({
-            container: document.getElementById('anim-crash'),
-            renderer: 'svg',
-            loop: true,
-            autoplay: true,
-            path: 'crash.tgs'
-        });
+                lottie.loadAnimation({
+                    container: container,
+                    renderer: 'svg',
+                    loop: true,
+                    autoplay: true,
+                    animationData: animationData
+                });
+            } catch (err) {
+                console.warn(`Не удалось загрузить ${tgsPath}, ставим картинку: ${fallbackImg}`, err);
+                container.innerHTML = `<img src="${fallbackImg}" alt="game">`;
+            }
+        }
 
-        lottie.loadAnimation({
-            container: document.getElementById('anim-rolls'),
-            renderer: 'svg',
-            loop: true,
-            autoplay: true,
-            path: 'rolls.tgs'
-        });
-
-        lottie.loadAnimation({
-            container: document.getElementById('anim-plinko'),
-            renderer: 'svg',
-            loop: true,
-            autoplay: true,
-            path: 'plinko.tgs'
-        });
+        // Подключаем TGS анимации с резервными картинками
+        loadTGS('media-mine', 'mine.tgs', 'img/gyba.png');
+        loadTGS('media-crash', 'crash.tgs', 'img/dog.png');
+        loadTGS('media-rolls', 'rolls.tgs', 'img/kotel.png');
+        loadTGS('media-plinko', 'plinko.tgs', 'img/pepe.png');
 
         async function loadBalance() {
             const userId = tg.initDataUnsafe?.user?.id || 8015661230;
@@ -272,7 +280,7 @@
 
         loadBalance();
 
-        // Поднимающиеся пузырьки (оформление)
+        // Поднимающиеся пузырьки
         (function makeSparks() {
             const box = document.getElementById('sparks');
             for (let i = 0; i < 22; i++) {
