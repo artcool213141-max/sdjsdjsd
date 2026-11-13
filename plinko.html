@@ -256,7 +256,7 @@ async function openInventory(){
   if (!r.gifts.length) { grid.innerHTML = '<div class="empty">У вас пока нет подарков</div>'; return; }
   r.gifts.forEach(g => {
     const d = document.createElement('div'); d.className = 'inv';
-    const img = document.createElement('img'); img.src = g.image_url || 'img/star.png'; img.onerror = () => { img.onerror = null; img.src = 'img/star.png'; };
+    const img = document.createElement('img'); img.src = g.image_url ? (g.image_url.startsWith('/') ? BASES[baseIdx] + g.image_url : g.image_url) : 'img/star.png'; img.onerror = () => { img.onerror = null; img.src = 'img/star.png'; };
     const n = document.createElement('div'); n.className = 'n'; n.textContent = g.name;
     const p = document.createElement('div'); p.className = 'p'; p.innerHTML = `${g.price_stars} ${STAR}`;
     d.append(img, n, p);
