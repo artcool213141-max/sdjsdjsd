@@ -52,6 +52,13 @@ RR_ITEMS = RR_ITEMS_STANDARD + RR_ITEMS_PREMIUM
 RR_MIN_CHANCE = 1
 RR_MAX_CHANCE = 95
 
+# --- Настройка реальных шансов рулетки ---
+RR_HIGH_FROM = 60        # с какого выбранного % шансы "высокие"
+RR_HIGH_PENALTY = 5      # высокие: реальный шанс = выбранный - 5  (60->55, 95->90)
+RR_LOW_BASE = 1.0        # низкие: минимум (при выборе 1%)
+RR_LOW_SPAN = 14.0       # низкие: растёт до ~15% при выборе 59%
+RR_PREMIUM_MULT = 0.85   # премиум-подарки чуть сложнее
+
 # =====================================================================
 #  ЛУТ КЕЙСОВ
 # =====================================================================
@@ -172,8 +179,7 @@ def _catalog() -> dict:
     data = rpc("get_catalog", {})
     if isinstance(data, dict):
         data = data.get("items") or data.get("catalog") or []
-    
-    # Теперь читаем напрямую из базы данных без всякого хардкода
+
     return {
         x["id"]: {
             "id": x["id"],
@@ -262,13 +268,29 @@ def _ton_balance(user_id: str):
         return None
 
 
-# Расчёт стоимости прокрута БЕЗ КАКИХ-ЛИБО КОМИССИЙ (чистая пропорция)
+# Расчёт стоимости прокрута (чистая пропорция, без комиссий)
 def _rr_cost(price_stars, chance: int, currency: str = "stars") -> float:
     price = int(round(float(price_stars or 0)))
     base_stars = max(1, -(-(price * chance) // 100))
     if currency == "ton":
         return round(base_stars * TON_PER_STAR, 2)
     return base_stars
+
+
+def _real_chance(chance: int, premium: bool) -> float:
+    """Реальный шанс выигрыша по выбранному игроком.
+
+    Выбрано >= 60%: выигрыш выпадает часто (выбранный - 5).
+    Выбрано  < 60%: выигрыш редкий, но возможный (1% ... ~15%).
+    Премиум-подарки: дополнительно умножаются на RR_PREMIUM_MULT.
+    """
+    if chance >= RR_HIGH_FROM:
+        real = chance - RR_HIGH_PENALTY
+    else:
+        real = RR_LOW_BASE + (chance / (RR_HIGH_FROM - 1)) ** 2 * RR_LOW_SPAN
+    if premium:
+        real *= RR_PREMIUM_MULT
+    return max(1.0, min(real, 95.0))
 
 
 # ---------------- Кейсы ----------------
@@ -384,23 +406,12 @@ async def rr_spin(req: RRSpinReq):
     if not item:
         raise HTTPException(404, "Подарок не найден")
 
-    # ---- СКРЫТЫЕ ВНУТРЕННИЕ ШАНСЫ (БЕЗ КОМИССИИ НА СТОИМОСТЬ) ----
-    if req.item_id in RR_ITEMS_PREMIUM:
-        if req.chance < 80:
-            hidden_chance = random.SystemRandom().randint(1, 5)  # 1–5% при выборе 1-79%
-        else:
-            hidden_chance = 40  # 40% победа / 60% поражение при выборе 80-100%
-    else:
-        if req.chance <= 30:
-            hidden_chance = random.SystemRandom().randint(1, 5)  # 1–5% при выборе 1-30%
-        else:
-            hidden_chance = 40  # 40% победа / 60% поражение при выборе 31-100%
-
-    # Чистая стоимость без комиссии
+    # Стоимость пропорциональна выбранному шансу
     cost = _rr_cost(item["price_stars"], req.chance, currency=req.currency)
-    
-    # Розыгрыш по скрытому шансу
-    win = random.SystemRandom().random() * 100 < hidden_chance
+
+    # Реальный шанс по новой схеме
+    real = _real_chance(req.chance, req.item_id in RR_ITEMS_PREMIUM)
+    win = random.SystemRandom().random() * 100 < real
 
     if win:
         _check(rpc("open_case", {
@@ -418,7 +429,7 @@ async def rr_spin(req: RRSpinReq):
     return {
         "win": win,
         "cost": cost,
-        "chance": req.chance,  # На клиенте отображается выбор игрока
+        "chance": req.chance,
         "item": item,
         "balance": _stars_balance(uid),
         "ton_balance": _ton_balance(uid),
