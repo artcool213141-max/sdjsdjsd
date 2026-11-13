@@ -17,12 +17,12 @@
   --safe-top:env(safe-area-inset-top,0px); --safe-bottom:env(safe-area-inset-bottom,0px);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg);color:#fff;font-family:'Montserrat',sans-serif}
-body{display:flex;flex-direction:column;height:100vh;height:100dvh;background:linear-gradient(180deg,#112a6e 0%,#0b1d52 100%)}
+html,body{margin:0;min-height:100%;overflow-x:hidden;background:var(--bg);color:#fff;font-family:'Montserrat',sans-serif}
+body{min-height:100vh;min-height:100dvh;background:linear-gradient(180deg,#112a6e 0%,#0b1d52 100%)}
 .num{font-variant-numeric:tabular-nums}
 
 /* header */
-header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;
+header{position:sticky;top:0;display:flex;align-items:center;justify-content:space-between;gap:8px;
   padding:calc(10px + var(--safe-top)) 14px 10px;background:rgba(7,18,55,.75);border-bottom:1px solid var(--line);z-index:50}
 .left{display:flex;align-items:center;gap:10px;min-width:0}
 .back-btn{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1);cursor:pointer;flex:0 0 auto}
@@ -34,7 +34,7 @@ header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-betwe
 .pill img{width:16px;height:16px;object-fit:contain}
 
 /* history */
-.history{flex:0 0 auto;display:flex;gap:6px;padding:8px 14px;overflow-x:auto;scrollbar-width:none;background:rgba(7,18,55,.4);border-bottom:1px solid var(--line);min-height:38px}
+.history{display:flex;gap:6px;padding:8px 14px;overflow-x:auto;scrollbar-width:none;background:rgba(7,18,55,.4);border-bottom:1px solid var(--line);min-height:38px}
 .history::-webkit-scrollbar{display:none}
 .chip{flex:0 0 auto;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(255,255,255,.07);border:1px solid var(--line)}
 .chip.hi{color:var(--success);border-color:rgba(67,217,163,.35)}
@@ -42,7 +42,7 @@ header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-betwe
 .chip.top{color:var(--gold);border-color:rgba(255,210,74,.4)}
 
 /* scene */
-.scene{position:relative;flex:1 1 auto;min-height:150px;overflow:hidden;
+.scene{position:relative;height:clamp(240px,38dvh,380px);overflow:hidden;
   background:
    radial-gradient(ellipse at 50% 110%,rgba(47,107,255,.35),transparent 60%),
    linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
@@ -69,10 +69,9 @@ header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-betwe
 @keyframes boom{from{transform:scale(.2);opacity:0}60%{transform:scale(1.25);opacity:1}to{transform:scale(1);opacity:.9}}
 
 /* bets feed */
-.bets{flex:0 0 auto;background:#1b2132;border-top:1px solid var(--line);padding:8px 12px 6px;max-height:25dvh;display:flex;flex-direction:column;z-index:40}
+.bets{background:#1b2132;border-top:1px solid var(--line);padding:14px 12px calc(24px + var(--safe-bottom));min-height:45dvh}
 .bets-head{display:flex;justify-content:space-between;font-size:11px;font-weight:800;color:var(--muted);padding:0 6px 6px}
-#bets-list{overflow-y:auto;display:flex;flex-direction:column;gap:6px;scrollbar-width:none;min-height:0}
-#bets-list::-webkit-scrollbar{display:none}
+#bets-list{display:flex;flex-direction:column;gap:6px}
 .bets-empty{text-align:center;font-size:11px;font-weight:700;color:var(--muted);padding:4px 0 6px}
 .brow{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:12px;background:rgba(255,255,255,.045);animation:slideUp .38s cubic-bezier(.2,.9,.3,1.2)}
 @keyframes slideUp{from{opacity:0;transform:translateY(26px) scale(.96)}to{opacity:1;transform:none}}
@@ -93,7 +92,7 @@ header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-betwe
 .gcard span{font-size:10px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* panel */
-.panel{flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);padding:10px 14px calc(10px + var(--safe-bottom));display:flex;flex-direction:column;gap:8px;z-index:60}
+.panel{background:var(--panel);border-top:1px solid var(--line);padding:10px 14px calc(10px + var(--safe-bottom));display:flex;flex-direction:column;gap:8px;z-index:60}
 .modes{display:flex;gap:8px}
 .mode{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 0;border-radius:10px;font-size:11px;font-weight:800;color:var(--muted);background:rgba(255,255,255,.05);border:1px solid var(--line);cursor:pointer;transition:.15s}
 .mode img{width:14px;height:14px}
@@ -166,12 +165,6 @@ header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-betwe
   <div id="boom">💥</div>
 </div>
 
-<section class="bets">
-  <div class="bets-head"><span>Ставка</span><span>Возможн. приз</span></div>
-  <div id="bets-list"></div>
-  <div id="bets-empty" class="bets-empty">Ставок пока нет — будь первым</div>
-</section>
-
 <div class="panel">
   <div class="modes">
     <div id="mode-stars" class="mode active" onclick="switchMode('stars')"><img src="img/star.png" alt=""> STARS</div>
@@ -186,11 +179,17 @@ header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-betwe
       <label>Авто-вывод</label>
       <input type="number" id="input-auto" class="num" placeholder="—" min="1.01" step="0.1" inputmode="decimal">
     </div>
-    <div class="gift-btn" id="gift-btn" onclick="openInventory()"> <span id="gift-label">Gifts</span></div>
+    <div class="gift-btn" id="gift-btn" onclick="openInventory()">🎁 <span id="gift-label">Подарок</span></div>
   </div>
   <div class="quick" id="quick"></div>
   <button id="btn-main" class="btn-main" onclick="onAction()" disabled>Подключение…</button>
 </div>
+
+<section class="bets">
+  <div class="bets-head"><span>Ставки раунда</span><span>Возможн. приз</span></div>
+  <div id="bets-list"></div>
+  <div id="bets-empty" class="bets-empty">Ставок пока нет — будь первым</div>
+</section>
 
 <div id="inv-modal" class="overlay" onclick="if(event.target===this)closeInventory()">
   <div class="modal">
@@ -249,19 +248,34 @@ function toast(msg, kind=''){
 }
 function fmtAmt(v, c){ v = Number(v); return c === 'ton' ? v.toFixed(2) : String(+v.toFixed(2)); }
 
+const BASES = API_BASE ? [API_BASE] : ['', '/api'];
+let baseIdx = 0, lastApiError = '';
 async function api(path, opts = {}){
-  const res = await fetch(API_BASE + path, {
-    method: opts.method || 'GET',
-    headers: { 'Content-Type': 'application/json', 'x-init-data': tg.initData || '' },
-    body: opts.body ? JSON.stringify(opts.body) : undefined
-  });
-  let data = null; try { data = await res.json(); } catch(e){}
-  if (!res.ok) {
-    let d = data && (data.detail ?? data.error);
-    if (d && typeof d !== 'string') d = JSON.stringify(d);
-    throw new Error(d || ('HTTP ' + res.status));
+  let lastErr = null;
+  for (let k = 0; k < BASES.length; k++) {
+    const i = (baseIdx + k) % BASES.length;
+    const url = BASES[i] + path;
+    try {
+      const res = await fetch(url, {
+        method: opts.method || 'GET',
+        headers: { 'Content-Type': 'application/json', 'x-init-data': tg.initData || '' },
+        body: opts.body ? JSON.stringify(opts.body) : undefined
+      });
+      let data = null; try { data = await res.json(); } catch(e){}
+      const notFound = res.status === 404 && !(data && data.detail && data.detail !== 'Not Found');
+      if (notFound || (data === null && !res.ok)) { lastErr = new Error('HTTP ' + res.status + ' ' + url); continue; }
+      if (!res.ok) {
+        let d = data && (data.detail ?? data.error);
+        if (d && typeof d !== 'string') d = JSON.stringify(d);
+        const err = new Error(d || ('HTTP ' + res.status)); err.server = true; throw err;
+      }
+      baseIdx = i; return data;
+    } catch(e){
+      if (e.server) throw e;
+      lastErr = e;
+    }
   }
-  return data;
+  throw lastErr || new Error('нет ответа');
 }
 
 /* ================= ФАЗА (по серверным часам) ================= */
@@ -299,7 +313,7 @@ async function poll(){
     renderBets(r.bets || [], r.round_id);
     renderHistory(r.history || []);
   } catch(e){
-    apiDown = true; console.error('poll:', e);
+    apiDown = true; lastApiError = String(e.message || e).slice(0, 60); console.error('poll:', e);
   }
   const ph = phase();
   let delay = 1000;
@@ -599,7 +613,7 @@ function frame(){
   el.status.classList.toggle('err', apiDown);
 
   if (st.state === 'load') {
-    setText(el.status, apiDown ? 'Нет связи с сервером' : 'Подключение…');
+    setText(el.status, apiDown ? ('Нет связи: ' + lastApiError) : 'Подключение…');
     el.mult.className = 'num idle'; setText(el.mult, '1.00x');
     el.rocket.classList.remove('on'); drawTrail(1); placeRocket(1);
     if (!busy) { setText(el.btn, apiDown ? 'Нет связи' : 'Подключение…'); el.btn.className = 'btn-main'; el.btn.disabled = true; }
