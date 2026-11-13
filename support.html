@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>PandaGift — Об игре</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+        :root {
+            --bg-dark: #07173f;
+            --blue: #2f6bff;
+            --blue-light: #8fc2ff;
+            --glass: rgba(255, 255, 255, 0.12);
+            --glass-line: rgba(255, 255, 255, 0.18);
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; height: 100%; }
+        body {
+            background-color: var(--bg-dark);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .page {
+            min-height: 100%;
+            background:
+                radial-gradient(circle at 50% 8%, #3d78ff 0%, rgba(47,107,255,0.3) 28%, transparent 60%),
+                linear-gradient(180deg, #1f55d6 0%, #133ea6 42%, #08205f 100%);
+            background-attachment: fixed;
+            padding: 22px 16px 60px;
+        }
+        .wrap { max-width: 480px; margin: 0 auto; }
+
+        h1 { text-align: center; font-size: 26px; font-weight: 900; margin: 6px 0 20px; }
+
+        /* баннер обучения */
+        .tutorial {
+            display: flex; align-items: center; gap: 12px; width: 100%;
+            padding: 14px 16px; margin-bottom: 14px; border: none; border-radius: 22px; cursor: pointer;
+            background: linear-gradient(135deg, #3b6dff 0%, #2147e8 100%);
+            color: #fff; text-align: left; font-family: inherit;
+            box-shadow: 0 8px 24px rgba(10, 30, 120, 0.45), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+        .tutorial:active { transform: scale(0.98); }
+        .tutorial .ic {
+            flex: none; width: 44px; height: 44px; border-radius: 50%; background: #fff; color: #2147e8;
+            display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 22px;
+        }
+        .tutorial .t1 { font-size: 15px; font-weight: 800; line-height: 1.2; }
+        .tutorial .t2 { font-size: 13px; color: #c9d9ff; margin-top: 2px; }
+        .tutorial .chev { margin-left: auto; opacity: 0.7; font-size: 20px; }
+
+        /* аккордеон */
+        .acc {
+            background: var(--glass); border: 1px solid var(--glass-line);
+            border-radius: 24px; margin-bottom: 12px; overflow: hidden; backdrop-filter: blur(10px);
+            cursor: pointer;
+        }
+        .acc-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 20px; }
+        .acc-q { font-size: 16px; font-weight: 800; line-height: 1.3; }
+        .acc-arrow {
+            flex: none; width: 10px; height: 10px; border-left: 2px solid #cfe0ff; border-bottom: 2px solid #cfe0ff;
+            transform: rotate(45deg); transition: transform 0.25s; margin-right: 4px; opacity: 0.8;
+        }
+        .acc.open .acc-arrow { transform: rotate(-45deg); }
+        .acc-body { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+        .acc-inner { padding: 0 20px 20px; font-size: 14px; line-height: 1.5; color: #dbe7ff; font-weight: 500; user-select: text; }
+        .acc-inner p { margin: 0 0 10px; }
+        .acc-inner p:last-child { margin-bottom: 0; }
+        .acc-inner b { color: #fff; }
+
+        .links { display: flex; gap: 10px; margin-top: 14px; }
+        .link-btn {
+            flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 13px 8px;
+            border-radius: 14px; border: 1px solid var(--glass-line); background: rgba(255,255,255,0.16);
+            color: #fff; font-size: 14px; font-weight: 800; font-family: inherit; cursor: pointer;
+        }
+        .link-btn:active { transform: scale(0.97); }
+
+        .support-link {
+            display: block; text-align: center; margin: 22px auto 0; padding: 10px;
+            color: #9cc0ff; font-size: 14px; font-weight: 700; background: none; border: none; font-family: inherit; cursor: pointer;
+        }
+
+        /* обучение */
+        #tut-modal {
+            position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; padding: 24px;
+            background: rgba(2, 10, 40, 0.8); backdrop-filter: blur(6px); opacity: 0; transition: opacity 0.25s;
+        }
+        #tut-modal.show { display: flex; }
+        #tut-modal.vis { opacity: 1; }
+        .tut-box {
+            width: 100%; max-width: 360px; padding: 28px 22px 22px; border-radius: 28px; text-align: center;
+            background: linear-gradient(180deg, #1c4bc4 0%, #0a2468 100%); border: 1px solid var(--glass-line);
+            box-shadow: 0 20px 60px rgba(0, 10, 60, 0.6);
+        }
+        .tut-emoji { font-size: 54px; line-height: 1; margin-bottom: 12px; }
+        .tut-title { font-size: 20px; font-weight: 900; font-style: italic; text-transform: uppercase; margin-bottom: 10px; }
+        .tut-text { font-size: 14px; line-height: 1.5; color: #cfe0ff; min-height: 84px; }
+        .dots { display: flex; justify-content: center; gap: 6px; margin: 16px 0; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.3); transition: all 0.2s; }
+        .dot.on { background: #fff; width: 20px; border-radius: 4px; }
+        .tut-btn {
+            width: 100%; padding: 14px; border: none; border-radius: 999px; cursor: pointer;
+            background: linear-gradient(180deg, #4f8cff, #1d4ed8); color: #fff; font-family: inherit;
+            font-size: 14px; font-weight: 900; font-style: italic; text-transform: uppercase;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+        }
+        .tut-btn:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="wrap">
+        <h1>Об игре</h1>
+
+        <button class="tutorial" onclick="openTutorial()">
+            <div class="ic">i</div>
+            <div>
+                <div class="t1">Просмотрите краткое обучение игре</div>
+                <div class="t2">Это займёт всего полминуты</div>
+            </div>
+            <div class="chev">›</div>
+        </button>
+
+        <div id="faq"></div>
+
+        <button class="support-link" onclick="openSupport()">Поддержка</button>
+    </div>
+</div>
+
+<!-- обучение -->
+<div id="tut-modal" onclick="closeTutorial()">
+    <div class="tut-box" onclick="event.stopPropagation()">
+        <div class="tut-emoji" id="tut-emoji"></div>
+        <div class="tut-title" id="tut-title"></div>
+        <div class="tut-text" id="tut-text"></div>
+        <div class="dots" id="tut-dots"></div>
+        <button class="tut-btn" id="tut-next" onclick="nextStep()">Дальше</button>
+    </div>
+</div>
+
+<script>
+const tg = window.Telegram.WebApp;
+
+// ===== НАСТРОЙКИ: поменяй ссылки на свои =====
+const CHANNEL_URL = 'https://t.me/PandaGift_app';   // канал
+const CHAT_URL    = 'https://t.me/PandaGift_app';   // чат
+const SUPPORT_URL = 'https://t.me/PandaGift_app';   // поддержка
+
+// ===== ТЕКСТЫ FAQ (редактируй под себя) =====
+// html — разрешены <b>, <p>; links:true добавит кнопки «Канал» и «Чат»
+const FAQ = [
+    { q: 'Что это за приложение?', open: true, links: true, html:
+      '<p>PandaGift — это игра, где можно выиграть подарки.</p>' +
+      '<p>Есть много режимов на удачу, в том числе бесплатные. Для платных режимов нужны Stars или TON — валюта внутри игры.</p>' },
+    { q: 'Как выиграть подарок?', html:
+      '<p>Откройте кейс, прокрутите рулетку или сыграйте в мини-игру. Выигранные подарки попадают в ваш профиль, оттуда их можно вывести или улучшить в разделе «Апгрейды».</p>' },
+    { q: 'Это бесплатно?', html:
+      '<p>Да, часть режимов бесплатна: ежедневная рулетка и бесплатный кейс раз в 24 часа. Платные режимы работают на пополненном балансе.</p>' },
+    { q: 'Это не обман?', html:
+      '<p>Нет. Все результаты определяются сервером, а не вашим устройством. Выигранные подарки и баланс закрепляются за вашим аккаунтом Telegram.</p>' },
+    { q: 'Что такое Stars?', html:
+      '<p><b>Stars</b> — валюта внутри игры. Пополнить её можно через Telegram Stars: 1 Telegram Star = 1 Star в игре.</p>' },
+    { q: 'Как получить Stars?', html:
+      '<p>Пополните баланс кнопкой «+» на главном экране, выигрывайте в играх или приглашайте друзей по реферальной ссылке.</p>' },
+    { q: 'Как вывести Stars?', html:
+      '<p>Выведите выигрыш в профиле. Если вывод Stars недоступен, обменяйте их на подарок и выведите его.</p>' },
+    { q: 'Почему я не могу играть, хотя Stars есть?', html:
+      '<p>В части режимов можно использовать только пополненные Stars. Пополните баланс или играйте в другие режимы.</p>' },
+    { q: 'Как вывести подарок?', html:
+      '<p>Откройте профиль, выберите подарок и нажмите «Вывести». Подарок придёт на ваш аккаунт Telegram.</p>' },
+    { q: 'Я вывел подарок, но он не пришёл!', html:
+      '<p>Иногда доставка занимает до нескольких минут. Если подарка нет дольше — напишите в поддержку и укажите ваш ID.</p>' },
+    { q: 'Как работает реферальная программа?', html:
+      '<p>Скопируйте свою ссылку на вкладке «Рефералы» и отправьте друзьям. За каждого приглашённого вы получаете награду.</p>' }
+];
+
+// ===== ОБУЧЕНИЕ =====
+const STEPS = [
+    { e: '🐼', t: 'Добро пожаловать', d: 'PandaGift — игра, где можно выигрывать подарки. Давайте быстро разберёмся, как всё устроено.' },
+    { e: '💰', t: 'Баланс', d: 'Вверху главной — ваши Stars, TON и бамбук. Stars и TON пополняются кнопкой «+», бамбук зарабатывается в кейсах.' },
+    { e: '🎁', t: 'Играйте и выигрывайте', d: 'Крутите рулетку раз в 24 часа, открывайте кейсы, играйте в мини-игры и улучшайте подарки в апгрейдах.' },
+    { e: '👥', t: 'Зовите друзей', d: 'Отправьте реферальную ссылку друзьям и получайте награду за каждого приглашённого.' }
+];
+
+// ---------- аккордеон ----------
+const faqEl = document.getElementById('faq');
+FAQ.forEach((item) => {
+    const acc = document.createElement('div');
+    acc.className = 'acc';
+    acc.innerHTML =
+        '<div class="acc-head"><div class="acc-q">' + item.q + '</div><div class="acc-arrow"></div></div>' +
+        '<div class="acc-body"><div class="acc-inner">' + item.html +
+        (item.links ? '<div class="links"><button class="link-btn" data-go="channel">Канал ›</button><button class="link-btn" data-go="chat">Чат ›</button></div>' : '') +
+        '</div></div>';
+    acc.addEventListener('click', (ev) => {
+        const go = ev.target.getAttribute && ev.target.getAttribute('data-go');
+        if (go) { ev.stopPropagation(); openLink(go === 'channel' ? CHANNEL_URL : CHAT_URL); return; }
+        toggle(acc);
+    });
+    faqEl.appendChild(acc);
+    if (item.open) toggle(acc, true);
+});
+
+function toggle(acc, force) {
+    const body = acc.querySelector('.acc-body');
+    const willOpen = force !== undefined ? force : !acc.classList.contains('open');
+    // закрываем остальные
+    document.querySelectorAll('.acc.open').forEach(o => {
+        if (o !== acc) { o.classList.remove('open'); o.querySelector('.acc-body').style.maxHeight = '0px'; }
+    });
+    acc.classList.toggle('open', willOpen);
+    body.style.maxHeight = willOpen ? body.scrollHeight + 'px' : '0px';
+    if (willOpen) { try { tg.HapticFeedback.selectionChanged(); } catch (e) {} }
+}
+
+// ---------- ссылки ----------
+function openLink(url) {
+    try {
+        if (url.indexOf('t.me/') !== -1 && tg.openTelegramLink) tg.openTelegramLink(url);
+        else if (tg.openLink) tg.openLink(url);
+        else window.open(url, '_blank');
+    } catch (e) { window.open(url, '_blank'); }
+}
+function openSupport() { openLink(SUPPORT_URL); }
+
+// ---------- обучение ----------
+let step = 0;
+function renderStep() {
+    const s = STEPS[step];
+    document.getElementById('tut-emoji').textContent = s.e;
+    document.getElementById('tut-title').textContent = s.t;
+    document.getElementById('tut-text').textContent = s.d;
+    document.getElementById('tut-dots').innerHTML = STEPS.map((_, i) => '<div class="dot' + (i === step ? ' on' : '') + '"></div>').join('');
+    document.getElementById('tut-next').textContent = step === STEPS.length - 1 ? 'Понятно!' : 'Дальше';
+}
+function openTutorial() {
+    step = 0; renderStep();
+    const m = document.getElementById('tut-modal');
+    m.classList.add('show');
+    requestAnimationFrame(() => m.classList.add('vis'));
+}
+function closeTutorial() {
+    const m = document.getElementById('tut-modal');
+    m.classList.remove('vis');
+    setTimeout(() => m.classList.remove('show'), 250);
+}
+function nextStep() {
+    if (step < STEPS.length - 1) { step++; renderStep(); } else { closeTutorial(); }
+}
+
+// ---------- Telegram ----------
+try {
+    tg.expand(); tg.ready();
+    tg.headerColor = '#1f55d6';
+    tg.backgroundColor = '#08205f';
+    // кнопка «назад» в шапке Telegram возвращает на главную
+    tg.BackButton.show();
+    tg.BackButton.onClick(() => { window.location.href = 'index.html'; });
+} catch (e) {}
+</script>
+</body>
+</html>
