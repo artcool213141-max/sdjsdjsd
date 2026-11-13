@@ -146,25 +146,28 @@ async def handle_check(cq: dict):
     payload = clean_payload((cq.get("data") or "")[4:])
     msg = cq.get("message") or {}
 
+    # Мгновенно убираем часики с кнопки, чтобы она не висела
+    await tg_call("answerCallbackQuery", {
+        "callback_query_id": cq["id"],
+        "text": "Проверяем подписку..."
+    })
+
+    # Проверяем подписку
     missing = await missing_channels(user_id)
+    
     if missing:
-        # Убираем всплывающее окошко и просто обновляем текст сообщения в чате
-        await tg_call("answerCallbackQuery", {
-            "callback_query_id": cq["id"],
-            "text": "Вы еще не подписались!",
-        })
-        
+        # Если не подписан — меняем текст сообщения на предупреждение
         if msg.get("chat") and msg.get("message_id"):
             await tg_call("editMessageText", {
                 "chat_id": msg["chat"]["id"],
                 "message_id": msg["message_id"],
-                "text": NOT_SUBSCRIBED_TEXT,
+                "text": "❌ <b>Вы еще не подписались на канал!</b>\n\nПодпишитесь на канал ниже, а затем снова нажмите кнопку <b>«Я подписался»</b> 👇",
                 "parse_mode": "HTML",
                 "reply_markup": sub_keyboard(missing, payload),
             })
         return
 
-    await tg_call("answerCallbackQuery", {"callback_query_id": cq["id"], "text": "Успешно!"})
+    # Если подписан — открываем вход в апку
     if msg.get("chat") and msg.get("message_id"):
         await tg_call("editMessageText", {
             "chat_id": msg["chat"]["id"],
