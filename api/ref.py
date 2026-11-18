@@ -14,7 +14,7 @@ SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 ADMIN_ID = os.environ.get("ADMIN_ID", "")
 
-REF_IMAGE_URL = os.environ.get("REF_IMAGE_URL", "")
+REF_IMAGE_URL = "https://raw.githubusercontent.com/artcool213141-max/sdjsdjsd/main/img/reffo.jpg?v=1"
 BOT_USERNAME = os.environ.get("BOT_USERNAME", "PandaGift_app")
 APP_SHORT_NAME = os.environ.get("APP_SHORT_NAME", "app")
 
