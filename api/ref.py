@@ -1,4 +1,4 @@
-import os, hmac, hashlib, json, time
+import os, hmac, hashlib, json, time, asyncio
 from typing import Optional
 from urllib.parse import parse_qsl
 
@@ -14,9 +14,23 @@ SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 ADMIN_ID = os.environ.get("ADMIN_ID", "")
 
-REF_IMAGE_URL = "https://raw.githubusercontent.com/artcool213141-max/sdjsdjsd/main/img/reffo.jpg?v=1"
 BOT_USERNAME = os.environ.get("BOT_USERNAME", "PandaGift_app")
 APP_SHORT_NAME = os.environ.get("APP_SHORT_NAME", "app")
+
+# ===== Картинка для реферального сообщения =====
+# Порядок: 1) готовый file_id из env  2) локальный файл img/reffo.jpg рядом с кодом
+# 3) скачиваем с GitHub САМИ (с нашего сервера) и один раз заливаем в Telegram.
+# После этого Telegram больше ничего не качает по ссылке, а использует file_id.
+REF_FILE_ID = os.environ.get("REF_FILE_ID", "")
+REF_IMAGE_URL = "https://raw.githubusercontent.com/artcool213141-max/sdjsdjsd/main/img/reffo.jpg"
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+REF_LOCAL_PATHS = [
+    os.path.join(_BASE_DIR, "img", "reffo.jpg"),
+    os.path.join(os.getcwd(), "img", "reffo.jpg"),
+]
+
+_file_id_cache = {"id": REF_FILE_ID}
+_file_id_lock = asyncio.Lock()
 
 supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY) if SUPABASE_URL and SUPABASE_SERVICE_KEY else None
 
@@ -39,7 +53,7 @@ PROMO_ERRORS = {
 REF_CAPTION = (
     "<b>🐼 Залетай в PandaGift и забирай своё!</b>\n"
     "<b>Крути бесплатный кейс раз в 24 часа</b>\n"
-    "<u>Быстрые выплаты без лишних коммисий</u>\n"
+    "<u>Быстрые выплаты без лишних комиссий</u>\n"
     "<u>Панда уже заряжена на победу</u>\n"
     "\n"
     "👇 Жми кнопку и выводи NFT"
@@ -76,6 +90,73 @@ def rpc(name: str, params: dict):
         raise HTTPException(500, f"db error: {str(e)[:200]}")
 
 
+async def _load_image_bytes() -> Optional[bytes]:
+    """Берём картинку с диска, а если её нет, качаем с GitHub с нашего сервера."""
+    for p in REF_LOCAL_PATHS:
+        if os.path.isfile(p):
+            with open(p, "rb") as f:
+                print("ref image: loaded from disk", p)
+                return f.read()
+    try:
+        async with httpx.AsyncClient(timeout=20, follow_redirects=True) as c:
+            r = await c.get(REF_IMAGE_URL)
+        if r.status_code == 200 and r.content:
+            print("ref image: downloaded from GitHub,", len(r.content), "bytes")
+            return r.content
+        print("ref image: GitHub status", r.status_code)
+    except Exception as e:
+        print("ref image: download error", repr(e))
+    return None
+
+
+async def get_ref_file_id(force: bool = False) -> Optional[str]:
+    """Возвращает file_id картинки. При первом вызове заливает её в Telegram."""
+    if _file_id_cache["id"] and not force:
+        return _file_id_cache["id"]
+
+    async with _file_id_lock:
+        if _file_id_cache["id"] and not force:
+            return _file_id_cache["id"]
+
+        if not ADMIN_ID:
+            print("ref image: ADMIN_ID missing, cannot upload")
+            return None
+
+        content = await _load_image_bytes()
+        if not content:
+            return None
+
+        try:
+            async with httpx.AsyncClient(timeout=30) as c:
+                r = await c.post(
+                    f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto",
+                    data={"chat_id": ADMIN_ID, "disable_notification": "true"},
+                    files={"photo": ("reffo.jpg", content, "image/jpeg")},
+                )
+                data = r.json()
+                if not data.get("ok"):
+                    print("ref image: sendPhoto error:", data)
+                    return None
+
+                msg = data["result"]
+                file_id = msg["photo"][-1]["file_id"]
+                _file_id_cache["id"] = file_id
+                print("ref image: file_id cached. Put it in env REF_FILE_ID:", file_id)
+
+                # убираем служебное сообщение из чата админа
+                try:
+                    await c.post(
+                        f"https://api.telegram.org/bot{BOT_TOKEN}/deleteMessage",
+                        json={"chat_id": ADMIN_ID, "message_id": msg["message_id"]},
+                    )
+                except Exception:
+                    pass
+                return file_id
+        except Exception as e:
+            print("ref image: upload exception:", repr(e))
+            return None
+
+
 class RefReq(BaseModel):
     init_data: str
     start_param: Optional[str] = None
@@ -107,8 +188,15 @@ async def env_check():
         "SUPABASE_SERVICE_KEY": bool(SUPABASE_SERVICE_KEY),
         "BOT_TOKEN": bool(BOT_TOKEN),
         "ADMIN_ID": bool(ADMIN_ID),
-        "REF_IMAGE_URL": bool(REF_IMAGE_URL),
+        "REF_FILE_ID": bool(_file_id_cache["id"]),
     }
+
+
+@router.get("/ref_image_check")
+async def ref_image_check():
+    """Заливает картинку в Telegram и сообщает, получилось ли. file_id смотри в логах."""
+    fid = await get_ref_file_id()
+    return {"ok": bool(fid)}
 
 
 @router.get("/ref_ping")
@@ -217,44 +305,75 @@ async def buy_gift(req: BuyReq):
     return res
 
 
+async def _save_prepared(uid: int, result: dict):
+    async with httpx.AsyncClient(timeout=15) as c:
+        r = await c.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/savePreparedInlineMessage",
+            json={
+                "user_id": uid,
+                "result": result,
+                "allow_user_chats": True,
+                "allow_bot_chats": True,
+                "allow_group_chats": True,
+                "allow_channel_chats": True,
+            },
+        )
+    return r.json()
+
+
 # ===== Красивая реферальная рассылка (фото + текст + кнопка) =====
 @router.post("/share_ref")
 async def share_ref(req: InitReq):
     user = validate_init_data(req.init_data)
     uid = int(user["id"])
 
-    if not REF_IMAGE_URL:
-        return {"ok": False, "reason": "no_image"}
-
     # Обычная реферальная ссылка на чат с ботом (а не прямая ссылка на мини-апку)
     link = f"https://t.me/{BOT_USERNAME}?start={uid}"
-    result = {
-        "type": "photo",
-        "id": f"ref{uid}",
-        "photo_url": REF_IMAGE_URL,
-        "thumbnail_url": REF_IMAGE_URL,
-        "caption": REF_CAPTION,
-        "parse_mode": "HTML",
-        "reply_markup": {"inline_keyboard": [[{"text": "Бесплатный кейс", "url": link}]]},
-    }
+    keyboard = {"inline_keyboard": [[{"text": "Бесплатный кейс", "url": link}]]}
+
     try:
-        async with httpx.AsyncClient(timeout=10) as c:
-            r = await c.post(
-                f"https://api.telegram.org/bot{BOT_TOKEN}/savePreparedInlineMessage",
-                json={
-                    "user_id": uid,
-                    "result": result,
-                    "allow_user_chats": True,
-                    "allow_bot_chats": True,
-                    "allow_group_chats": True,
-                    "allow_channel_chats": True,
-                },
-            )
-        data = r.json()
-        if not data.get("ok"):
-            print("savePreparedInlineMessage error:", data)
-            return {"ok": False, "reason": "tg_error"}
-        return {"ok": True, "id": data["result"]["id"]}
+        file_id = await get_ref_file_id()
+
+        # Основной путь: картинка из file_id (надёжно, Telegram ничего не качает)
+        if file_id:
+            result = {
+                "type": "photo",
+                "id": f"ref{uid}",
+                "photo_file_id": file_id,
+                "caption": REF_CAPTION,
+                "parse_mode": "HTML",
+                "reply_markup": keyboard,
+            }
+            data = await _save_prepared(uid, result)
+            if data.get("ok"):
+                return {"ok": True, "id": data["result"]["id"]}
+
+            print("savePreparedInlineMessage (file_id) error:", data)
+            # file_id мог устареть или быть от другого бота: заливаем заново и пробуем ещё раз
+            file_id = await get_ref_file_id(force=True)
+            if file_id:
+                result["photo_file_id"] = file_id
+                data = await _save_prepared(uid, result)
+                if data.get("ok"):
+                    return {"ok": True, "id": data["result"]["id"]}
+                print("savePreparedInlineMessage (retry) error:", data)
+
+        # Запасной путь: по ссылке (может не сработать, если Telegram не качает с GitHub)
+        result = {
+            "type": "photo",
+            "id": f"ref{uid}",
+            "photo_url": REF_IMAGE_URL,
+            "thumbnail_url": REF_IMAGE_URL,
+            "caption": REF_CAPTION,
+            "parse_mode": "HTML",
+            "reply_markup": keyboard,
+        }
+        data = await _save_prepared(uid, result)
+        if data.get("ok"):
+            return {"ok": True, "id": data["result"]["id"]}
+
+        print("savePreparedInlineMessage (url) error:", data)
+        return {"ok": False, "reason": "tg_error"}
     except Exception as e:
         print("share_ref exception:", repr(e))
         return {"ok": False, "reason": "exception"}
